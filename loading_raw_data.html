@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style type="text/css">
+@font-face {
+font-family: octicons-link;
+src: url(data:font/woff;charset=utf-8;base64,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) format('woff');
+}
+body {
+-webkit-text-size-adjust: 100%;
+text-size-adjust: 100%;
+color: #333;
+font-family: "Helvetica Neue", Helvetica, "Segoe UI", Arial, freesans, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+font-size: 16px;
+line-height: 1.6;
+word-wrap: break-word;
+}
+a {
+background-color: transparent;
+}
+a:active,
+a:hover {
+outline: 0;
+}
+strong {
+font-weight: bold;
+}
+h1 {
+font-size: 2em;
+margin: 0.67em 0;
+}
+img {
+border: 0;
+}
+hr {
+box-sizing: content-box;
+height: 0;
+}
+pre {
+overflow: auto;
+}
+code,
+kbd,
+pre {
+font-family: monospace, monospace;
+font-size: 1em;
+}
+input {
+color: inherit;
+font: inherit;
+margin: 0;
+}
+html input[disabled] {
+cursor: default;
+}
+input {
+line-height: normal;
+}
+input[type="checkbox"] {
+box-sizing: border-box;
+padding: 0;
+}
+table {
+border-collapse: collapse;
+border-spacing: 0;
+}
+td,
+th {
+padding: 0;
+}
+* {
+box-sizing: border-box;
+}
+input {
+font: 13px / 1.4 Helvetica, arial, nimbussansl, liberationsans, freesans, clean, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+a {
+color: #4078c0;
+text-decoration: none;
+}
+a:hover,
+a:active {
+text-decoration: underline;
+}
+hr {
+height: 0;
+margin: 15px 0;
+overflow: hidden;
+background: transparent;
+border: 0;
+border-bottom: 1px solid #ddd;
+}
+hr:before {
+display: table;
+content: "";
+}
+hr:after {
+display: table;
+clear: both;
+content: "";
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+margin-top: 15px;
+margin-bottom: 15px;
+line-height: 1.1;
+}
+h1 {
+font-size: 30px;
+}
+h2 {
+font-size: 21px;
+}
+h3 {
+font-size: 16px;
+}
+h4 {
+font-size: 14px;
+}
+h5 {
+font-size: 12px;
+}
+h6 {
+font-size: 11px;
+}
+blockquote {
+margin: 0;
+}
+ul,
+ol {
+padding: 0;
+margin-top: 0;
+margin-bottom: 0;
+}
+ol ol,
+ul ol {
+list-style-type: lower-roman;
+}
+ul ul ol,
+ul ol ol,
+ol ul ol,
+ol ol ol {
+list-style-type: lower-alpha;
+}
+dd {
+margin-left: 0;
+}
+code {
+font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+font-size: 12px;
+}
+pre {
+margin-top: 0;
+margin-bottom: 0;
+font: 12px Consolas, "Liberation Mono", Menlo, Courier, monospace;
+}
+.select::-ms-expand {
+opacity: 0;
+}
+.octicon {
+font: normal normal normal 16px/1 octicons-link;
+display: inline-block;
+text-decoration: none;
+text-rendering: auto;
+-webkit-font-smoothing: antialiased;
+-moz-osx-font-smoothing: grayscale;
+-webkit-user-select: none;
+-moz-user-select: none;
+-ms-user-select: none;
+user-select: none;
+}
+.octicon-link:before {
+content: '\f05c';
+}
+.markdown-body:before {
+display: table;
+content: "";
+}
+.markdown-body:after {
+display: table;
+clear: both;
+content: "";
+}
+.markdown-body>*:first-child {
+margin-top: 0 !important;
+}
+.markdown-body>*:last-child {
+margin-bottom: 0 !important;
+}
+a:not([href]) {
+color: inherit;
+text-decoration: none;
+}
+.anchor {
+display: inline-block;
+padding-right: 2px;
+margin-left: -18px;
+}
+.anchor:focus {
+outline: none;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+margin-top: 1em;
+margin-bottom: 16px;
+font-weight: bold;
+line-height: 1.4;
+}
+h1 .octicon-link,
+h2 .octicon-link,
+h3 .octicon-link,
+h4 .octicon-link,
+h5 .octicon-link,
+h6 .octicon-link {
+color: #000;
+vertical-align: middle;
+visibility: hidden;
+}
+h1:hover .anchor,
+h2:hover .anchor,
+h3:hover .anchor,
+h4:hover .anchor,
+h5:hover .anchor,
+h6:hover .anchor {
+text-decoration: none;
+}
+h1:hover .anchor .octicon-link,
+h2:hover .anchor .octicon-link,
+h3:hover .anchor .octicon-link,
+h4:hover .anchor .octicon-link,
+h5:hover .anchor .octicon-link,
+h6:hover .anchor .octicon-link {
+visibility: visible;
+}
+h1 {
+padding-bottom: 0.3em;
+font-size: 2.25em;
+line-height: 1.2;
+border-bottom: 1px solid #eee;
+}
+h1 .anchor {
+line-height: 1;
+}
+h2 {
+padding-bottom: 0.3em;
+font-size: 1.75em;
+line-height: 1.225;
+border-bottom: 1px solid #eee;
+}
+h2 .anchor {
+line-height: 1;
+}
+h3 {
+font-size: 1.5em;
+line-height: 1.43;
+}
+h3 .anchor {
+line-height: 1.2;
+}
+h4 {
+font-size: 1.25em;
+}
+h4 .anchor {
+line-height: 1.2;
+}
+h5 {
+font-size: 1em;
+}
+h5 .anchor {
+line-height: 1.1;
+}
+h6 {
+font-size: 1em;
+color: #777;
+}
+h6 .anchor {
+line-height: 1.1;
+}
+p,
+blockquote,
+ul,
+ol,
+dl,
+table,
+pre {
+margin-top: 0;
+margin-bottom: 16px;
+}
+hr {
+height: 4px;
+padding: 0;
+margin: 16px 0;
+background-color: #e7e7e7;
+border: 0 none;
+}
+ul,
+ol {
+padding-left: 2em;
+}
+ul ul,
+ul ol,
+ol ol,
+ol ul {
+margin-top: 0;
+margin-bottom: 0;
+}
+li>p {
+margin-top: 16px;
+}
+dl {
+padding: 0;
+}
+dl dt {
+padding: 0;
+margin-top: 16px;
+font-size: 1em;
+font-style: italic;
+font-weight: bold;
+}
+dl dd {
+padding: 0 16px;
+margin-bottom: 16px;
+}
+blockquote {
+padding: 0 15px;
+color: #777;
+border-left: 4px solid #ddd;
+}
+blockquote>:first-child {
+margin-top: 0;
+}
+blockquote>:last-child {
+margin-bottom: 0;
+}
+table {
+display: block;
+width: 100%;
+overflow: auto;
+word-break: normal;
+word-break: keep-all;
+}
+table th {
+font-weight: bold;
+}
+table th,
+table td {
+padding: 6px 13px;
+border: 1px solid #ddd;
+}
+table tr {
+background-color: #fff;
+border-top: 1px solid #ccc;
+}
+table tr:nth-child(2n) {
+background-color: #f8f8f8;
+}
+img {
+max-width: 100%;
+box-sizing: content-box;
+background-color: #fff;
+}
+code {
+padding: 0;
+padding-top: 0.2em;
+padding-bottom: 0.2em;
+margin: 0;
+font-size: 85%;
+background-color: rgba(0,0,0,0.04);
+border-radius: 3px;
+}
+code:before,
+code:after {
+letter-spacing: -0.2em;
+content: "\00a0";
+}
+pre>code {
+padding: 0;
+margin: 0;
+font-size: 100%;
+word-break: normal;
+white-space: pre;
+background: transparent;
+border: 0;
+}
+.highlight {
+margin-bottom: 16px;
+}
+.highlight pre,
+pre {
+padding: 16px;
+overflow: auto;
+font-size: 85%;
+line-height: 1.45;
+background-color: #f7f7f7;
+border-radius: 3px;
+}
+.highlight pre {
+margin-bottom: 0;
+word-break: normal;
+}
+pre {
+word-wrap: normal;
+}
+pre code {
+display: inline;
+max-width: initial;
+padding: 0;
+margin: 0;
+overflow: initial;
+line-height: inherit;
+word-wrap: normal;
+background-color: transparent;
+border: 0;
+}
+pre code:before,
+pre code:after {
+content: normal;
+}
+kbd {
+display: inline-block;
+padding: 3px 5px;
+font-size: 11px;
+line-height: 10px;
+color: #555;
+vertical-align: middle;
+background-color: #fcfcfc;
+border: solid 1px #ccc;
+border-bottom-color: #bbb;
+border-radius: 3px;
+box-shadow: inset 0 -1px 0 #bbb;
+}
+.pl-c {
+color: #969896;
+}
+.pl-c1,
+.pl-s .pl-v {
+color: #0086b3;
+}
+.pl-e,
+.pl-en {
+color: #795da3;
+}
+.pl-s .pl-s1,
+.pl-smi {
+color: #333;
+}
+.pl-ent {
+color: #63a35c;
+}
+.pl-k {
+color: #a71d5d;
+}
+.pl-pds,
+.pl-s,
+.pl-s .pl-pse .pl-s1,
+.pl-sr,
+.pl-sr .pl-cce,
+.pl-sr .pl-sra,
+.pl-sr .pl-sre {
+color: #183691;
+}
+.pl-v {
+color: #ed6a43;
+}
+.pl-id {
+color: #b52a1d;
+}
+.pl-ii {
+background-color: #b52a1d;
+color: #f8f8f8;
+}
+.pl-sr .pl-cce {
+color: #63a35c;
+font-weight: bold;
+}
+.pl-ml {
+color: #693a17;
+}
+.pl-mh,
+.pl-mh .pl-en,
+.pl-ms {
+color: #1d3e81;
+font-weight: bold;
+}
+.pl-mq {
+color: #008080;
+}
+.pl-mi {
+color: #333;
+font-style: italic;
+}
+.pl-mb {
+color: #333;
+font-weight: bold;
+}
+.pl-md {
+background-color: #ffecec;
+color: #bd2c00;
+}
+.pl-mi1 {
+background-color: #eaffea;
+color: #55a532;
+}
+.pl-mdr {
+color: #795da3;
+font-weight: bold;
+}
+.pl-mo {
+color: #1d3e81;
+}
+kbd {
+display: inline-block;
+padding: 3px 5px;
+font: 11px Consolas, "Liberation Mono", Menlo, Courier, monospace;
+line-height: 10px;
+color: #555;
+vertical-align: middle;
+background-color: #fcfcfc;
+border: solid 1px #ccc;
+border-bottom-color: #bbb;
+border-radius: 3px;
+box-shadow: inset 0 -1px 0 #bbb;
+}
+.task-list-item {
+list-style-type: none;
+}
+.task-list-item+.task-list-item {
+margin-top: 3px;
+}
+.task-list-item input {
+margin: 0 0.35em 0.25em -1.6em;
+vertical-align: middle;
+}
+:checked+.radio-label {
+z-index: 1;
+position: relative;
+border-color: #4078c0;
+}
+.sourceLine {
+display: inline-block;
+}
+code .kw { color: #000000; }
+code .dt { color: #ed6a43; }
+code .dv { color: #009999; }
+code .bn { color: #009999; }
+code .fl { color: #009999; }
+code .ch { color: #009999; }
+code .st { color: #183691; }
+code .co { color: #969896; }
+code .ot { color: #0086b3; }
+code .al { color: #a61717; }
+code .fu { color: #63a35c; }
+code .er { color: #a61717; background-color: #e3d2d2; }
+code .wa { color: #000000; }
+code .cn { color: #008080; }
+code .sc { color: #008080; }
+code .vs { color: #183691; }
+code .ss { color: #183691; }
+code .im { color: #000000; }
+code .va {color: #008080; }
+code .cf { color: #000000; }
+code .op { color: #000000; }
+code .bu { color: #000000; }
+code .ex { color: #000000; }
+code .pp { color: #999999; }
+code .at { color: #008080; }
+code .do { color: #969896; }
+code .an { color: #008080; }
+code .cv { color: #008080; }
+code .in { color: #008080; }
+</style>
+<style>
+body {
+  box-sizing: border-box;
+  min-width: 200px;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 45px;
+  padding-top: 0px;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<h1 id="loading-raw-data-from-amadeus">Loading Raw Data from
+Amadeus</h1>
+<p><code>{r}# Load necessary libraries library(amadeus) library(dplyr) library(tidyr) library(archive) library(languageserver)</code></p>
+<p>```{r}# Load Zip Files</p>
+<p>#If there is a zip step, i just load the zip files for now since I’m,
+having issues with some functions unzipping. Will mannually unzip
+next</p>
+<h1 id="load-climatology-lab-terraclimate-aka-terraclimate">Load
+Climatology Lab TerraClimate AKA terraclimate</h1>
+<p># DOWNLOADED</p>
+<p>variables &lt;- c( “aet”, “def”, “swe”, “q”, “soil”, “PDSI”, “pet”,
+“ppt”, “srad”, “tmax”, “tmin”, “vap”, “vpd”, “ws” )</p>
+<p>for (var in variables) { download_terraclimate( variables = var, year
+= c(2010, 2024), directory_to_save =
+“/ddn/gs1/group/set/chords/combining_datasets/raw_data/terraclimate”,
+acknowledgement = TRUE, download = TRUE, remove_command = FALSE, hash =
+FALSE ) }</p>
+<h1 id="load-climatology-lab-gridmet-aka-gridmet">Load Climatology Lab
+GridMet AKA gridmet</h1>
+<h1 id="404-not-found-for-all-years">404 not found for all years</h1>
+<p>variables &lt;- c( “sph”, “pr”, “rmin”, “rmax”, “srad”, “tmmn”,
+“tmmx”, “vs”, “th”, “pdsi”, “pet”, “etr”, “ERC”, “BI”, “FM100”, “FM1000”
+)</p>
+<p>years &lt;- c(“2010”, “2011”, “2012”, “2013”, “2014”, “2015”, “2016”,
+“2017”, “2018”, “2019”, “2020”, “2021”, “2022”, “2023”, “2024”)</p>
+<p>for (year in years) { for (var in variables) { tryCatch({
+download_gridmet( variables = var, year = year, directory_to_save =
+“/ddn/gs1/group/set/chords/combining_datasets/raw_data/gridmet”,
+acknowledgement = TRUE, download = TRUE, remove_command = FALSE, hash =
+FALSE ) }, error = function(e) { message(paste(“Error for”, var, “in”,
+year, “:”, e$message)) }) } }</p>
+<h1 id="thuis-one-is-not-working---404-not-found">Thuis one is not
+working - 404 not found</h1>
+<h1 id="load-koppen-geiger-climate-classification-aka-koppen_geiger">Load
+Koppen-Geiger Climate Classification AKA koppen_geiger</h1>
+<h2 id="weird-time-period---ask-kyle">Weird time period - ask Kyle</h2>
+<p># Download MRLC1 Consortium National Land Cover Database (NLCD) AKA
+nlcd # DOWNLOADING ZIP FILES</p>
+<p>#commenting this out for now bc when i trie to redo the function it
+overwrote the files. re- insert after nlcd runs ### products &lt;- c(
+### “Land Cover”, ### “Land Cover Change”, ### “Land Cover Confidence”,
+### “Fractional Impervious Surface”, ### “Impervious Descriptor”, ###
+“Spectral Change Day of Year” ### )</p>
+<p>products &lt;- c(“Land Cover”)</p>
+<p>base_dir &lt;-
+“/ddn/gs1/group/set/chords/combining_datasets/raw_data/nlcd”</p>
+<p>for (prod in products) { prod_dir &lt;- file.path(base_dir, gsub(”
+“,”_“, prod)) if (!dir.exists(prod_dir)) dir.create(prod_dir)</p>
+<p>for (yr in 2010:2023) { download_nlcd( product = prod, year = yr,
+directory_to_save = prod_dir, acknowledgement = TRUE, download = TRUE,
+remove_command = FALSE, unzip = TRUE, remove_zip = FALSE, hash = FALSE )
+} }</p>
+<p># Download NASA2 Moderate Resolution Imaging Spectroradiometer
+(MODIS) AKA modis # NOT YET DOWNLOADED - TRY LATER</p>
+<p># DO NOT RESTART IF IT ONLY GOES PART THROUGH - IT WILL OVERWRITE THE
+FILES AND YOU WILL HAVE TO START OVER</p>
+<p>years &lt;- list( c(“2010-01-01”, “2010-12-31”), c(“2011-01-01”,
+“2011-12-31”), c(“2012-01-01”, “2012-12-31”), c(“2013-01-01”,
+“2013-12-31”), c(“2014-01-01”, “2014-12-31”), c(“2015-01-01”,
+“2015-12-31”), c(“2016-01-01”, “2016-12-31”), c(“2017-01-01”,
+“2017-12-31”), c(“2018-01-01”, “2018-12-31”), c(“2019-01-01”,
+“2019-12-31”), c(“2020-01-01”, “2020-12-31”), c(“2021-01-01”,
+“2021-12-31”), c(“2022-01-01”, “2022-12-31”), c(“2023-01-01”,
+“2023-12-31”), c(“2024-01-01”, “2024-12-31”) )</p>
+<p>products &lt;- c(“MOD09A1”, “MYD09A1”, “MOD09GQ”, “MOD11A2”,
+“MYD11A2”, “MOD13A3”, “MYD13A3”, “VNP13A2”)</p>
+<p>nasa_token &lt;-
+“eyJ0eXAiOiJKV1QiLCJvcmlnaW4iOiJFYXJ0aGRhdGEgTG9naW4iLCJzaWciOiJlZGxqd3RwdWJrZXlfb3BzIiwiYWxnIjoiUlMyNTYifQ.eyJ0eXBlIjoiVXNlciIsInVpZCI6InBvZ3Vla2wiLCJleHAiOjE3NTkwNjc2NTAsImlhdCI6MTc1Mzg4MzY1MCwiaXNzIjoiaHR0cHM6Ly91cnMuZWFydGhkYXRhLm5hc2EuZ292IiwiaWRlbnRpdHlfcHJvdmlkZXIiOiJlZGxfb3BzIiwiYWNyIjoiZWRsIiwiYXNzdXJhbmNlX2xldmVsIjozfQ.OhGSopQgCj-A4dEYlxpCdaQ6EMTNq3EOLEQgN0twuPq5Ds2RFyEjyjvK6wrgjIhlure8VQV6s9VueHG8JHTBu9_JZBdZQt7yJcG76PTVnulP79HWZMpkx5zjy8D54LBrNoRmbFw_EyihOfeJOLOzcCZF1OzAiRqTQtOV_MO7UHVNUDXxEHugM0RK0oTbLVnxRTuwwpL3rHbeHxsa-BmZ3VqRGqdylWKmt4Av8f5ln9j112uSBLwy0ObanmZf43rjzokIbNyGB4HzSUcXAWZ8taKJm2y_AB53NGPYtA7zB2Kqr0TIDGTBeKuG6tXFp0BrgoCyZgreCNx5CdNvvC7Fxg”</p>
+<p>for (product in products) { # create a subfolder for each product
+product_dir &lt;-
+file.path(“/ddn/gs1/group/set/chords/combining_datasets/raw_data/modis”,
+product) dir.create(product_dir, recursive = TRUE, showWarnings =
+FALSE)</p>
+<p>for (year_range in years) { tryCatch({ download_modis( product =
+product, version = “61”, horizontal_tiles = c(7, 13), vertical_tiles =
+c(3, 6), mod06_links = NULL, nasa_earth_data_token = nasa_token, date =
+year_range, # each year is a start/end vector like c(“2010-01-01”,
+“2010-12-31”) directory_to_save = product_dir, # save into the
+product-specific folder acknowledgement = TRUE, download = TRUE,
+remove_command = FALSE, hash = FALSE ) }, error = function(e) {
+message(paste(“Failed for”, product, “in”, paste(year_range, collapse =
+” - “),”:“, e$message)) }) } }</p>
+<p># Download NASA Modern-Era Retrospective analysis for Research and
+Applications, Version 2 (MERRA-2) AKA merra2 # STILL LOADING - having
+some connectivity issues</p>
+<p>products &lt;- c( “statD_2d_slv_Nx”, “tavg1_2d_adg_Nx”,
+“tavg1_2d_aer_Nx”, “tavg1_2d_chm_Nx”, “tavg1_2d_csp_Nx”,
+“tavg1_2d_flx_Nx”, “tavg1_2d_lfo_Nx”, “tavg1_2d_lnd_Nx”,
+“tavg1_2d_rad_Nx”, “tavg1_2d_slv_Nx” )</p>
+<p>for (prod in products) { download_merra2( collection = prod, date =
+c(“2010-01-01”, “2024-12-31”), directory_to_save =
+“/ddn/gs1/group/set/chords/combining_datasets/raw_data/merra2”,
+acknowledgement = TRUE, download = TRUE, remove_command = FALSE, hash =
+FALSE ) }</p>
+<h1 id="download-nasa-sedac3-un-wpp-adjusted-population-density-aka-population">Download
+NASA SEDAC3 UN WPP-Adjusted Population Density AKA population</h1>
+<p># “</p>
+<p>
+The requested URL was not found on this server.
+</p>
+
+<p>”<br />
+# zip files load but then say ther file was not found</p>
+<p>years &lt;- c(“2010”, “2015”, “2020”)</p>
+<p>for (year in years) { download_population( data_resolution = “60
+minute”, data_format = “netCDF”, year = year, directory_to_save =
+“/ddn/gs1/group/set/chords/combining_datasets/raw_data/zip_files”,
+acknowledgement = TRUE, download = TRUE, remove_command = FALSE, unzip =
+FALSE, remove_zip = FALSE, hash = FALSE ) }</p>
+<h1 id="download-nasa-sedac-global-roads-open-access-data-set-aka-groads">Download
+NASA SEDAC Global Roads Open Access Data Set AKA groads</h1>
+<h1 id="downloaded">DOWNLOADED</h1>
+<p>download_groads( data_region = c(“Americas”), data_format =
+c(“Shapefile”), directory_to_save =
+“/ddn/gs1/group/set/chords/combining_datasets/raw_data/zip_files”,
+acknowledgement = TRUE, download = TRUE, remove_command = FALSE, unzip =
+FALSE, remove_zip = FALSE, hash = FALSE )</p>
+<h1 id="unzip-groads-file">Unzip groads file</h1>
+<p>unzip(“/ddn/gs1/group/set/chords/combining_datasets/raw_data/zip_files/zip_files/groads_v1_americas_shp.zip”,
+exdir =
+“/ddn/gs1/group/set/chords/combining_datasets/raw_data/groads”)</p>
+<h1 id="download-nasa-goddard-earth-observing-system-composition-forcasting-geos-cf-aka-geos">Download
+NASA Goddard Earth Observing System Composition Forcasting (GEOS-CF) AKA
+geos</h1>
+<h1 id="404-not-found---also-looks-like-this-is-all-atmospheric-data-not-land-surface-data">404
+not found - also looks like this is all atmospheric data, not land
+surface data</h1>
+<p>products &lt;- c(“aqc_tavg_1hr_g1440x721_v1”,
+“chm_tavg_1hr_g1440x721_v1”, “met_tavg_1hr_g1440x721_x1”,
+“xgc_tavg_1hr_g1440x721_x1”, “chm_inst_1hr_g1440x721_p23”,
+“met_inst_1hr_g1440x721_p23”)</p>
+<pre><code>for (prod in products) {
+  download_geos(
+    collection = prod,
+    date = c(&quot;2010-01-01&quot;, &quot;2024-12-31&quot;),
+    directory_to_save = &quot;/ddn/gs1/group/set/chords/combining_datasets/raw_data&quot;,
+    acknowledgement = TRUE,
+    download = TRUE,
+    remove_command = FALSE,
+    hash = FALSE
+  )
+}</code></pre>
+<h1 id="download-noaa-hazard-mapping-system-fire-and-smoke-product-aka-hms">Download
+NOAA Hazard Mapping System Fire and Smoke Product AKA hms</h1>
+<h1 id="downloaded-1">DOWNLOADED</h1>
+<p>download_hms( data_format = “Shapefile”, date = c(“2010-01-01”,
+“2024-12-31”), directory_to_save =
+“/ddn/gs1/group/set/chords/combining_datasets/raw_data/hms”,
+acknowledgement = TRUE, download = TRUE, remove_command = FALSE, unzip =
+TRUE, remove_zip = TRUE, hash = FALSE )</p>
+<h1 id="loading-noaa-ncep4-north-american-regional-reanalysis-narr-aka-narr">Loading
+NOAA NCEP4 North American Regional Reanalysis (NARR) AKA narr</h1>
+<h1 id="selected-variable-is-not-available-for-all-surface-variables">“selected
+variable is not available” for all surface variables</h1>
+<p>variables &lt;- c( “VIS”, “HPBL”, “PRES”, “PRESN”, “TMP”, “POT”,
+“CNWAT”, “WEASD”, “SNOWC”, “SNOD”, “APCP”, “APCPN”, “ACPCP”, “DSWRF”,
+“DLWRF”, “SHTFL”, “LHTFL”, “GFLUX”, “SNOHF”, “EVP”, “PEVAP”, “SFEXC”,
+“CD”, “FRICV”, “VEG”, “CCOND”, “RCS”, “RCT”, “RCQ”, “RCSOL”, “CAPE”,
+“CIN”, “ALBDO”, “UFLX”, “VFLX”, “SOILW”, “SOILL”, “TSOIL”, “MSTAV”,
+“SOILM”,
+“VIS”,“LCDC”,“TCDC”,“SFCR”,“VGTYP”,“SOTYP”,“SLTYP”,“RSMIN”,“RLYRS”,“WILT”,“SMREF”,“NLAT”,“ELON”,“LAND”,“SNFALB”,“MXSALB”
+)</p>
+<p>for (var in variables) { tryCatch({ message(paste0(“▶ Starting
+download for:”, var))</p>
+<pre><code>download_narr(
+  variables = var,
+  year = c(2010, 2024),
+  directory_to_save = &quot;/ddn/gs1/group/set/chords/combining_datasets/raw_data/narr&quot;,
+  acknowledgement = TRUE,
+  download = TRUE,
+  remove_command = FALSE,
+  hash = FALSE
+)
+
+message(paste0(&quot;Finished: &quot;, var))</code></pre>
+<p>}, error = function(e) { message(paste0(“Error for”, var, “:”,
+e$message)) }) }</p>
+<h1 id="download-opengeohub-foundation-openlandmap-aka--is-there-a-function-here-ask-kyle">Download
+OpenGeoHub Foundation OpenLandMap aka ?? is there a function here? ask
+Kyle</h1>
+<h1 id="download-parameter-elevation-regression-on-independent-slopes-model-prism-aka-prism">Download
+Parameter Elevation Regression on Independent Slopes Model (PRISM) AKA
+prism</h1>
+<h1 id="downloaded-sol-only-tried-to-download-more-that-2x---it-got-mad-try-thurs">DOWNLOADED
+SOL ONLY tried to download more that 2x - it got mad. try thurs</h1>
+<p>elements1 &lt;- c(“ppt”, “tmin”, “tmax”, “tmean”, “tdmean”, “vpdmin”,
+“vpdmax”)</p>
+<p>elements_sol &lt;- c(“solslope”, “soltotal”, “solclear”,
+“soltrans”)</p>
+<p>for (element in elements1) { download_prism( time = “201001”,<br />
+element = element, data_type = c(“ts”, “normals_800”, “normals”), format
+= c(“nc”, “asc”, “grib2”), directory_to_save =
+“/ddn/gs1/group/set/chords/combining_datasets/raw_data/prism”,
+acknowledgement = TRUE, download = TRUE, remove_command = FALSE, hash =
+FALSE ) }</p>
+<p>for (element in elements_sol) { download_prism( time = “01”,<br />
+element = element, data_type = c(“normals”), format = c(“nc”, “asc”,
+“grib2”), directory_to_save =
+“/ddn/gs1/group/set/chords/combining_datasets/raw_data/prism”,
+acknowledgement = TRUE, download = TRUE, remove_command = FALSE, hash =
+FALSE ) }</p>
+<p># unzip prism files</p>
+<p>zips &lt;-
+list.files(“/ddn/gs1/group/set/chords/combining_datasets/raw_data/prism”,
+pattern = “\.zip$”, full.names = TRUE)
+dir.create(“/ddn/gs1/group/set/chords/combining_datasets/raw_data/prism/data_files”,
+showWarnings = FALSE, recursive = TRUE) for (f in zips) unzip(f, exdir =
+“/ddn/gs1/group/set/chords/combining_datasets/raw_data/prism/data_files”)</p>
+<h1 id="download-us-epa5-air-data-pre-generated-data-files">Download US
+EPA5 Air Data Pre-Generated Data Files</h1>
+<h1 id="dont-do-this-one---bad-data">Don’t do this one - bad data</h1>
+<h1 id="download-us-epa-ecoregions-aka-ecoregions">Download US EPA
+Ecoregions AKA ecoregions</h1>
+<h1 id="404-not-found">404 not found.</h1>
+<p>download_ecoregion( epa_certificate_path =
+system.file(“extdata/cacert_gaftp_epa.pem”, package = “amadeus”),
+certificate_url = “<a href="http://cacerts.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crt">http://cacerts.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crt</a>”,
+directory_to_save =
+“/ddn/gs1/group/set/chords/combining_datasets/raw_data/ecoregions”,
+acknowledgement = TRUE, download = TRUE, remove_command = FALSE, unzip =
+FALSE, remove_zip = FALSE, hash = FALSE )</p>
+<h1 id="download-us-epa-national-emissions-inventory-nei-aka-nei">Download
+US EPA National Emissions Inventory (NEI) AKA nei</h1>
+<h1 id="404-not-found---data-only-available-for-2017-and-2020">404 not
+found - data only available for 2017 and 2020</h1>
+<p>download_nei( epa_certificate_path =
+system.file(“extdata/cacert_gaftp_epa.pem”, package = “amadeus”),
+certificate_url = “<a href="http://cacerts.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crt">http://cacerts.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crt</a>”,
+year = c(2010L, 2024L), directory_to_save =
+“/ddn/gs1/group/set/chords/combining_datasets/raw_data/nei”,
+acknowledgement = TRUE, download = TRUE, remove_command = FALSE, unzip =
+TRUE, hash = FALSE )</p>
+<h1 id="download-us-epa-toxic-release-inventory-tri-program-aka-tri">Download
+US EPA Toxic Release Inventory (TRI) Program AKA tri</h1>
+<h1 id="downloaded-2">DOWNLOADED</h1>
+<p>download_tri( year = c(2010L, 2024L), directory_to_save =
+“/ddn/gs1/group/set/chords/combining_datasets/raw_data/tri”,
+acknowledgement = TRUE, download = TRUE, remove_command = FALSE, hash =
+FALSE )</p>
+<h1 id="download-usgs6-global-multi-resolution-terrain-elevation-data-gmted2010-aka-gmted">Download
+USGS6 Global Multi-resolution Terrain Elevation Data (GMTED2010) AKA
+gmted</h1>
+<h1 id="downloaded-3">DOWNLOADED</h1>
+<p>statistic &lt;- c(“Breakline Emphasis”, “Systematic Subsample”,
+“Median Statistic”, “Minimum Statistic”, “Mean Statistic”, “Maximum
+Statistic”, “Standard Deviation Statistic”)</p>
+<p>for (stat in statistic) { download_gmted( statistic = stat,
+resolution = c(“30 arc-seconds”), directory_to_save =
+“/ddn/gs1/group/set/chords/combining_datasets/raw_data/gmted”,
+acknowledgement = TRUE, download = TRUE, remove_command = FALSE, unzip =
+TRUE, remove_zip = FALSE, hash = FALSE ) }</p>
+<h1 id="download-usgs-national-hydrography-dataset-nhd-aka-huc">Download
+USGS National Hydrography Dataset (NHD) AKA huc</h1>
+<h1 id="downloaded-zip-only---need-7---zip-program-to-unzip">DOWNLOADED
+ZIP ONLY - need 7 - zip program to unzip</h1>
+<p>download_huc( region = c(“Lower48”, “Islands”), type = c(“Seamless”,
+“OceanCatchment”), directory_to_save =
+“/ddn/gs1/group/set/chords/combining_datasets/raw_data/huc”,
+acknowledgement = TRUE, download = TRUE, remove_command = FALSE, unzip =
+FALSE, hash = FALSE )</p>
+<h1 id="unzip-huc-files">unzip huc files</h1>
+<p>archive_extract(
+“/ddn/gs1/group/set/chords/combining_datasets/raw_data/huc/NHDPlusV21_NationalData_Seamless_Geodatabase_Lower48_07.7z”,
+dir = “/ddn/gs1/group/set/chords/combining_datasets/raw_data/huc” )</p>
+<p>```</p>
+<p>``` {r} # Unzip the downloaded zip files</p>
+
+</body>
+</html>
