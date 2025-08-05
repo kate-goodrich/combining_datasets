@@ -105,7 +105,21 @@ for (year in years) {
 
 # Load Koppen-Geiger Climate Classification AKA koppen_geiger
 
-## Weird time period - ask Kyle
+
+download_koppen_geiger(
+  data_resolution = c( "0.5"),
+  time_period = c("Present"),
+  directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/koppen_geiger",
+  acknowledgement = TRUE,
+  download = TRUE,
+  remove_command = FALSE,
+  unzip = TRUE,
+  remove_zip = FALSE,
+  hash = FALSE
+)
+
+
+
 
  # Download MRLC1 Consortium National Land Cover Database (NLCD) AKA nlcd
  # DOWNLOADING ZIP FILES
@@ -174,7 +188,7 @@ years <- list(
 )
 
 
-products <- c("MOD09A1", "MYD09A1", "MOD09GQ", "MOD11A2", "MYD11A2", "MOD13A3", "MYD13A3",  "VNP13A2")
+products <- c("MOD09A1", "MYD09A1", "MOD09GQ", "MOD11A2", "MYD11A2", "MOD13A3", "MYD13A3", "VNP46A2")
 
 nasa_token <- "eyJ0eXAiOiJKV1QiLCJvcmlnaW4iOiJFYXJ0aGRhdGEgTG9naW4iLCJzaWciOiJlZGxqd3RwdWJrZXlfb3BzIiwiYWxnIjoiUlMyNTYifQ.eyJ0eXBlIjoiVXNlciIsInVpZCI6InBvZ3Vla2wiLCJleHAiOjE3NTkwNjc2NTAsImlhdCI6MTc1Mzg4MzY1MCwiaXNzIjoiaHR0cHM6Ly91cnMuZWFydGhkYXRhLm5hc2EuZ292IiwiaWRlbnRpdHlfcHJvdmlkZXIiOiJlZGxfb3BzIiwiYWNyIjoiZWRsIiwiYXNzdXJhbmNlX2xldmVsIjozfQ.OhGSopQgCj-A4dEYlxpCdaQ6EMTNq3EOLEQgN0twuPq5Ds2RFyEjyjvK6wrgjIhlure8VQV6s9VueHG8JHTBu9_JZBdZQt7yJcG76PTVnulP79HWZMpkx5zjy8D54LBrNoRmbFw_EyihOfeJOLOzcCZF1OzAiRqTQtOV_MO7UHVNUDXxEHugM0RK0oTbLVnxRTuwwpL3rHbeHxsa-BmZ3VqRGqdylWKmt4Av8f5ln9j112uSBLwy0ObanmZf43rjzokIbNyGB4HzSUcXAWZ8taKJm2y_AB53NGPYtA7zB2Kqr0TIDGTBeKuG6tXFp0BrgoCyZgreCNx5CdNvvC7Fxg"
 
@@ -216,15 +230,18 @@ nasa_token <- "eyJ0eXAiOiJKV1QiLCJvcmlnaW4iOiJFYXJ0aGRhdGEgTG9naW4iLCJzaWciOiJlZ
  
 
  # Download NASA Modern-Era Retrospective analysis for Research and Applications, Version 2 (MERRA-2) AKA merra2
- # STILL LOADING - having some connectivity issues  
+ # FULLY LOADED
 
- products <- c(
-     "statD_2d_slv_Nx", "tavg1_2d_adg_Nx", "tavg1_2d_aer_Nx", "tavg1_2d_chm_Nx",
-     "tavg1_2d_csp_Nx", "tavg1_2d_flx_Nx", "tavg1_2d_lfo_Nx",
-     "tavg1_2d_lnd_Nx", "tavg1_2d_rad_Nx", "tavg1_2d_slv_Nx" )
- 
+ #Original products, replace when loaded into environment
+
+  products <- c(
+      "statD_2d_slv_Nx", "tavg1_2d_adg_Nx", "tavg1_2d_aer_Nx", "tavg1_2d_chm_Nx",
+      "tavg1_2d_csp_Nx", "tavg1_2d_flx_Nx", "tavg1_2d_lfo_Nx",
+      "tavg1_2d_lnd_Nx", "tavg1_2d_rad_Nx", "tavg1_2d_slv_Nx" )
+  
 
 
+#change file name back to normal and move file after loading - worries about overwriting
 
 for (prod in products) {
   download_merra2(
@@ -495,12 +512,12 @@ download_huc(
   hash = FALSE
 )
 
-# unzip huc files
+# unzip huc files - NOT this was done in bash. Here is the code
 
-archive_extract(
-  "/ddn/gs1/group/set/chords/combining_datasets/raw_data/huc/NHDPlusV21_NationalData_Seamless_Geodatabase_Lower48_07.7z",
-  dir = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/huc"
-)
+## apptainer exec /ddn/gs1/group/set/chords/containers/container_combining_datasets.sif 7z x \
+##   /ddn/gs1/group/set/chords/combining_datasets/raw_data/huc/NHDPlusV21_NationalData_Seamless_Geodatabase_Lower48_07.7z \
+##   -o/ddn/gs1/group/set/chords/combining_datasets/raw_data/huc
+
 
 
 
