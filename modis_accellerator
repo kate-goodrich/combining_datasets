@@ -59,7 +59,7 @@ for (product in products) {
                     vertical_tiles = c(3, 6),
                     mod06_links = NULL,
                     nasa_earth_data_token = nasa_token,
-                    date = year_range, # each year is a start/end vector like c("2010-01-01", "2010-12-31")
+                    date = year_range,
                     directory_to_save = product_dir, # save into the product-specific folder
                     acknowledgement = TRUE,
                     download = TRUE,
