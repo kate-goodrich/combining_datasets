@@ -1,8 +1,6 @@
 # Load Climatology Lab TerraClimate AKA terraclimate
 # DOWNLOADED
 
-# File: R/load_terraclimate.R
-
 load_terraclimate <- function(
     save_dir = "raw_data/terraclimate",
     years = c(2010, 2024),
@@ -27,6 +25,19 @@ load_terraclimate <- function(
     downloaded_files <- character(0)
 
     for (var in variables) {
+        # Check if any matching .nc files for this variable already exist
+        existing_files <- list.files(
+            save_dir,
+            pattern = paste0("^", var, ".*\\.nc$"),
+            full.names = TRUE
+        )
+
+        if (length(existing_files) > 0) {
+            message("Skipping ", var, " - files already exist.")
+            downloaded_files <- c(downloaded_files, existing_files)
+            next
+        }
+
         tryCatch(
             {
                 download_terraclimate(

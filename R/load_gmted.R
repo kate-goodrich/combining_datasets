@@ -17,6 +17,21 @@ load_gmted <- function(
     dir.create(save_dir, recursive = TRUE, showWarnings = FALSE)
 
     for (stat in statistics) {
+        stat_dir <- file.path(save_dir, gsub(" ", "_", stat))
+        # If any file already exists in the stat-specific directory, skip
+        if (
+            dir.exists(stat_dir) &&
+                length(list.files(stat_dir, recursive = TRUE)) > 0
+        ) {
+            message(
+                "Skipping GMTED (",
+                stat,
+                ") - already exists at ",
+                stat_dir
+            )
+            next
+        }
+
         tryCatch(
             {
                 download_gmted(

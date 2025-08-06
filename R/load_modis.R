@@ -3,7 +3,7 @@
 
 load_modis <- function(
     dir = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/modis",
-    nasa_token
+    nasa_token = "YOUR_TOKEN_HERE"
 ) {
     available_years <- list(
         "MOD09A1" = 2010:2024,
@@ -25,7 +25,28 @@ load_modis <- function(
             function(y) c(sprintf("%s-01-01", y), sprintf("%s-12-31", y))
         )
 
-        for (year_range in year_ranges) {
+        for (i in seq_along(years)) {
+            year <- years[i]
+            year_range <- year_ranges[[i]]
+
+            # Skip if any file with the year string exists in the product directory
+            existing <- list.files(
+                product_dir,
+                pattern = as.character(year),
+                full.names = TRUE,
+                recursive = TRUE
+            )
+            if (length(existing) > 0) {
+                message(
+                    "Skipping ",
+                    product,
+                    " for ",
+                    year,
+                    " - files already exist."
+                )
+                next
+            }
+
             tryCatch(
                 {
                     download_modis(

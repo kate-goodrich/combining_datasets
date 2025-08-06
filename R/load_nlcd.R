@@ -20,6 +20,25 @@ load_nlcd <- function(
         dir.create(prod_dir, recursive = TRUE, showWarnings = FALSE)
 
         for (yr in years) {
+            # Skip if any files already exist in prod_dir for this year
+            existing <- list.files(
+                prod_dir,
+                pattern = as.character(yr),
+                full.names = TRUE,
+                recursive = TRUE
+            )
+
+            if (length(existing) > 0) {
+                message(
+                    "Skipping ",
+                    prod,
+                    " for ",
+                    yr,
+                    " - files already exist."
+                )
+                next
+            }
+
             tryCatch(
                 {
                     download_nlcd(

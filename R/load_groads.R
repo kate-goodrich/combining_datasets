@@ -6,6 +6,17 @@ load_groads <- function(
     unzip_dir = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/groads",
     zip_filename = "groads/groads_v1_americas_shp.zip"
 ) {
+    # Skip if any file already exists in the unzipped directory
+    if (
+        dir.exists(unzip_dir) &&
+            length(list.files(unzip_dir, recursive = TRUE)) > 0
+    ) {
+        message("Skipping Groads download - files already exist in ", unzip_dir)
+        return(list(
+            extracted_dir = unzip_dir
+        ))
+    }
+
     tryCatch(
         {
             download_groads(

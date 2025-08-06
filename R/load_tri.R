@@ -7,24 +7,44 @@ load_tri <- function(
 ) {
     dir.create(save_dir, recursive = TRUE, showWarnings = FALSE)
 
-    tryCatch(
-        {
-            download_tri(
-                year = years,
-                directory_to_save = save_dir,
-                acknowledgement = TRUE,
-                download = TRUE,
-                remove_command = TRUE,
-                hash = FALSE
-            )
-            message("TRI download complete.")
-        },
-        error = function(e) {
-            message("Failed to download TRI data: ", e$message)
+    for (yr in years) {
+        # Check if any file for the year exists
+        existing <- list.files(
+            save_dir,
+            pattern = as.character(yr),
+            full.names = TRUE,
+            recursive = TRUE
+        )
+
+        if (length(existing) > 0) {
+            message("Skipping TRI for year ", yr, " - files already exist.")
+            next
         }
-    )
+
+        tryCatch(
+            {
+                download_tri(
+                    year = yr,
+                    directory_to_save = save_dir,
+                    acknowledgement = TRUE,
+                    download = TRUE,
+                    remove_command = TRUE,
+                    hash = FALSE
+                )
+                message("Downloaded TRI data for year: ", yr)
+            },
+            error = function(e) {
+                message(
+                    "Failed to download TRI data for year ",
+                    yr,
+                    ": ",
+                    e$message
+                )
+            }
+        )
+    }
 
     return(list(
-        directory = save_dir,
+        directory = save_dir
     ))
 }

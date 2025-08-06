@@ -2,7 +2,7 @@
 # DOWNLOADED
 
 load_merra2 <- function(
-    dir = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/merra2",
+    save_dir = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/merra2",
     products = c(
         "statD_2d_slv_Nx",
         "tavg1_2d_adg_Nx",
@@ -18,16 +18,34 @@ load_merra2 <- function(
     start_date = "2010-01-01",
     end_date = "2024-12-31"
 ) {
-    dir.create(dir, recursive = TRUE, showWarnings = FALSE)
+    dir.create(save_dir, recursive = TRUE, showWarnings = FALSE)
     all_downloaded_files <- list()
 
     for (prod in products) {
+        # Skip download if files for this product already exist
+        existing_files <- list.files(
+            save_dir,
+            pattern = prod,
+            full.names = TRUE,
+            recursive = TRUE
+        )
+
+        if (length(existing_files) > 0) {
+            message(
+                "Skipping MERRA-2 download for ",
+                prod,
+                " - files already exist."
+            )
+            all_downloaded_files[[prod]] <- existing_files
+            next
+        }
+
         tryCatch(
             {
                 download_merra2(
                     collection = prod,
                     date = c(start_date, end_date),
-                    directory_to_save = dir,
+                    directory_to_save = save_dir,
                     acknowledgement = TRUE,
                     download = TRUE,
                     remove_command = TRUE,
@@ -46,7 +64,7 @@ load_merra2 <- function(
         )
 
         downloaded <- list.files(
-            dir,
+            save_dir,
             pattern = prod,
             full.names = TRUE,
             recursive = TRUE

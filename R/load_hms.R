@@ -8,6 +8,14 @@ load_hms <- function(
 ) {
     dir.create(save_dir, recursive = TRUE, showWarnings = FALSE)
 
+    # Skip download if any files already exist
+    if (length(list.files(save_dir, recursive = TRUE)) > 0) {
+        message("Skipping HMS smoke data - files already exist in ", save_dir)
+        return(list(
+            extracted_dir = save_dir
+        ))
+    }
+
     tryCatch(
         {
             download_hms(

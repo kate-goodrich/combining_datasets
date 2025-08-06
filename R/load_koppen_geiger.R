@@ -6,6 +6,19 @@ load_koppen_geiger <- function(
 ) {
     dir.create(save_dir, recursive = TRUE, showWarnings = FALSE)
 
+    # Skip if files already exist
+    if (length(list.files(save_dir, recursive = TRUE)) > 0) {
+        message(
+            "Skipping Köppen-Geiger download - files already exist in ",
+            save_dir
+        )
+        return(list.files(
+            save_dir,
+            full.names = TRUE,
+            recursive = TRUE
+        ))
+    }
+
     tryCatch(
         {
             download_koppen_geiger(

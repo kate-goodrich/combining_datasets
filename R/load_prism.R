@@ -10,6 +10,20 @@ load_prism <- function(
 
     dir.create(save_dir, recursive = TRUE, showWarnings = FALSE)
 
+    extract_dir <- file.path(save_dir, data_subdir)
+    dir.create(extract_dir, recursive = TRUE, showWarnings = FALSE)
+
+    # Skip if any extracted files already exist
+    if (length(list.files(extract_dir, recursive = TRUE)) > 0) {
+        message(
+            "Skipping PRISM download and unzip - files already exist in ",
+            extract_dir
+        )
+        return(list(
+            extracted_dir = extract_dir
+        ))
+    }
+
     # Download regular elements
     for (element in elements1) {
         tryCatch(
@@ -68,8 +82,6 @@ load_prism <- function(
 
     # Unzip all .zip files
     zip_files <- list.files(save_dir, pattern = "\\.zip$", full.names = TRUE)
-    extract_dir <- file.path(save_dir, data_subdir)
-    dir.create(extract_dir, recursive = TRUE, showWarnings = FALSE)
 
     for (zip_file in zip_files) {
         tryCatch(

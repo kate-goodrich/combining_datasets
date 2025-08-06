@@ -8,7 +8,19 @@ load_huc <- function(
     # 1. Create download directory if needed
     dir.create(save_dir, recursive = TRUE, showWarnings = FALSE)
 
-    # 2. Download HUC using R wrapper
+    # 2. Skip if any file already exists
+    if (length(list.files(save_dir, recursive = TRUE)) > 0) {
+        message(
+            "Skipping HUC download and extraction - files already exist in ",
+            save_dir
+        )
+        return(list(
+            archive = NA,
+            extracted_dir = save_dir
+        ))
+    }
+
+    # 3. Download HUC using R wrapper
     tryCatch(
         {
             download_huc(
@@ -21,14 +33,14 @@ load_huc <- function(
                 unzip = FALSE,
                 hash = FALSE
             )
-            message("✅ HUC download complete.")
+            message("HUC download complete.")
         },
         error = function(e) {
-            message("❌ Failed to download HUC data: ", e$message)
+            message("Failed to download HUC data: ", e$message)
         }
     )
 
-    # 3. Find the .7z archive to extract
+    # 4. Find the .7z archive to extract
     archive_file <- file.path(
         save_dir,
         "NHDPlusV21_NationalData_Seamless_Geodatabase_Lower48_07.7z"
@@ -37,7 +49,7 @@ load_huc <- function(
         stop("Expected archive not found at: ", archive_file)
     }
 
-    # 4. Build and run the Apptainer extraction command
+    # 5. Build and run the Apptainer extraction command
     unzip_cmd <- c(
         "exec",
         container_path,
@@ -52,12 +64,12 @@ load_huc <- function(
             system2("apptainer", args = unzip_cmd, stdout = TRUE, stderr = TRUE)
         },
         error = function(e) {
-            message("❌ Failed to unzip HUC archive: ", e$message)
+            message("Failed to unzip HUC archive: ", e$message)
             return(NULL)
         }
     )
 
-    # 5. Return for targets tracking
+    # 6. Return for targets tracking
     return(list(
         archive = archive_file,
         extracted_dir = save_dir

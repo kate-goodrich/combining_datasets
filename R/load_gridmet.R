@@ -22,6 +22,19 @@ load_gridmet <- function(
 
     for (year in as.character(years)) {
         for (var in variables) {
+            # Check if any matching file exists for the variable-year pair
+            existing_files <- list.files(
+                save_dir,
+                pattern = paste0("^", var, ".*", year, ".*\\.nc$"),
+                full.names = TRUE,
+                recursive = TRUE
+            )
+
+            if (length(existing_files) > 0) {
+                message("Skipping ", var, " (", year, ") - already exists.")
+                next
+            }
+
             tryCatch(
                 {
                     download_gridmet(

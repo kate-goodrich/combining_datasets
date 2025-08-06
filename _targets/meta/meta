@@ -1,0 +1,22 @@
+name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
+nlcd|stem|8d9b193f8594f92f|370c9a32de5bd19e|0a07325e1842496d|-1751591624||t20306.7308669827s|s2171b|2171|rds|local|vector|||536.536|error 1 in extracting from zip file|
+load_hms|function|28bcabbcad3f5e64
+load_gmted|function|7e1b8e5d5d99ae22
+load_merra2|function|69857befa9a30b03
+load_tri|function|6beba703619ed7b9
+.Random.seed|object|09ab2eccbca2c87a
+load_gridmet|function|efc0c471600aa7f5
+load_nlcd|function|c08d5134b77b74c8
+load_terraclimate|function|0d0ab8e36638d212
+load_groads|function|7ff236db0184e455
+load_modis|function|79eaa5e8f12406ab
+load_koppen_geiger|function|7c960eeb6074d347
+load_prism|function|a0c8bcfe7681bf48
+load_huc|function|8634cd1cfa3f1e8e
+huc|stem|8278a830f8921d45|9edd48470a9e94cd|0640004ea02d42ce|437562985||t20306.741878848s|s174b|174|rds|local|vector|||213.753||
+prism|stem|bf447bed1e59b857|e72a0c3287aece8a|5e659fda1fbd54f5|-2023822628||t20306.742035647s|s112b|112|rds|local|vector|||13.541||
+hms|stem|30b28b7bdfe9e8ea|8af6cd99f1bc89aa|27c2c24a1bc8b0aa|1765999304||t20306.7538689223s|s101b|101|rds|local|vector|||1022.352|error 1 in extracting from zip file. error 1 in extracting from zip file. error 1 in extracting from zip file. error 1 in extracting from zip file. error 1 in extracting from zip file|
+groads|stem|4c1578fcbc32ca7a|331ad441efdeb85a|6bb75a4c42300c0b|826850566||t20306.7539507243s|s143b|143|rds|local|vector|||7.059||
+gmted|stem|da83767100550e14|ace8598ca3792967|1014040dbde51ad5|-96524093||t20306.7542790694s|s102b|102|rds|local|vector|||28.363||
+modis|stem|6ecd78f0df8f6e9e|5e51e620f99821c4|dae2a155ce0a9b12|-1526643308||t20306.7549723565s|s438029b|438029|rds|local|vector|||59.789||
+tri|stem||21d813facf05b92e|993776cc8156d0d7|-1983517621||t20306.7549724936s||0|rds|local|vector|||0.004||argument 2 is empty

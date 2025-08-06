@@ -2,29 +2,22 @@ BootStrap: docker
 From: rocker/geospatial:latest
 
 %post
-    # Update package list
     apt-get update
 
-    # Install locales and generate the necessary locale
+    # Locale and fonts
     apt-get install -y locales
     locale-gen en_US.UTF-8
-
-    # Install fonts for Unicode support
     apt-get install -y fonts-dejavu fonts-liberation fonts-noto fonts-unifont
 
-    # Install SSL certificates and curl for downloading data
+    # Core system packages
     apt-get install -y \
         libcurl4-openssl-dev \
         libssl-dev \
+        libicu-dev \
         ca-certificates \
         curl \
-        slurm-client
-
-    # Install git-lfs for debugging and versioning
-    apt-get install -y git-lfs && git lfs install
-
-    # Install tools for extracting 7z archives and geospatial processing
-    apt-get install -y \
+        slurm-client \
+        git-lfs \
         p7zip-full \
         gdal-bin \
         libgdal-dev \
@@ -33,36 +26,31 @@ From: rocker/geospatial:latest
         libproj-dev \
         libxml2-dev
 
-    # Clean up APT cache to reduce image size
+
+
+    git lfs install
     apt-get clean
 
-    # Set locale for the environment
+    # Locale
     echo "LANG=en_US.UTF-8" >> /etc/default/locale
     echo "LC_ALL=en_US.UTF-8" >> /etc/default/locale
     export LANG=en_US.UTF-8
     export LC_ALL=en_US.UTF-8
 
-    # Create directories
+    # Create standard dirs
     mkdir -p /pipeline /input /opt/_targets /project /data /scratch
 
-    # Install R packages
-    Rscript -e "install.packages(c(
-      'pak', 'devtools', 'tarchetypes', 'testthat', 'tidymodels',
-      'bonsai', 'qs', 'qs2', 'kernlab', 'lightgbm', 'lwgeom', 'doRNG', 'quarto',
+    # Install R packages using pak
+    Rscript -e "install.packages('pak')"
+    Rscript -e "pak::pak(c(
+      'devtools', 'tarchetypes', 'testthat', 'tidymodels', 'bonsai',
+      'qs', 'qs2', 'kernlab', 'lightgbm', 'lwgeom', 'doRNG', 'quarto',
       'sf', 'terra', 'raster', 'ncdf4', 'dplyr', 'tidyr', 'archive',
-      'languageserver', 'amadeus'
+      'languageserver', 'targets', 'xml2',
+      'rOpenGov/secretbase@0.5.0',
+      'NIEHS/amadeus'
     ))"
 
-    Rscript -e "pak::pak('NIEHS/amadeus')"
-
-    Rscript -e "devtools::install_version('targets', version = '1.10.0')"
-
-    apt-get update && apt-get install -y libicu-dev
-
-
-# Fix curl certificate issue
-apt-get install -y ca-certificates
-update-ca-certificates
 
 
 
