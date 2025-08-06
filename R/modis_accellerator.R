@@ -11,8 +11,6 @@ library(languageserver)
 # DO NOT RESTART IF IT ONLY GOES PART THROUGH - IT WILL OVERWRITE THE FILES AND YOU WILL HAVE TO START OVER
 
 years <- list(
-    c("2010-01-01", "2010-12-31"),
-    c("2011-01-01", "2011-12-31"),
     c("2012-01-01", "2012-12-31"),
     c("2013-01-01", "2013-12-31"),
     c("2014-01-01", "2014-12-31"),
@@ -30,12 +28,7 @@ years <- list(
 
 
 products <- c("MOD09A1")
-products <- c("MYD09A1")
-products <- c("MOD09GQ")
 products <- c("MOD11A2")
-products <- c("MYD11A2")
-products <- c("MOD13A3")
-products <- c("MYD13A3")
 products <- c("VNP46A2")
 
 nasa_token <- "eyJ0eXAiOiJKV1QiLCJvcmlnaW4iOiJFYXJ0aGRhdGEgTG9naW4iLCJzaWciOiJlZGxqd3RwdWJrZXlfb3BzIiwiYWxnIjoiUlMyNTYifQ.eyJ0eXBlIjoiVXNlciIsInVpZCI6InBvZ3Vla2wiLCJleHAiOjE3NTkwNjc2NTAsImlhdCI6MTc1Mzg4MzY1MCwiaXNzIjoiaHR0cHM6Ly91cnMuZWFydGhkYXRhLm5hc2EuZ292IiwiaWRlbnRpdHlfcHJvdmlkZXIiOiJlZGxfb3BzIiwiYWNyIjoiZWRsIiwiYXNzdXJhbmNlX2xldmVsIjozfQ.OhGSopQgCj-A4dEYlxpCdaQ6EMTNq3EOLEQgN0twuPq5Ds2RFyEjyjvK6wrgjIhlure8VQV6s9VueHG8JHTBu9_JZBdZQt7yJcG76PTVnulP79HWZMpkx5zjy8D54LBrNoRmbFw_EyihOfeJOLOzcCZF1OzAiRqTQtOV_MO7UHVNUDXxEHugM0RK0oTbLVnxRTuwwpL3rHbeHxsa-BmZ3VqRGqdylWKmt4Av8f5ln9j112uSBLwy0ObanmZf43rjzokIbNyGB4HzSUcXAWZ8taKJm2y_AB53NGPYtA7zB2Kqr0TIDGTBeKuG6tXFp0BrgoCyZgreCNx5CdNvvC7Fxg"

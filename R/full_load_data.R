@@ -36,7 +36,7 @@ for (var in variables) {
         directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/terraclimate",
         acknowledgement = TRUE,
         download = TRUE,
-        remove_command = FALSE,
+        remove_command = TRUE,
         hash = FALSE
     )
 }
@@ -92,7 +92,7 @@ for (year in years) {
                     directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/gridmet",
                     acknowledgement = TRUE,
                     download = TRUE,
-                    remove_command = FALSE,
+                    remove_command = TRUE,
                     hash = FALSE
                 )
             },
@@ -113,7 +113,7 @@ download_koppen_geiger(
     directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/koppen_geiger",
     acknowledgement = TRUE,
     download = TRUE,
-    remove_command = FALSE,
+    remove_command = TRUE,
     unzip = TRUE,
     remove_zip = FALSE,
     hash = FALSE
@@ -148,7 +148,7 @@ for (prod in products) {
             directory_to_save = prod_dir,
             acknowledgement = TRUE,
             download = TRUE,
-            remove_command = FALSE,
+            remove_command = TRUE,
             unzip = TRUE,
             remove_zip = FALSE,
             hash = FALSE
@@ -183,10 +183,7 @@ years <- list(
 
 products <- c(
     "MOD09A1",
-    "MYD09A1",
-    "MOD09GQ",
     "MOD11A2",
-    "MYD11A2",
     "MOD13A3",
     "MYD13A3",
     "VNP46A2"
@@ -217,7 +214,7 @@ for (product in products) {
                     directory_to_save = product_dir, # save into the product-specific folder
                     acknowledgement = TRUE,
                     download = TRUE,
-                    remove_command = FALSE,
+                    remove_command = TRUE,
                     hash = FALSE
                 )
             },
@@ -255,8 +252,6 @@ products <- c(
 )
 
 
-#change file name back to normal and move file after loading - worries about overwriting
-
 for (prod in products) {
     download_merra2(
         collection = prod,
@@ -264,7 +259,7 @@ for (prod in products) {
         directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/merra2",
         acknowledgement = TRUE,
         download = TRUE,
-        remove_command = FALSE,
+        remove_command = TRUE,
         hash = FALSE
     )
 }
@@ -284,7 +279,7 @@ for (year in years) {
         directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/population",
         acknowledgement = TRUE,
         download = TRUE,
-        remove_command = FALSE,
+        remove_command = TRUE,
         unzip = FALSE,
         remove_zip = FALSE,
         hash = FALSE
@@ -301,7 +296,7 @@ download_groads(
     directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/zip_files",
     acknowledgement = TRUE,
     download = TRUE,
-    remove_command = FALSE,
+    remove_command = TRUE,
     unzip = FALSE,
     remove_zip = FALSE,
     hash = FALSE
@@ -336,7 +331,7 @@ for (prod in products) {
         directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/geos",
         acknowledgement = TRUE,
         download = TRUE,
-        remove_command = FALSE,
+        remove_command = TRUE,
         hash = FALSE
     )
 }
@@ -351,7 +346,7 @@ download_hms(
     directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/hms",
     acknowledgement = TRUE,
     download = TRUE,
-    remove_command = FALSE,
+    remove_command = TRUE,
     unzip = TRUE,
     remove_zip = TRUE,
     hash = FALSE
@@ -432,7 +427,7 @@ for (var in variables) {
                 directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/narr",
                 acknowledgement = TRUE,
                 download = TRUE,
-                remove_command = FALSE,
+                remove_command = TRUE,
                 hash = FALSE
             )
 
@@ -461,7 +456,7 @@ for (element in elements1) {
         directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/prism",
         acknowledgement = TRUE,
         download = TRUE,
-        remove_command = FALSE,
+        remove_command = TRUE,
         hash = FALSE
     )
 }
@@ -476,7 +471,7 @@ for (element in elements_sol) {
         directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/prism",
         acknowledgement = TRUE,
         download = TRUE,
-        remove_command = FALSE,
+        remove_command = TRUE,
         hash = FALSE
     )
 }
@@ -516,7 +511,7 @@ download_ecoregion(
     directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/ecoregions",
     acknowledgement = TRUE,
     download = TRUE,
-    remove_command = FALSE,
+    remove_command = TRUE,
     unzip = TRUE,
     remove_zip = FALSE,
     hash = FALSE
@@ -544,7 +539,7 @@ download_nei(
     directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/nei",
     acknowledgement = TRUE,
     download = TRUE,
-    remove_command = FALSE,
+    remove_command = TRUE,
     unzip = TRUE,
     hash = FALSE
 )
@@ -558,7 +553,7 @@ download_tri(
     directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/tri",
     acknowledgement = TRUE,
     download = TRUE,
-    remove_command = FALSE,
+    remove_command = TRUE,
     hash = FALSE
 )
 
@@ -583,7 +578,7 @@ for (stat in statistic) {
         directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/gmted",
         acknowledgement = TRUE,
         download = TRUE,
-        remove_command = FALSE,
+        remove_command = TRUE,
         unzip = TRUE,
         remove_zip = FALSE,
         hash = FALSE
@@ -591,20 +586,20 @@ for (stat in statistic) {
 }
 
 # Download USGS National Hydrography Dataset (NHD) AKA huc
-# DOWNLOADED ZIP ONLY -  need 7 - zip program to unzip
+# DOWNLOADED
 download_huc(
     region = c("Lower48", "Islands"),
     type = c("Seamless", "OceanCatchment"),
     directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/huc",
     acknowledgement = TRUE,
     download = TRUE,
-    remove_command = FALSE,
+    remove_command = TRUE,
     unzip = FALSE,
     hash = FALSE
 )
 
 # unzip huc files - NOTe this was done in bash. Here is the code
 
-## apptainer exec /ddn/gs1/group/set/chords/containers/container_combining_datasets.sif 7z x \
+## apptainer exec /ddn/gs1/group/set/chords/combining_datasets/container_combining_datasets.sif 7z x \
 ##   /ddn/gs1/group/set/chords/combining_datasets/raw_data/huc/NHDPlusV21_NationalData_Seamless_Geodatabase_Lower48_07.7z \
 ##   -o/ddn/gs1/group/set/chords/combining_datasets/raw_data/huc

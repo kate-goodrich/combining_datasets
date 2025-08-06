@@ -57,6 +57,9 @@ From: rocker/geospatial:latest
 
     Rscript -e "devtools::install_version('targets', version = '1.10.0')"
 
+    apt-get update && apt-get install -y libicu-dev
+
+
 # Fix curl certificate issue
 apt-get install -y ca-certificates
 update-ca-certificates
