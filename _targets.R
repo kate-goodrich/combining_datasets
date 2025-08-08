@@ -60,7 +60,7 @@ list(
 
     tar_target(
         koppen_geiger,
-        load_koppen_geiger(save_dir = "raw_data/koppen")
+        load_koppen_geiger(save_dir = "raw_data/koppen_geiger")
     ),
 
     tar_target(
