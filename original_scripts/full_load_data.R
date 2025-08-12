@@ -239,11 +239,7 @@ for (product in products) {
 #Original products, replace when loaded into environment
 
 products <- c(
-    "statD_2d_slv_Nx",
-    "tavg1_2d_adg_Nx",
     "tavg1_2d_aer_Nx",
-    "tavg1_2d_chm_Nx",
-    "tavg1_2d_csp_Nx",
     "tavg1_2d_flx_Nx",
     "tavg1_2d_lfo_Nx",
     "tavg1_2d_lnd_Nx",
@@ -443,38 +439,43 @@ for (var in variables) {
 # Download Parameter Elevation Regression on Independent Slopes Model (PRISM) AKA prism
 # DOWNLOADED
 
-elements1 <- c("ppt", "tmin", "tmax", "tmean", "tdmean", "vpdmin", "vpdmax")
+# Define months with leading zeros
+months <- sprintf("%02d", 1:12)
 
-elements_sol <- c("solslope", "soltotal", "solclear", "soltrans")
+# Define PRISM elements
+elements1 <- c(
+    "ppt",
+    "tmin",
+    "tmax",
+    "tmean",
+    "tdmean",
+    "vpdmin",
+    "vpdmax",
+    "solslope",
+    "soltotal",
+    "solclear",
+    "soltrans"
+)
 
+# Loop over elements and months
 for (element in elements1) {
-    download_prism(
-        time = "201001",
-        element = element,
-        data_type = c("ts", "normals_800", "normals"),
-        format = c("nc", "asc", "grib2"),
-        directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/prism",
-        acknowledgement = TRUE,
-        download = TRUE,
-        remove_command = TRUE,
-        hash = FALSE
-    )
+    for (month in months) {
+        message("Downloading ", element, " for month ", month)
+
+        download_prism(
+            time = month,
+            element = element,
+            data_type = c("normals_800"), # Still verify if this is the correct type
+            format = c("nc", "asc", "grib2"),
+            directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/prism",
+            acknowledgement = TRUE,
+            download = TRUE,
+            remove_command = TRUE,
+            hash = FALSE
+        )
+    }
 }
 
-
-for (element in elements_sol) {
-    download_prism(
-        time = "01",
-        element = element,
-        data_type = c("normals"),
-        format = c("nc", "asc", "grib2"),
-        directory_to_save = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/prism",
-        acknowledgement = TRUE,
-        download = TRUE,
-        remove_command = TRUE,
-        hash = FALSE
-    )
-}
 
 # unzip prism files
 
@@ -494,6 +495,8 @@ for (f in zips) {
         exdir = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/prism/data_files"
     )
 }
+
+file.remove(zips)
 
 
 # Download US EPA5 Air Data Pre-Generated Data Files

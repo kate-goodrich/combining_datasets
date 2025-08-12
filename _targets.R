@@ -21,8 +21,14 @@ tar_option_set(
         "dplyr",
         "tidyr",
         "archive",
-        "languageserver"
+        "languageserver",
+        "terra",
+        "purrr",
+        "stringr",
+        "tibble"
     ),
+    error = "continue", # continue on error
+    memory = "transient", # use transient memory
     library = "/usr/local/lib/R/site-library",
     format = "rds" # storage format
 )
@@ -80,7 +86,7 @@ list(
 
     tar_target(
         prism,
-        load_prism(save_dir = "raw_data/prism")
+        download_and_unzip_prism(save_dir = "raw_data/prism")
     ),
 
     tar_target(
@@ -91,7 +97,42 @@ list(
     tar_target(
         tri,
         load_tri(save_dir = "raw_data/tri")
+    ),
+
+    # Processing
+
+    tar_target(
+        modis_clean_log,
+        build_modis_clean(
+            modis_vars = list(
+                MOD09A1 = c(
+                    #   "sur_refl_b01",
+                    #   "sur_refl_b02",
+                    #   "sur_refl_b03",
+                    "sur_refl_b04",
+                    "sur_refl_b05",
+                    "sur_refl_b06",
+                    "sur_refl_b07",
+                    "sur_refl_qc500m",
+                    "sur_refl_day_of_year"
+                ),
+                MOD11A2 = c("LST_Day_1km", "LST_Night_1km"),
+                MOD13A3 = c("NDVI", "EVI", "Pixel_reliability"),
+                VNP13A2 = c(
+                    "Gap_Filled_DNB_BRDF-Corrected_NTL",
+                    "QF_Cloud_Mask",
+                    "Snow_Flag",
+                    "DNB_Lunar_Irradiance"
+                )
+            ),
+            raw_dir = "raw_data/modis",
+            out_dir = "clean_data/modis_clean",
+            start_date = "2010-01-01",
+            end_date = "2024-12-31",
+            fun_agg = "mean",
+            overwrite = TRUE,
+            verbose = TRUE
+        ),
+        format = "rds" # saves the returned log as an RDS
     )
 )
-
-# run pipeline with targets::tar_make()

@@ -1,102 +1,96 @@
-# Download Parameter Elevation Regression on Independent Slopes Model (PRISM) AKA prism
-# DOWNLOADED
-
-load_prism <- function(
+download_and_unzip_prism <- function(
     save_dir = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/prism",
-    data_subdir = "data_files"
+    elements = c(
+        "ppt",
+        "tmin",
+        "tmax",
+        "tmean",
+        "tdmean",
+        "vpdmin",
+        "vpdmax",
+        "solslope",
+        "soltotal",
+        "solclear",
+        "soltrans"
+    ),
+    months = sprintf("%02d", 1:12)
 ) {
-    elements1 <- c("ppt", "tmin", "tmax", "tmean", "tdmean", "vpdmin", "vpdmax")
-    elements_sol <- c("solslope", "soltotal", "solclear", "soltrans")
-
+    # Create output directory
     dir.create(save_dir, recursive = TRUE, showWarnings = FALSE)
 
-    extract_dir <- file.path(save_dir, data_subdir)
-    dir.create(extract_dir, recursive = TRUE, showWarnings = FALSE)
+    # Check if data files already exist
+    unzip_dir <- file.path(save_dir, "data_files")
+    existing_files <- list.files(
+        unzip_dir,
+        pattern = "\\.(bil|nc|asc|grib2)$",
+        full.names = TRUE
+    )
 
-    # Skip if any extracted files already exist
-    if (length(list.files(extract_dir, recursive = TRUE)) > 0) {
+    if (length(existing_files) > 0) {
         message(
-            "Skipping PRISM download and unzip - files already exist in ",
-            extract_dir
+            "PRISM files already exist in ",
+            unzip_dir,
+            ". Skipping download."
         )
         return(list(
-            extracted_dir = extract_dir
+            zip_dir = save_dir,
+            extracted_dir = unzip_dir
         ))
     }
 
-    # Download regular elements
-    for (element in elements1) {
-        tryCatch(
-            {
-                download_prism(
-                    time = "201001",
-                    element = element,
-                    data_type = c("ts", "normals_800", "normals"),
-                    format = c("nc", "asc", "grib2"),
-                    directory_to_save = save_dir,
-                    acknowledgement = TRUE,
-                    download = TRUE,
-                    remove_command = TRUE,
-                    hash = FALSE
-                )
-                message(paste("Downloaded PRISM element:", element))
-            },
-            error = function(e) {
-                message(
-                    "Failed to download PRISM element ",
-                    element,
-                    ": ",
-                    e$message
-                )
-            }
-        )
+    # Loop through all elements and months
+    for (element in elements) {
+        for (month in months) {
+            message("Downloading ", element, " for month ", month)
+            tryCatch(
+                {
+                    download_prism(
+                        time = month,
+                        element = element,
+                        data_type = "normals_800",
+                        format = c("nc", "asc", "grib2"),
+                        directory_to_save = save_dir,
+                        acknowledgement = TRUE,
+                        download = TRUE,
+                        remove_command = TRUE,
+                        hash = FALSE
+                    )
+                },
+                error = function(e) {
+                    message(
+                        "Failed to download ",
+                        element,
+                        " for month ",
+                        month,
+                        ": ",
+                        e$message
+                    )
+                }
+            )
+        }
     }
 
-    # Download solar elements
-    for (element in elements_sol) {
+    # Unzip downloaded files
+    zip_files <- list.files(
+        save_dir,
+        pattern = "\\.zip$",
+        full.names = TRUE
+    )
+    dir.create(unzip_dir, recursive = TRUE, showWarnings = FALSE)
+
+    for (f in zip_files) {
         tryCatch(
             {
-                download_prism(
-                    time = "01",
-                    element = element,
-                    data_type = c("normals"),
-                    format = c("nc", "asc", "grib2"),
-                    directory_to_save = save_dir,
-                    acknowledgement = TRUE,
-                    download = TRUE,
-                    remove_command = TRUE,
-                    hash = FALSE
-                )
-                message(paste("Downloaded PRISM solar element:", element))
+                unzip(f, exdir = unzip_dir)
             },
             error = function(e) {
-                message(
-                    "Failed to download PRISM solar element ",
-                    element,
-                    ": ",
-                    e$message
-                )
-            }
-        )
-    }
-
-    # Unzip all .zip files
-    zip_files <- list.files(save_dir, pattern = "\\.zip$", full.names = TRUE)
-
-    for (zip_file in zip_files) {
-        tryCatch(
-            {
-                unzip(zip_file, exdir = extract_dir)
-                file.remove(zip_file)
-                message(paste("Unzipped and removed:", zip_file))
-            },
-            error = function(e) {
-                message("Failed to unzip: ", zip_file, " - ", e$message)
+                message("Failed to unzip ", f, ": ", e$message)
             }
         )
     }
 
     return(list(
-        extracted_dir = extract_dir
+        zip_dir = save_dir,
+        extracted_dir = unzip_dir
     ))
 }

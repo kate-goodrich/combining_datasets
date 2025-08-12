@@ -4,11 +4,7 @@
 load_merra2 <- function(
     save_dir = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/merra2",
     products = c(
-        "statD_2d_slv_Nx",
-        "tavg1_2d_adg_Nx",
         "tavg1_2d_aer_Nx",
-        "tavg1_2d_chm_Nx",
-        "tavg1_2d_csp_Nx",
         "tavg1_2d_flx_Nx",
         "tavg1_2d_lfo_Nx",
         "tavg1_2d_lnd_Nx",
