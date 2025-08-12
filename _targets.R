@@ -33,29 +33,35 @@ tar_option_set(
     format = "rds" # storage format
 )
 
+# all functions are idempotent - delete the file if you want it to redo
 
 # Define targets
 list(
+    #load gmted
     tar_target(
         gmted,
         load_gmted(save_dir = "raw_data/gmted")
     ),
 
+    #load gridmet
     tar_target(
         gridmet,
         load_gridmet(save_dir = "raw_data/gridmet")
     ),
 
+    #load groads
     tar_target(
         groads,
         load_groads()
     ),
 
+    #load hms
     tar_target(
         hms,
         load_hms(save_dir = "raw_data/hms")
     ),
 
+    #load huc
     tar_target(
         huc,
         load_huc(
@@ -64,43 +70,107 @@ list(
         )
     ),
 
+    #load koppen
     tar_target(
         koppen_geiger,
         load_koppen_geiger(save_dir = "raw_data/koppen_geiger")
     ),
 
+    #load merra2
     tar_target(
         merra2,
         load_merra2(save_dir = "raw_data/merra2")
     ),
 
+    #load modis
     tar_target(
         modis,
         load_modis(dir = "raw_data/modis")
     ),
 
+    #load nlcd
     tar_target(
         nlcd,
         load_nlcd(base_dir = "raw_data/nlcd")
     ),
 
+    #load prism
     tar_target(
         prism,
         download_and_unzip_prism(save_dir = "raw_data/prism")
     ),
 
+    #load terraclimate
     tar_target(
         terraclimate,
         load_terraclimate(save_dir = "raw_data/terraclimate")
     ),
 
+    #load tri
     tar_target(
         tri,
         load_tri(save_dir = "raw_data/tri")
     ),
 
-    # Processing
+    ################## Processing ##################
 
+    #process gmted
+    tar_target(
+        gmted_outputs,
+        clean_gmted(),
+        format = "file" # tracks all cleaned .tif files + gmted_log.csv
+    ),
+
+    #process gridmet
+    tar_target(
+        gridmet_files,
+        clean_gridmet(),
+        format = "file"
+    ),
+
+    #process groads
+    tar_target(
+        groads_files,
+        clean_groads(),
+        format = "file"
+    ),
+
+    #process hms
+    tar_target(
+        hms_files,
+        clean_hms(years = 2010:2024, months = 1:12, overwrite = TRUE),
+        format = "file"
+    ),
+
+    #process huc
+    tar_target(
+        huc_files,
+        clean_huc_layers(),
+        format = "file"
+    ),
+
+    #process koppen
+    tar_target(
+        kg_files_out,
+        clean_koppen_geiger(),
+        format = "file"
+    ),
+
+    #process merra2
+    tar_target(
+        merra2_files, # single target
+        clean_merra2(
+            years = 2011:2024,
+            raw_dir = "./raw_data/merra2",
+            out_dir = "./clean_data/merra2_clean",
+            use_collection_by_year = TRUE,
+            overwrite = TRUE,
+            verbose = TRUE
+        ),
+        format = "file" # tracks all returned paths (GeoTIFFs + merra2_log.csv)
+    ),
+
+    #process modis
     tar_target(
         modis_clean_log,
         build_modis_clean(
@@ -134,5 +204,33 @@ list(
             verbose = TRUE
         ),
         format = "rds" # saves the returned log as an RDS
+    ),
+
+    #process nlcd
+    tar_target(
+        nlcd_files,
+        clean_nlcd(),
+        format = "file"
+    ),
+
+    #process prism
+    tar_target(
+        prism_files,
+        clean_prism_normals(),
+        format = "file"
+    ),
+
+    #process terraclimate
+    tar_target(
+        terraclimate_files,
+        clean_terraclimate(),
+        format = "file"
+    ),
+
+    #process tri
+    tar_target(
+        tri_files,
+        clean_tri(),
+        format = "file"
     )
 )
