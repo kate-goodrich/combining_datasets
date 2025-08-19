@@ -1,11 +1,7 @@
 clean_koppen_geiger <- function(
     kg_files = c(
-        "raw_data/koppen_geiger/data_files/Beck_KG_V1_present_0p5.tif",
         "raw_data/koppen_geiger/data_files/Beck_KG_V1_present_0p083.tif",
-        "raw_data/koppen_geiger/data_files/Beck_KG_V1_present_0p0083.tif",
-        "raw_data/koppen_geiger/data_files/Beck_KG_V1_present_conf_0p5.tif",
-        "raw_data/koppen_geiger/data_files/Beck_KG_V1_present_conf_0p083.tif",
-        "raw_data/koppen_geiger/data_files/Beck_KG_V1_present_conf_0p0083.tif"
+        "raw_data/koppen_geiger/data_files/Beck_KG_V1_present_conf_0p083.tif"
     ),
     out_dir = "./clean_data/koppen_geiger_clean",
     overwrite = TRUE,

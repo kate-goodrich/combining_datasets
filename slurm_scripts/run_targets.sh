@@ -16,4 +16,7 @@
 CONTAINER_PATH="/ddn/gs1/group/set/chords/combining_datasets/container_combining_datasets.sif"
 
 # Run pipeline inside container
-apptainer exec "$CONTAINER_PATH" bash -c "Rscript -e 'targets::tar_make()'"
+apptainer exec \
+  --bind /ddn/gs1/group/set/chords/combining_datasets:/project \
+  "$CONTAINER_PATH" \
+  bash -c "cd /project && Rscript -e 'targets::tar_make()'"

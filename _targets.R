@@ -8,6 +8,15 @@ library(dplyr)
 library(tidyr)
 library(archive)
 library(languageserver)
+library(units)
+library(sf)
+library(lwgeom)
+library(lubridate)
+library(terra)
+library(exactextractr)
+library(stringr)
+library(purrr)
+library(readr)
 
 # Load all files in the R directory
 purrr::walk(list.files("R", full.names = TRUE, pattern = "\\.R$"), source)
@@ -25,7 +34,13 @@ tar_option_set(
         "terra",
         "purrr",
         "stringr",
-        "tibble"
+        "tibble",
+        "units",
+        "sf",
+        "lwgeom",
+        "lubridate",
+        "exactextractr",
+        "readr"
     ),
     error = "continue", # continue on error
     memory = "transient", # use transient memory
@@ -176,9 +191,9 @@ list(
         build_modis_clean(
             modis_vars = list(
                 MOD09A1 = c(
-                    #   "sur_refl_b01",
-                    #   "sur_refl_b02",
-                    #   "sur_refl_b03",
+                    "sur_refl_b01",
+                    "sur_refl_b02",
+                    "sur_refl_b03",
                     "sur_refl_b04",
                     "sur_refl_b05",
                     "sur_refl_b06",
@@ -187,13 +202,7 @@ list(
                     "sur_refl_day_of_year"
                 ),
                 MOD11A2 = c("LST_Day_1km", "LST_Night_1km"),
-                MOD13A3 = c("NDVI", "EVI", "Pixel_reliability"),
-                VNP13A2 = c(
-                    "Gap_Filled_DNB_BRDF-Corrected_NTL",
-                    "QF_Cloud_Mask",
-                    "Snow_Flag",
-                    "DNB_Lunar_Irradiance"
-                )
+                MOD13A3 = c("NDVI", "EVI")
             ),
             raw_dir = "raw_data/modis",
             out_dir = "clean_data/modis_clean",
@@ -231,6 +240,523 @@ list(
     tar_target(
         tri_files,
         clean_tri(),
+        format = "file"
+    ),
+
+    #Process county and census tract boundaries
+    tar_target(
+        canonical_gpkg,
+        build_canonical_census(
+            in_gpkg = "raw_data/county_census/cb_2024_us_all_500k.gpkg",
+            out_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            make_valid = TRUE
+        ),
+        format = "file"
+    ),
+    tar_target(
+        counties_500k,
+        sf::st_read(canonical_gpkg, layer = "counties_500k", quiet = TRUE)
+    ),
+    tar_target(
+        tracts_500k,
+        sf::st_read(canonical_gpkg, layer = "tracts_500k", quiet = TRUE)
+    ),
+
+    ################## Calculating ##################
+
+    # gmted
+
+    tar_target(
+        gmted_static_county,
+        static_zonal_summary(
+            tif_dir = "clean_data/gmted_clean",
+            level = "county",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zone_layer = "counties_500k",
+            write_csv = "summary_sets/static_county_gmted.csv"
+        )
+    ),
+    tar_target(
+        gmted_static_tract,
+        static_zonal_summary(
+            tif_dir = "clean_data/gmted_clean",
+            level = "tract",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zone_layer = "tracts_500k",
+            write_csv = "summary_sets/static_tract_gmted.csv"
+        )
+    ),
+
+    # gridmet
+
+    tar_target(
+        gridmet_county_annual,
+        gridmet_zonal(
+            tif_dir = "clean_data/gridmet_clean",
+            level = "county",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            aggregate_to = "annual",
+            chunk_size = 365,
+            write_csv = "summary_sets/annual_county_gridmet.csv"
+        )
+    ),
+
+    tar_target(
+        gridmet_county_monthly,
+        gridmet_zonal(
+            tif_dir = "clean_data/gridmet_clean",
+            level = "county",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            aggregate_to = "monthly",
+            chunk_size = 365,
+            write_csv = "summary_sets/monthly_county_gridmet.csv"
+        )
+    ),
+
+    tar_target(
+        gridmet_tract_annual,
+        gridmet_zonal(
+            tif_dir = "clean_data/gridmet_clean",
+            level = "tract",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zone_layer = "tracts_500k", # optional if your gpkg has this name
+            aggregate_to = "annual",
+            chunk_size = 365,
+            write_csv = "summary_sets/annual_tract_gridmet.csv"
+        )
+    ),
+
+    tar_target(
+        gridmet_tract_monthly,
+        gridmet_zonal(
+            tif_dir = "clean_data/gridmet_clean",
+            level = "tract",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zone_layer = "tracts_500k", # optional if your gpkg has this name
+            aggregate_to = "monthly",
+            chunk_size = 365,
+            write_csv = "summary_sets/monthly_tract_gridmet.csv"
+        )
+    ),
+
+    # groads
+
+    tar_target(
+        groads_county_long,
+        road_density_zonal(
+            roads_gpkg = "clean_data/groads_clean/groads_clean.gpkg",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "county",
+            write_csv = "summary_sets/static_county_groads.csv"
+        )
+    ),
+
+    tar_target(
+        groads_tract_long,
+        road_density_zonal(
+            roads_gpkg = "clean_data/groads_clean/groads_clean.gpkg",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "tract",
+            write_csv = "summary_sets/static_tract_groads.csv"
+        )
+    ),
+
+    # hms
+
+    tar_target(
+        hms_county_annual,
+        hms_fire_exposure(
+            hms_dir = "clean_data/hms_clean",
+            level = "county",
+            agg = "annual",
+            write_csv = "summary_sets/hms_county_annual.csv"
+        )
+    ),
+
+    tar_target(
+        hms_county_monthly,
+        hms_fire_exposure(
+            hms_dir = "clean_data/hms_clean",
+            level = "county",
+            agg = "monthly",
+            write_csv = "summary_sets/hms_county_monthly.csv"
+        )
+    ),
+
+    tar_target(
+        hms_tract_annual,
+        hms_fire_exposure(
+            hms_dir = "clean_data/hms_clean",
+            level = "tract",
+            agg = "annual",
+            write_csv = "summary_sets/hms_tract_annual.csv"
+        )
+    ),
+
+    tar_target(
+        hms_tract_monthly,
+        hms_fire_exposure(
+            hms_dir = "clean_data/hms_clean",
+            level = "tract",
+            agg = "monthly",
+            write_csv = "summary_sets/hms_tract_monthly.csv"
+        )
+    ),
+
+    # huc
+
+    tar_target(
+        huc_county_summary,
+        huc_overlap_summary(
+            gpkg_dir = "clean_data/huc_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "county",
+            write_csv = "summary_sets/static_county_huc.csv"
+        )
+    ),
+    tar_target(
+        huc_tract_summary,
+        huc_overlap_summary(
+            gpkg_dir = "clean_data/huc_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "tract",
+            zone_layer = "tracts_500k", # set if your gpkg uses this layer name
+            write_csv = "summary_sets/static_tract_huc.csv"
+        )
+    ),
+
+    # koppen-geiger
+
+    tar_target(
+        koppen_county_long,
+        koppen_geiger_summary(
+            level = "county",
+            write_csv = "summary_sets/static_county_koppen_geiger.csv"
+        )
+    ),
+    tar_target(
+        koppen_tract_long,
+        koppen_geiger_summary(
+            level = "tract",
+            write_csv = "summary_sets/static_tract_koppen_geiger.csv"
+        )
+    ),
+
+    # merra2
+
+    tar_target(
+        merra2_county_annual,
+        merra2_summary(
+            tif_dir = "clean_data/merra2_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "county",
+            agg = "annual",
+            write_csv = "summary_sets/annual_county_merra2.csv"
+        ),
+        format = "rds"
+    ),
+    tar_target(
+        merra2_county_monthly,
+        merra2_summary(
+            tif_dir = "clean_data/merra2_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "county",
+            agg = "monthly",
+            write_csv = "summary_sets/monthly_county_merra2.csv"
+        ),
+        format = "rds"
+    ),
+
+    tar_target(
+        merra2_tract_annual,
+        merra2_summary(
+            tif_dir = "clean_data/merra2_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "tract",
+            agg = "annual",
+            write_csv = "summary_sets/annual_tract_merra2.csv"
+        ),
+        format = "rds"
+    ),
+
+    tar_target(
+        merra2_tract_monthly,
+        merra2_summary(
+            tif_dir = "clean_data/merra2_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "tract",
+            agg = "monthly",
+            write_csv = "summary_sets/monthly_tract_merra2.csv"
+        ),
+        format = "rds"
+    ),
+
+    # modis
+
+    # nlcd
+
+    tar_target(
+        nlcd_county_annual,
+        zonal_means_from_tifs(
+            input_dir = "clean_data/nlcd_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "county",
+            agg = "annual",
+            id_col = "geoid",
+            file_pattern = "_processed\\.tif$",
+            write_csv = "summary_sets/annual_county_nlcd.csv"
+        )
+    ),
+
+    # ---- Tract Monthly ----
+    tar_target(
+        nlcd_tract_monthly,
+        zonal_means_from_tifs(
+            input_dir = "clean_data/nlcd_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "tract",
+            agg = "monthly",
+            id_col = "geoid",
+            file_pattern = "_processed\\.tif$",
+            write_csv = "summary_sets/monthly_tract_nlcd.csv"
+        )
+    ),
+
+    tar_target(
+        nlcd_tract_annual,
+        zonal_means_from_tifs(
+            input_dir = "clean_data/nlcd_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "county",
+            agg = "annual",
+            id_col = "geoid",
+            file_pattern = "_processed\\.tif$",
+            write_csv = "summary_sets/annual_county_nlcd.csv"
+        )
+    ),
+
+    # ---- Tract Monthly ----
+    tar_target(
+        nlcd_tract_monthly,
+        zonal_means_from_tifs(
+            input_dir = "clean_data/nlcd_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "tract",
+            agg = "monthly",
+            id_col = "geoid",
+            file_pattern = "_processed\\.tif$",
+            write_csv = "summary_sets/monthly_tract_nlcd.csv"
+        )
+    ),
+
+    # prism
+
+    # County monthly normals (keeps 12 months)
+    tar_target(
+        prism_county_monthly_normals,
+        prism_normals_from_tifs(
+            input_dir = "clean_data/prism_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "county",
+            agg = "monthly",
+            id_col = "geoid",
+            write_csv = "summary_sets/normal_monthly_county_prism.csv"
+        )
+    ),
+
+    tar_target(
+        prism_county_annual_normals,
+        prism_normals_from_tifs(
+            input_dir = "clean_data/prism_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "county",
+            agg = "annual",
+            id_col = "geoid",
+            write_csv = "summary_sets/normal_annual_county_prism.csv"
+        )
+    ),
+
+    # tract monthly normals (keeps 12 months)
+    tar_target(
+        prism_tract_monthly_normals,
+        prism_normals_from_tifs(
+            input_dir = "clean_data/prism_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "tract",
+            agg = "monthly",
+            id_col = "geoid",
+            write_csv = "summary_sets/normal_monthly_tract_prism.csv"
+        )
+    ),
+    # Tract annual normals (mean of months 1..12)
+    tar_target(
+        prism_tract_annual_normals,
+        prism_normals_from_tifs(
+            input_dir = "clean_data/prism_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "tract",
+            agg = "annual",
+            id_col = "geoid",
+            write_csv = "summary_sets/normal_annual_tract_prism.csv"
+        )
+    ),
+
+    # terraclimate
+
+    tar_target(
+        terraclimate_county_annual,
+        summarize_terraclimate(
+            tif_dir = "clean_data/terraclimate_clean",
+            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "county",
+            agg = "annual",
+            write_csv = "summary_sets/annual_county_terraclimate.csv"
+        ),
+        format = "file"
+    ),
+
+    # ---- COUNTY MONTHLY ----
+    tar_target(
+        terraclimate_county_monthly,
+        summarize_terraclimate(
+            tif_dir = "clean_data/terraclimate_clean",
+            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "county",
+            agg = "monthly",
+            write_csv = "summary_sets/monthly_county_terraclimate.csv"
+        ),
+        format = "file"
+    ),
+
+    # ---- TRACT ANNUAL ----
+    tar_target(
+        terraclimate_tract_annual,
+        summarize_terraclimate(
+            tif_dir = "clean_data/terraclimate_clean",
+            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "tract",
+            agg = "annual",
+            write_csv = "summary_sets/annual_tract_terraclimate.csv"
+        ),
+        format = "file"
+    ),
+
+    # ---- TRACT MONTHLY ----
+    tar_target(
+        terraclimate_tract_monthly,
+        summarize_terraclimate(
+            tif_dir = "clean_data/terraclimate_clean",
+            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "tract",
+            agg = "monthly",
+            write_csv = "summary_sets/monthly_tract_terraclimate.csv"
+        ),
+        format = "file"
+    ),
+
+    # tri
+
+    # ---- COUNTY ANNUAL ----
+    tar_target(
+        tri_county_annual,
+        summarise_tri_air_totals(
+            tri_dir = "clean_data/tri_clean",
+            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "county",
+            agg = "annual"
+        )
+    ),
+
+    tar_target(
+        tri_county_annual_csv,
+        {
+            out_path <- "summary_sets/annual_county_tri.csv"
+            dir.create(
+                dirname(out_path),
+                showWarnings = FALSE,
+                recursive = TRUE
+            )
+            readr::write_csv(tri_county_annual, out_path)
+            out_path
+        },
+        format = "file"
+    ),
+
+    # ---- COUNTY MONTHLY ----
+    tar_target(
+        tri_county_monthly,
+        summarise_tri_air_totals(
+            tri_dir = "clean_data/tri_clean",
+            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "county",
+            agg = "monthly"
+        )
+    ),
+
+    tar_target(
+        tri_county_monthly_csv,
+        {
+            out_path <- "summary_sets/monthly_county_tri.csv"
+            dir.create(
+                dirname(out_path),
+                showWarnings = FALSE,
+                recursive = TRUE
+            )
+            readr::write_csv(tri_county_monthly, out_path)
+            out_path
+        },
+        format = "file"
+    ),
+
+    # ---- TRACT ANNUAL ----
+    tar_target(
+        tri_tract_annual,
+        summarise_tri_air_totals(
+            tri_dir = "clean_data/tri_clean",
+            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "tract",
+            agg = "annual"
+        )
+    ),
+
+    tar_target(
+        tri_tract_annual_csv,
+        {
+            out_path <- "summary_sets/annual_tract_tri.csv"
+            dir.create(
+                dirname(out_path),
+                showWarnings = FALSE,
+                recursive = TRUE
+            )
+            readr::write_csv(tri_tract_annual, out_path)
+            out_path
+        },
+        format = "file"
+    ),
+
+    # ---- TRACT MONTHLY ----
+    tar_target(
+        tri_tract_monthly,
+        summarise_tri_air_totals(
+            tri_dir = "clean_data/tri_clean",
+            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "tract",
+            agg = "monthly"
+        )
+    ),
+
+    tar_target(
+        tri_tract_monthly_csv,
+        {
+            out_path <- "summary_sets/monthly_tract_tri.csv"
+            dir.create(
+                dirname(out_path),
+                showWarnings = FALSE,
+                recursive = TRUE
+            )
+            readr::write_csv(tri_tract_monthly, out_path)
+            out_path
+        },
         format = "file"
     )
 )

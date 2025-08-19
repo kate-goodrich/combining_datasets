@@ -42,14 +42,15 @@ From: rocker/geospatial:latest
 
     # Install R packages using pak
     Rscript -e "install.packages('pak')"
-    Rscript -e "pak::pak(c(
-      'devtools', 'tarchetypes', 'testthat', 'tidymodels', 'bonsai',
-      'qs', 'qs2', 'kernlab', 'lightgbm', 'lwgeom', 'doRNG', 'quarto',
-      'sf', 'terra', 'raster', 'ncdf4', 'dplyr', 'tidyr', 'archive',
-      'languageserver', 'targets', 'xml2',
-      'rOpenGov/secretbase@0.5.0',
-      'NIEHS/amadeus', 'stringr'
-    ))"
+        Rscript -e "pak::pak(c(
+          'devtools', 'tarchetypes', 'testthat', 'tidymodels', 'bonsai',
+          'qs', 'qs2', 'kernlab', 'lightgbm', 'lwgeom', 'doRNG', 'quarto',
+          'sf', 'terra', 'raster', 'ncdf4', 'dplyr', 'tidyr', 'archive',
+          'languageserver', 'targets', 'xml2', 'exactextractr',
+          'rOpenGov/secretbase@0.5.0',
+          'NIEHS/amadeus', 'stringr'
+        ))"
+
 
 
 

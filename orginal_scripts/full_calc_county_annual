@@ -1,0 +1,1062 @@
+# apptainer shell /ddn/gs1/group/set/chords/combining_datasets/container_combining_datasets.sif
+.libPaths("/usr/local/lib/R/site-library")
+
+library(terra) # raster IO
+library(sf) # vector IO
+library(exactextractr) # fast, area-weighted zonal stats
+library(dplyr)
+library(stringr)
+library(purrr)
+library(readr)
+library(tidyr)
+
+
+##### Bash code I used to get county and census data
+##### curl -O https://www2.census.gov/geo/tiger/GENZ2024/gpkg/cb_2024_us_all_500k.zip
+##### unzip -jo cb_2024_us_all_500k.zip "*.gpkg" -d raw_data/county_census
+
+## Determine data type for each dataset
+
+# static - gmted, groads
+# dynamic - gridmet
+
+counties <- sf::st_read(
+    "clean_data/county_census/canonical_2024.gpkg",
+    layer = "counties_500k",
+    quiet = TRUE
+) |>
+    sf::st_make_valid()
+
+
+###### gmted ######
+# done
+
+tif_dir <- "clean_data/gmted_clean"
+tifs <- list.files(tif_dir, pattern = "\\.tif$", full.names = TRUE)
+
+# Use file stem as variable name, e.g., "be30_grd_clean"
+var_from_path <- function(p) tools::file_path_sans_ext(basename(p))
+
+county_means_static <- function(tif, counties) {
+    r <- terra::rast(tif)
+    ct <- sf::st_transform(counties, terra::crs(r))
+    vals <- exactextractr::exact_extract(r, ct, "mean")
+    tibble(
+        geoid = counties$geoid,
+        var = var_from_path(tif),
+        value = as.numeric(vals)
+    )
+}
+
+
+# long form for gmted
+res_static <- purrr::map_dfr(tifs, county_means_static, counties = counties)
+
+
+# Save
+dir.create(
+    "summary_sets/annual_county_hms",
+    recursive = TRUE,
+    showWarnings = FALSE
+)
+
+write_csv(res_static, "summary_sets/static_county_gmted.csv")
+
+
+######### gridmet #########
+# done
+
+dates_from_names <- function(nm) {
+    m <- stringr::str_match(nm, ".*_(\\d{8})$")[, 2]
+    if (all(!is.na(m))) as.Date(m, "%Y%m%d") else rep(NA_Date_, length(nm))
+}
+
+# Prefer the built-in time axis; fall back to parsing names
+layer_dates <- function(r) {
+    tt <- tryCatch(terra::time(r), error = function(e) NULL)
+    if (!is.null(tt)) {
+        tibble(layer = names(r), date = as.Date(tt))
+    } else {
+        tibble(layer = names(r), date = dates_from_names(names(r)))
+    }
+}
+
+# Variable name from layer names like "etr_20100101"
+var_from_r <- function(r) sub("_\\d{8}$", "", names(r)[1])
+
+# Core extractor (chunked to keep memory reasonable for 5k+ layers)
+county_means_for_file <- function(tif, counties, chunk_size = 365) {
+    r <- terra::rast(tif)
+    counties_r <- sf::st_transform(counties, terra::crs(r))
+    vname <- var_from_r(r)
+
+    if (terra::nlyr(r) == 1) {
+        vals <- exactextractr::exact_extract(r, counties_r, "mean")
+        dates <- layer_dates(r)$date[1]
+        return(tibble(
+            geoid = counties$geoid,
+            date = dates,
+            var = vname,
+            value = as.numeric(vals)
+        ))
+    }
+
+    # Multi-layer: build date key once
+    key_all <- layer_dates(r) # layer, date
+
+    # Chunk the layers to avoid creating a 5k-column wide table in one go
+    idx <- seq_len(terra::nlyr(r))
+    chunks <- split(idx, ceiling(idx / chunk_size))
+
+    out <- vector("list", length(chunks))
+    for (i in seq_along(chunks)) {
+        ids <- chunks[[i]]
+        r_chunk <- r[[ids]]
+
+        vals <- exactextractr::exact_extract(r_chunk, counties_r, "mean")
+        df <- as_tibble(vals)
+        df$geoid <- counties$geoid
+
+        long <- pivot_longer(
+            df,
+            cols = -geoid,
+            names_to = "layer",
+            values_to = "value"
+        )
+        key <- tibble(layer = names(r_chunk)) |>
+            left_join(key_all, by = "layer")
+
+        out[[i]] <- long |>
+            left_join(key, by = "layer") |>
+            transmute(geoid, date, var = vname, value)
+    }
+
+    bind_rows(out)
+}
+
+counties <- sf::st_read(
+    "clean_data/county_census/canonical_2024.gpkg",
+    layer = "counties_500k",
+    quiet = TRUE
+) |>
+    sf::st_make_valid()
+
+tif_dir <- "clean_data/gridmet_clean"
+tifs <- list.files(tif_dir, pattern = "\\.tif$", full.names = TRUE)
+
+gmted_res <- purrr::map_dfr(
+    tifs,
+    county_means_for_file,
+    counties = counties,
+    chunk_size = 365
+)
+
+# save
+write_csv(gmted_res, "summary_sets/annual_county_gridmet.csv")
+
+###### groads ######
+# done
+county_gpkg <- "clean_data/county_census/canonical_2024.gpkg"
+county_layer <- "counties_500k"
+roads_gpkg <- "clean_data/groads_clean/groads_clean.gpkg"
+
+# Read
+counties <- sf::st_read(county_gpkg, layer = county_layer, quiet = TRUE) |>
+    sf::st_make_valid() |>
+    dplyr::select(geoid, name, stusps)
+
+roads <- sf::st_read(roads_gpkg, quiet = TRUE) |>
+    sf::st_make_valid() |>
+    dplyr::select(LENGTH_KM)
+
+# Project for area/joins
+counties_m <- sf::st_transform(counties, 5070)
+roads_m <- sf::st_transform(roads, 5070)
+
+# County areas in km² (no explicit geometry reference)
+areas <- sf::st_area(counties_m) # units vector
+county_area <- counties_m |>
+    dplyr::mutate(area_km2 = as.numeric(set_units(areas, km^2))) |>
+    sf::st_drop_geometry() |>
+    dplyr::select(geoid, stusps, area_km2)
+
+# Assign each road segment to counties it intersects
+roads_in_counties <- sf::st_join(
+    roads_m,
+    counties_m |> dplyr::select(geoid),
+    join = sf::st_intersects,
+    left = FALSE
+)
+
+# Sum LENGTH_KM per county and compute density
+road_summary <- roads_in_counties |>
+    sf::st_drop_geometry() |>
+    dplyr::group_by(geoid) |>
+    dplyr::summarise(
+        total_road_km = sum(LENGTH_KM, na.rm = TRUE),
+        .groups = "drop"
+    ) |>
+    dplyr::left_join(county_area, by = "geoid") |>
+    dplyr::mutate(road_density_km_per_km2 = total_road_km / area_km2)
+
+readr::write_csv(road_summary, "summary_sets/static_county_groads.csv")
+road_summary
+
+
+###### hms ######
+#done
+# ==== Packages ====
+library(sf)
+library(dplyr)
+library(purrr)
+library(lubridate)
+library(tidyr)
+library(lwgeom) # for robust st_make_valid()
+
+# ==== Inputs ====
+hms_dir <- "clean_data/hms_clean"
+county_gpkg <- "clean_data/county_census/canonical_2024.gpkg"
+county_layer <- "counties_500k" # change if your layer name differs
+
+# ==== Counties (equal-area for correct areas) ====
+counties_raw <- st_read(county_gpkg, layer = county_layer, quiet = TRUE) |>
+    st_make_valid()
+
+# Ensure county id column is named 'geoid'
+# counties_raw <- counties_raw |> rename(geoid = GEOID)
+
+counties_aea <- counties_raw |>
+    st_transform(5070) |>
+    select(geoid, geom)
+
+county_area <- tibble(
+    geoid = counties_aea$geoid,
+    county_area_m2 = as.numeric(st_area(counties_aea))
+)
+
+dens_levels <- c("Light", "Medium", "Heavy")
+
+# ==== Geometry cleaners & safe intersection ====
+clean_polys <- function(x, snap = 10) {
+    # snap to grid (meters), fix validity, drop non-polygons, and buffer(0)
+    x |>
+        st_set_precision(snap) |>
+        st_snap_to_grid(size = snap) |>
+        st_make_valid() |>
+        st_collection_extract("POLYGON", warn = FALSE) |>
+        st_buffer(0)
+}
+
+safe_intersection <- function(a, b) {
+    # try raw; on failure, progressively sanitize
+    out <- try(suppressWarnings(st_intersection(a, b)), silent = TRUE)
+    if (!inherits(out, "try-error")) {
+        return(out)
+    }
+
+    b2 <- clean_polys(b, snap = 10)
+    out <- try(suppressWarnings(st_intersection(a, b2)), silent = TRUE)
+    if (!inherits(out, "try-error")) {
+        return(out)
+    }
+
+    a2 <- clean_polys(a, snap = 10)
+    out <- try(suppressWarnings(st_intersection(a2, b2)), silent = TRUE)
+    if (!inherits(out, "try-error")) {
+        return(out)
+    }
+
+    # last resort: coarser snapping
+    a3 <- clean_polys(a, snap = 50)
+    b3 <- clean_polys(b, snap = 50)
+    suppressWarnings(st_intersection(a3, b3))
+}
+
+# ==== Dissolve HMS by (Date, Density) to remove self-overlap ====
+dissolve_by_date_density <- function(g5070) {
+    g5070 |>
+        group_by(Date, Density) |>
+        summarise(.groups = "drop") |> # dplyr+sf does a union by group
+        clean_polys(snap = 10)
+}
+
+# ==== Monthly worker: daily county proportions ====
+hms_daily_props_for_month <- function(
+    gpkg_file,
+    counties_aea,
+    county_area_tbl
+) {
+    layer <- tools::file_path_sans_ext(basename(gpkg_file))
+
+    g <- st_read(gpkg_file, layer = layer, quiet = TRUE) |>
+        st_make_valid() |>
+        filter(!is.na(Density), Density %in% dens_levels) |>
+        mutate(
+            Density = factor(Density, levels = dens_levels),
+            Date = as.Date(Date)
+        ) |>
+        st_transform(5070) |>
+        st_collection_extract("POLYGON", warn = FALSE)
+
+    if (nrow(g) == 0) {
+        return(tibble(
+            geoid = character(),
+            Date = as.Date(character()),
+            Density = factor(character(), levels = dens_levels),
+            prop = numeric()
+        ))
+    }
+
+    g_diss <- dissolve_by_date_density(g)
+
+    # Safe intersection with fallbacks
+    int <- safe_intersection(counties_aea, g_diss)
+    if (nrow(int) == 0) {
+        return(tibble(
+            geoid = character(),
+            Date = as.Date(character()),
+            Density = factor(character(), levels = dens_levels),
+            prop = numeric()
+        ))
+    }
+
+    int$iarea_m2 <- as.numeric(st_area(int))
+
+    int |>
+        st_drop_geometry() |>
+        group_by(geoid, Date, Density) |>
+        summarise(area_m2 = sum(iarea_m2), .groups = "drop") |>
+        left_join(county_area_tbl, by = "geoid") |>
+        mutate(prop = pmin(area_m2 / county_area_m2, 1)) |>
+        select(geoid, Date, Density, prop)
+}
+
+# ==== Run over all monthly HMS files ====
+hms_files <- list.files(
+    hms_dir,
+    pattern = "^hms_\\d{4}_\\d{2}\\.gpkg$",
+    full.names = TRUE
+) |>
+    sort()
+
+daily_props <- map_dfr(
+    hms_files,
+    hms_daily_props_for_month,
+    counties_aea = counties_aea,
+    county_area_tbl = county_area
+)
+
+
+# ==== Annual averages (treat missing days as zeros) ====
+if (nrow(daily_props) == 0) {
+    stop("No intersections found. Check CRS, study region, and file naming.")
+}
+
+years_present <- sort(unique(year(daily_props$Date)))
+days_per_year <- tibble(
+    year = years_present,
+    days_in_year = yday(as.Date(paste0(years_present, "-12-31")))
+)
+
+annual_props <- daily_props |>
+    mutate(year = year(Date)) |>
+    group_by(geoid, year, Density) |>
+    summarise(sum_prop = sum(prop, na.rm = TRUE), .groups = "drop") |>
+    left_join(days_per_year, by = "year") |>
+    mutate(prop_avg = sum_prop / days_in_year) |>
+    select(geoid, year, density = Density, prop_avg)
+
+# Ensure every county-year-density combo exists (fill to zero)
+annual_props_long <- annual_props |>
+    complete(
+        geoid = counties_aea$geoid,
+        year = years_present,
+        density = factor(dens_levels, levels = dens_levels),
+        fill = list(prop_avg = 0)
+    ) |>
+    arrange(geoid, year, density)
+
+###### huc ######
+# done
+
+library(sf)
+library(purrr)
+library(dplyr)
+
+# Directory with your files
+gpkg_dir <- "clean_data/huc_clean"
+
+# List all GeoPackage files
+gpkg_files <- list.files(gpkg_dir, pattern = "\\.gpkg$", full.names = TRUE)
+
+# Summary of layers in each GPKG
+layers_summary <- map_dfr(gpkg_files, function(f) {
+    L <- st_layers(f)
+    tibble(
+        file = basename(f),
+        layer = L$name,
+        geom_type = L$geomtype,
+        features = L$features,
+        fields = L$fields,
+        crs_name = L$crs
+    )
+})
+
+print(layers_summary, n = Inf)
+
+check_time_columns <- function(gpkg_file) {
+    layers <- st_layers(gpkg_file)$name
+    map_dfr(layers, function(layer) {
+        df <- st_read(gpkg_file, layer = layer, quiet = TRUE)
+
+        time_cols <- names(df)[grepl(
+            "time|date",
+            names(df),
+            ignore.case = TRUE
+        )]
+        col_classes <- sapply(df[, time_cols, drop = FALSE], class)
+
+        tibble(
+            file = basename(gpkg_file),
+            layer = layer,
+            time_columns = paste(time_cols, collapse = ", "),
+            classes = paste(unlist(col_classes), collapse = ", ")
+        )
+    })
+}
+
+# Apply to all .gpkg files
+time_info <- map_dfr(gpkg_files, check_time_columns)
+
+print(time_info, n = Inf)
+
+
+####### koppen_geiger #######
+#done
+
+library(terra)
+library(sf)
+library(exactextractr)
+library(dplyr)
+library(tidyr)
+
+# Load counties
+counties <- st_read(
+    "clean_data/county_census/canonical_2024.gpkg",
+    layer = "counties_500k",
+    quiet = TRUE
+) |>
+    st_make_valid()
+
+# Load climate class and confidence rasters
+koppen <- rast(
+    "clean_data/koppen_geiger_clean/Beck_KG_V1_present_0p083_processed.tif"
+)
+conf <- rast(
+    "clean_data/koppen_geiger_clean/Beck_KG_V1_present_conf_0p083_processed.tif"
+)
+
+# Align CRS
+counties <- st_transform(counties, crs(koppen))
+
+koppen_props_list <- exact_extract(
+    koppen,
+    counties,
+    function(values, coverage_fraction) {
+        mask <- values != 0
+        values <- values[mask]
+        coverage_fraction <- coverage_fraction[mask]
+
+        counts <- tapply(coverage_fraction, values, sum)
+        props <- counts / sum(counts)
+        props
+    }
+)
+
+avg_conf <- exact_extract(conf, counties, function(values, coverage_fraction) {
+    weighted.mean(values, coverage_fraction, na.rm = TRUE)
+})
+
+
+# Proportions to long form
+koppen_props_df <- tibble(
+    geoid = counties$geoid,
+    props = koppen_props_list
+) |>
+    unnest_wider(props, names_sep = "_") |>
+    pivot_longer(
+        cols = starts_with("props_"),
+        names_prefix = "props_",
+        names_to = "koppen_code",
+        values_to = "proportion",
+        values_drop_na = TRUE
+    ) |>
+    mutate(koppen_code = as.integer(koppen_code))
+
+# Add confidence
+koppen_props_df <- koppen_props_df |>
+    left_join(
+        tibble(geoid = counties$geoid, confidence = avg_conf),
+        by = "geoid"
+    )
+
+koppen_props_df <- koppen_props_df |>
+    mutate(proportion = as.numeric(proportion))
+
+readr::write_csv(
+    koppen_props_df,
+    "summary_sets/static_county_koppen_geiger.csv"
+)
+
+
+####### merra2 #######
+
+library(terra)
+library(sf)
+library(exactextractr)
+library(dplyr)
+library(stringr)
+library(purrr)
+library(tidyr)
+library(readr)
+
+tif_dir <- "clean_data/merra2_clean"
+out_annual_dir <- file.path(tif_dir, "_annual_means")
+dir.create(out_annual_dir, showWarnings = FALSE, recursive = TRUE)
+
+counties <- st_read(
+    "clean_data/county_census/canonical_2024.gpkg",
+    layer = "counties_500k",
+    quiet = TRUE
+) |>
+    st_make_valid() |>
+    select(geoid)
+
+parse_var_year <- function(bn) {
+    tibble(
+        file = bn,
+        var = str_extract(bn, "^[^_]+"),
+        year = as.integer(str_match(bn, "(\\d{4})\\.tif$")[, 2])
+    )
+}
+
+summarise_one_merra_file <- function(tif_path, counties_sf) {
+    bn <- basename(tif_path)
+    meta <- parse_var_year(bn)
+
+    r <- rast(tif_path)
+
+    # Transform counties to raster CRS
+    counties_rcrs <- st_transform(counties_sf, st_crs(crs(r)))
+
+    # Compute / cache annual mean
+    out_file <- file.path(
+        out_annual_dir,
+        sprintf("%s_annualMean.tif", tools::file_path_sans_ext(bn))
+    )
+    if (!file.exists(out_file)) {
+        message("Computing annual mean for ", bn, " -> ", out_file)
+        r_mean <- app(
+            r,
+            mean,
+            na.rm = TRUE,
+            filename = out_file,
+            overwrite = TRUE,
+            wopt = list(gdal = c("COMPRESS=LZW", "PREDICTOR=3"))
+        )
+    } else {
+        r_mean <- rast(out_file)
+    }
+
+    # Cell-area weights in square meters for proper area-weighted averages on lon/lat grids
+    w <- cellSize(r_mean, unit = "m")
+
+    # If your exactextractr version needs RasterLayer weights:
+    # w <- raster::raster(w)
+
+    vals <- exact_extract(
+        r_mean,
+        counties_rcrs,
+        fun = "weighted_mean",
+        weights = w,
+        progress = TRUE
+    )
+
+    tibble(
+        geoid = counties_rcrs$geoid,
+        var = meta$var,
+        year = meta$year,
+        stat = "annual_mean",
+        value = as.numeric(vals)
+    )
+}
+
+tif_files <- list.files(tif_dir, pattern = "\\.tif$", full.names = TRUE)
+
+results_long <- map_dfr(
+    tif_files,
+    summarise_one_merra_file,
+    counties_sf = counties
+)
+
+readr::write_csv(
+    results_long,
+    file.path(tif_dir, "merra2_county_annual_means_long.csv")
+)
+glimpse(results_long)
+
+
+####### modis #######
+
+# ---- Libraries ----
+library(sf)
+library(terra)
+library(exactextractr)
+library(dplyr)
+library(stringr)
+library(purrr)
+library(tidyr)
+library(readr)
+library(rlang)
+
+# ---- Inputs ----
+counties <- st_read(
+    "clean_data/county_census/canonical_2024.gpkg",
+    layer = "counties_500k",
+    quiet = TRUE
+) |>
+    st_make_valid()
+
+# Map of variable directories -> output label -> scale factor
+# Adjust or extend as needed.
+vars <- tibble::tribble(
+    ~dir,
+    ~label,
+    ~scale,
+    "clean_data/modis_clean/MOD09A1/sur_refl_b01",
+    "MOD09A1_sur_refl_b01",
+    1e-4,
+    "clean_data/modis_clean/MOD09A1/sur_refl_b02",
+    "MOD09A1_sur_refl_b02",
+    1e-4,
+    "clean_data/modis_clean/MOD09A1/sur_refl_b03",
+    "MOD09A1_sur_refl_b03",
+    1e-4,
+    "clean_data/modis_clean/MOD09A1/sur_refl_b04",
+    "MOD09A1_sur_refl_b04",
+    1e-4,
+    "clean_data/modis_clean/MOD09A1/sur_refl_b05",
+    "MOD09A1_sur_refl_b05",
+    1e-4,
+    "clean_data/modis_clean/MOD09A1/sur_refl_b06",
+    "MOD09A1_sur_refl_b06",
+    1e-4,
+    "clean_data/modis_clean/MOD09A1/sur_refl_b07",
+    "MOD09A1_sur_refl_b07",
+    1e-4,
+    # day_of_year is a utility layer (no scaling); averaging may or may not be useful—kept for completeness.
+    "clean_data/modis_clean/MOD09A1/sur_refl_day_of_year",
+    "MOD09A1_sur_refl_doy",
+    1.0,
+    # QC directory is intentionally omitted from averaging; we can use it later for masking.
+
+    # MOD11A2 (8-day LST; units Kelvin after scaling)
+    "clean_data/modis_clean/MOD11A2/LST_Day_1km",
+    "MOD11A2_LST_Day_1km_K",
+    0.02,
+    "clean_data/modis_clean/MOD11A2/LST_Night_1km",
+    "MOD11A2_LST_Night_1km_K",
+    0.02,
+
+    # MOD13A3 (monthly VI; unitless after scaling)
+    "clean_data/modis_clean/MOD13A3/NDVI",
+    "MOD13A3_NDVI",
+    1e-4,
+    "clean_data/modis_clean/MOD13A3/EVI",
+    "MOD13A3_EVI",
+    1e-4
+)
+
+# ---- Helpers ----
+
+index_modis_files <- function(var_dir) {
+    tibble(
+        path = list.files(var_dir, pattern = "\\.tif$", full.names = TRUE)
+    ) |>
+        mutate(
+            date = as.Date(str_extract(basename(path), "\\d{4}-\\d{2}-\\d{2}")),
+            year = as.integer(format(date, "%Y"))
+        ) |>
+        arrange(date)
+}
+
+extract_means_factory <- function(counties_in_crs) {
+    # returns a function(fp) that extracts area-weighted mean for polygons
+    function(fp) {
+        r <- terra::rast(fp)
+        vals <- exactextractr::exact_extract(
+            r,
+            counties_in_crs,
+            fun = "mean",
+            progress = FALSE
+        )
+        tibble::tibble(
+            geoid = counties_in_crs$geoid,
+            mean_raw = as.numeric(vals)
+        )
+    }
+}
+
+summarize_modis_dir <- function(
+    var_dir,
+    variable_label,
+    scale_factor,
+    counties_ll
+) {
+    files <- index_modis_files(var_dir)
+
+    if (nrow(files) == 0) {
+        message("No files in: ", var_dir)
+        return(tibble(
+            variable = character(),
+            geoid = character(),
+            year = integer(),
+            value = double()
+        ))
+    }
+
+    r0 <- terra::rast(files$path[1])
+    counties_in_crs <- sf::st_transform(counties_ll, terra::crs(r0))
+
+    extract_means <- extract_means_factory(counties_in_crs)
+
+    daily <- files |>
+        mutate(res = purrr::map(path, extract_means)) |>
+        tidyr::unnest(res) |>
+        mutate(value = mean_raw * scale_factor) |>
+        select(geoid, date, year, value)
+
+    annual <- daily |>
+        group_by(geoid, year) |>
+        summarize(value = mean(value, na.rm = TRUE), .groups = "drop") |>
+        mutate(variable = variable_label) |>
+        relocate(variable, geoid, year, value)
+
+    annual
+}
+
+# ---- Run for all variables and combine ----
+all_annual <- vars |>
+    mutate(
+        tbl = purrr::pmap(
+            list(dir, label, scale),
+            ~ summarize_modis_dir(..1, ..2, ..3, counties)
+        )
+    ) |>
+    pull(tbl) |>
+    list_rbind()
+
+
+all_annual_out <- bind_rows(all_annual, lst_c)
+
+# ---- Save ----
+dir.create("summary_sets", showWarnings = FALSE, recursive = TRUE)
+readr::write_csv(
+    all_annual_out,
+    "summary_sets/annual_county_modis.csv"
+)
+
+# Helpful print
+all_annual_out |>
+    count(variable, year, name = "n_counties") |>
+    arrange(variable, year) |>
+    print(n = 50)
+
+
+####### nlcd #######
+# done
+
+library(terra)
+library(sf)
+library(exactextractr)
+library(dplyr)
+library(purrr)
+library(tibble)
+library(stringr)
+
+# Load valid county geometries
+counties <- st_read(
+    "clean_data/county_census/canonical_2024.gpkg",
+    layer = "counties_500k",
+    quiet = TRUE
+) |>
+    st_make_valid()
+
+
+get_county_means <- function(tif_file, counties) {
+    # Load raster
+    r <- rast(tif_file)
+    # Reproject counties to match raster CRS
+    counties_proj <- st_transform(counties, crs(r))
+
+    # Extract mean value for each county
+    vals <- exact_extract(r, counties_proj, "mean")
+
+    # Parse metadata
+    variable <- str_extract(basename(tif_file), "^[^_]+_[^_]+_[^_]+") # e.g., Fractional_Impervious_Surface
+    year <- str_extract(tif_file, "\\d{4}")
+
+    # Return as tidy tibble
+    tibble(
+        geoid = counties_proj$geoid,
+        year = as.integer(year),
+        variable = variable,
+        value = as.numeric(vals)
+    )
+}
+
+
+tif_dirs <- list.files(
+    "clean_data/nlcd_clean",
+    pattern = "_processed\\.tif$",
+    recursive = TRUE,
+    full.names = TRUE
+)
+
+length(tif_dirs) # should return ~84 files (6 variables × 14 years)
+
+nlcd_county_annual_means <- map_dfr(
+    tif_dirs,
+    get_county_means,
+    counties = counties
+)
+
+
+readr::write_csv(
+    nlcd_county_annual_means,
+    "summary_sets/annual_county_nlcd.csv"
+)
+
+
+###### Prism ######
+# done
+
+library(sf)
+library(terra)
+library(dplyr)
+library(purrr)
+library(stringr)
+library(tools)
+
+# Load counties
+counties <- st_read(
+    "clean_data/county_census/canonical_2024.gpkg",
+    layer = "counties_500k",
+    quiet = TRUE
+) |>
+    st_make_valid()
+
+# List all PRISM TIF files
+tif_dir <- "clean_data/prism_clean"
+tifs <- list.files(tif_dir, pattern = "\\.tif$", full.names = TRUE)
+
+# Helper to extract variable & month from filename
+parse_meta <- function(path) {
+    fn <- file_path_sans_ext(basename(path))
+    tibble(
+        file = path,
+        variable = str_extract(fn, "^[^_]+"), # e.g., ppt
+        month = as.integer(str_extract(fn, "\\d+$")) # last 2 digits
+    )
+}
+
+tif_meta <- map_dfr(tifs, parse_meta)
+
+# Function to get county means for one raster
+county_means_for_file <- function(path, counties) {
+    r <- rast(path)
+    ct <- st_transform(counties, crs(r))
+    vals <- exactextractr::exact_extract(r, ct, "mean")
+    tibble(
+        geoid = counties$geoid,
+        mean_val = as.numeric(vals)
+    )
+}
+
+# Loop over files, attach metadata
+prism_county_long <- pmap_dfr(
+    list(tif_meta$file, tif_meta$variable, tif_meta$month),
+    function(path, var, month) {
+        df <- county_means_for_file(path, counties)
+        df$variable <- var
+        df$month <- month
+        df
+    }
+)
+
+# Calculate ANNUAL average per variable × county
+prism_annual <- prism_county_long %>%
+    group_by(geoid, variable) %>%
+    summarise(annual_mean = mean(mean_val, na.rm = TRUE), .groups = "drop")
+
+# Save
+write.csv(
+    prism_annual,
+    "summary_sets/normal_county_prism.csv",
+    row.names = FALSE
+)
+
+###### terraclimate ######
+# done
+
+library(sf)
+library(terra)
+library(exactextractr)
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(stringr)
+library(tibble)
+
+# 0) Read counties once
+counties <- st_read(
+    "clean_data/county_census/canonical_2024.gpkg",
+    layer = "counties_500k",
+    quiet = TRUE
+) |>
+    st_make_valid()
+
+# 1) Helpers ---------------------------------------------------------------
+
+# Parse YYYYMM from layer names like "ppt_201001"
+layer_years <- function(r) {
+    nm <- names(r)
+    ym <- sub("^[^_]*_", "", nm) # keep "201001"
+    as.integer(substr(ym, 1, 4)) # -> 2010
+}
+
+# Collapse monthly -> annual means
+annualize <- function(r) {
+    yrs <- layer_years(r) # length = nlyr(r)
+    # terra::tapp groups layers by 'index' and applies fun over groups
+    ra <- terra::tapp(r, index = yrs, fun = mean, na.rm = TRUE)
+    names(ra) <- sort(unique(yrs)) # clean layer names: "2010", "2011", ...
+    ra
+}
+
+var_from_path <- function(p) {
+    nm <- tools::file_path_sans_ext(basename(p))
+    sub("_processed$", "", nm) # "ppt_processed" -> "ppt"
+}
+
+# 2) Per-file extractor: county x year means (coverage-weighted)
+county_annual_means_for_file <- function(tif, counties_ll) {
+    r <- terra::rast(tif)
+    ct <- sf::st_transform(counties_ll, terra::crs(r))
+    r_year <- annualize(r)
+
+    # exact_extract with "mean" does coverage-weighted means for polygons
+    mat <- exactextractr::exact_extract(r_year, ct, "mean", progress = TRUE)
+    out <- tibble(geoid = ct$geoid) |>
+        bind_cols(as_tibble(mat)) |>
+        pivot_longer(-geoid, names_to = "year", values_to = "value") |>
+        mutate(
+            year = as.integer(gsub("^X", "", year)), # sometimes terra prefixes names with "X"
+            var = var_from_path(tif)
+        ) |>
+        select(geoid, year, var, value)
+    out
+}
+
+# 3) Run over all TerraClimate variables -----------------------------------
+tif_dir <- "clean_data/terraclimate_clean"
+tifs <- list.files(tif_dir, pattern = "\\.tif$", full.names = TRUE)
+
+terraclimate_county_annual <- map_dfr(
+    tifs,
+    county_annual_means_for_file,
+    counties_ll = counties
+)
+
+
+readr::write_csv(
+    terraclimate_county_annual,
+    "summary_sets/annual_county_terraclimate.csv"
+)
+
+###### tri ######
+# done
+
+library(sf)
+library(dplyr)
+library(purrr)
+library(stringr)
+
+# County boundaries
+counties <- st_read(
+    "clean_data/county_census/canonical_2024.gpkg",
+    layer = "counties_500k",
+    quiet = TRUE
+) |>
+    st_transform(4326) # match TRI coords
+
+
+summarise_tri_year <- function(gpkg_path, counties) {
+    # Extract year from filename
+    year <- str_extract(basename(gpkg_path), "\\d{4}")
+
+    # Read and join to counties
+    tri <- st_read(gpkg_path, quiet = TRUE) |>
+        st_transform(st_crs(counties)) |>
+        st_join(counties, join = st_within)
+
+    # Drop geometry
+    tri_df <- st_drop_geometry(tri)
+
+    # Identify only the emission variables
+    emission_vars <- grep(
+        "^(FUGITIVE_AIR_|STACK_AIR_)",
+        names(tri_df),
+        value = TRUE
+    )
+
+    # Replace NAs with zero
+    tri_df[emission_vars] <- lapply(tri_df[emission_vars], \(x) {
+        ifelse(is.na(x), 0, x)
+    })
+
+    # Sum emissions by county
+    tri_df |>
+        group_by(geoid) |>
+        summarise(
+            across(all_of(emission_vars), sum, na.rm = TRUE),
+            .groups = "drop"
+        ) |>
+        mutate(year = as.integer(year))
+}
+
+
+# List all processed TRI files
+gpkg_files <- list.files(
+    "clean_data/tri_clean",
+    pattern = "_processed\\.gpkg$",
+    full.names = TRUE
+)
+
+# Run aggregation for each year
+county_tri_annual <- map_dfr(
+    gpkg_files,
+    summarise_tri_year,
+    counties = counties
+)
+
+
+county_tri_long <- county_tri_annual |>
+    pivot_longer(
+        cols = starts_with("FUGITIVE_AIR_") | starts_with("STACK_AIR_"),
+        names_to = "pollutant_id",
+        values_to = "emissions_lb"
+    )
+
+
+write.csv(county_tri_long, "annual_county_tri.csv", row.names = FALSE)
