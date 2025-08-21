@@ -3,3 +3,7 @@ clean_data/
 wget-log*
 library/
 container_combining_datasets.sif
+handoffs/
+summary_sets/
+slurm_messages/
+original_scripts/

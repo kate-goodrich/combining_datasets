@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=calc_gridmet
+#SBATCH --job-name=calc_groads
 #SBATCH --output=slurm_messages/container_output_%j.txt
 #SBATCH --error=slurm_messages/container_error_%j.txt
 #SBATCH --time=10:00:00
@@ -12,7 +12,7 @@
 
 # Paths
 CONTAINER_PATH="/ddn/gs1/group/set/chords/combining_datasets/container_combining_datasets.sif"
-SCRIPT_PATH="/ddn/gs1/group/set/chords/combining_datasets/orginal_scripts/calc_gridmet.R"
+SCRIPT_PATH="/ddn/gs1/group/set/chords/combining_datasets/orginal_scripts/calc_groads.R"
 
 # Run the R script inside the container with an isolated shell
 apptainer exec "$CONTAINER_PATH" bash -c "Rscript $SCRIPT_PATH"

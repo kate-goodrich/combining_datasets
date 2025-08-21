@@ -66,7 +66,7 @@ summarise_tri_air_totals <- function(
         inner_long <- tri_inner |>
             dplyr::select(geoid, all_of(fug_cols), all_of(stack_cols)) |>
             tidyr::pivot_longer(
-                cols = everything(),
+                cols = -geoid,
                 names_to = "pollutant_id",
                 values_to = "emissions_lb"
             ) |>
@@ -121,7 +121,7 @@ summarise_tri_air_totals <- function(
             tri_plus |>
                 dplyr::select(geoid, all_of(fug_cols), all_of(stack_cols)) |>
                 tidyr::pivot_longer(
-                    cols = everything(),
+                    cols = -geoid,
                     names_to = "pollutant_id",
                     values_to = "emissions_lb"
                 ) |>

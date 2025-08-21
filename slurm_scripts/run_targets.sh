@@ -2,7 +2,7 @@
 #SBATCH --job-name=run_targets
 #SBATCH --output=slurm_messages/container_output_%j.txt
 #SBATCH --error=slurm_messages/container_error_%j.txt
-#SBATCH --time=75:00:00
+#SBATCH --time=100:00:00
 #SBATCH --partition=highmem
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16

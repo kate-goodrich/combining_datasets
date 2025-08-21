@@ -61,7 +61,8 @@ prism_normals_from_tifs <- function(
             paste(names(zones), collapse = ", ")
         ))
     }
-    zones <- dplyr::select(zones, !!sym(id_col), geom = geometry)
+    zones <- dplyr::select(zones, !!sym(id_col))
+    zones$geom <- sf::st_geometry(zones)
 
     # --- Index files ---
     tif_paths <- list.files(
