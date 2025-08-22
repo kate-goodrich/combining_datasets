@@ -17,7 +17,7 @@
 
 ## Description
 
-This dataset includes annual summaries of environmental and climate health variables for all U.S. counties from 2010 to 2024. 
+This dataset includes annual summaries of environmental and climate health variables for all U.S. census tracts from 2010 to 2024. 
 
 ## Usage
 
