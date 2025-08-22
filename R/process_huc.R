@@ -71,7 +71,6 @@ clean_huc_layers <- function(
                     stop("SpatVector has 0 features")
                 }
 
-                # Optional: filter invalid geometries if available
                 valid_idx <- tryCatch(
                     {
                         if ("is.valid" %in% getNamespaceExports("terra")) {

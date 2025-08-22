@@ -1,38 +1,3 @@
-# prism_normals_zonal.R
-.libPaths("/usr/local/lib/R/site-library")
-
-suppressPackageStartupMessages({
-    library(sf)
-    library(terra)
-    library(dplyr)
-    library(purrr)
-    library(stringr)
-    library(tibble)
-    library(tidyr)
-    library(readr)
-    library(rlang)
-    library(exactextractr)
-    library(tools)
-})
-
-#' Zonal PRISM normals (monthly or annual) at county/tract level
-#'
-#' Expects PRISM "normal" GeoTIFFs named like "<var>_<MM>.tif"
-#' (e.g., ppt_01.tif, tmean_12.tif). Computes area-weighted means per zone.
-#'
-#' @param input_dir Directory with PRISM normal GeoTIFFs.
-#' @param zones_gpkg Path to GeoPackage containing polygons.
-#' @param level "county" or "tract".
-#' @param zone_layer Optional layer name in zones_gpkg (defaults by level).
-#' @param agg "monthly" (keep months 1..12) or "annual" (mean of 12 months).
-#' @param id_col Unique ID column in the zones (default "geoid").
-#' @param file_pattern Regex for files (default "\\\\.tif$").
-#' @param write_csv Optional path to write CSV output (NULL = don’t write).
-#'
-#' @return tibble with columns: {<id_col>, level, variable, month, value} for
-#'   monthly; and {<id_col>, level, variable, year, month, value} for annual,
-#'   where year is NA (normals are climatologies). For annual output, month=NA.
-#'
 prism_normals_from_tifs <- function(
     input_dir = "clean_data/prism_clean",
     zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",

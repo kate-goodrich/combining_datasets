@@ -1,5 +1,3 @@
-# koppen_geiger_summary_long.R
-
 koppen_geiger_summary <- function(
     raster_path_koppen = "clean_data/koppen_geiger_clean/Beck_KG_V1_present_0p083_processed.tif",
     raster_path_conf = "clean_data/koppen_geiger_clean/Beck_KG_V1_present_conf_0p083_processed.tif",

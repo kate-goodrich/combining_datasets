@@ -1,6 +1,3 @@
-# Load Climatology Lab TerraClimate AKA terraclimate
-# DOWNLOADED
-
 load_terraclimate <- function(
     save_dir = "raw_data/terraclimate",
     years = c(2010, 2024),

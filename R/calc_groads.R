@@ -1,20 +1,3 @@
-.libPaths("/usr/local/lib/R/site-library")
-
-
-library(terra)
-library(sf)
-library(exactextractr)
-library(dplyr)
-library(stringr)
-library(purrr)
-library(tidyr)
-library(readr)
-
-
-# road_density_zonal_long.R
-
-# road_density_zonal.R
-
 road_density_zonal <- function(
     roads_gpkg = "clean_data/groads_clean/groads_clean.gpkg",
     zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",

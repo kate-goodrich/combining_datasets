@@ -1,17 +1,3 @@
-# gridmet_zonal.R (revised: pre-aggregate in raster space to avoid huge binds)
-
-.libPaths("/usr/local/lib/R/site-library")
-
-library(terra)
-library(sf)
-library(exactextractr)
-library(dplyr)
-library(stringr)
-library(purrr)
-library(readr)
-library(tidyr)
-library(tibble)
-
 gridmet_zonal <- function(
     tif_dir,
     level = c("county", "tract"),

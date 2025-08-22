@@ -1,5 +1,3 @@
-# hms_fire_exposure.R
-
 hms_fire_exposure <- function(
     hms_dir = "clean_data/hms_clean",
     zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",

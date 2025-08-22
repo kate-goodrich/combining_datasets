@@ -1,6 +1,3 @@
-# Download NASA Modern-Era Retrospective analysis for Research and Applications, Version 2 (MERRA-2) AKA merra2
-# DOWNLOADED
-
 load_merra2 <- function(
     save_dir = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/merra2",
     products = c(

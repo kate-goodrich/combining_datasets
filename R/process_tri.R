@@ -1,27 +1,27 @@
 clean_tri <- function(
     years = 2010:2024,
     variables = c(
-        1, # YEAR
-        12, # LATITUDE
-        13, # LONGITUDE
-        14, # HORIZONTAL DATUM
-        20, # STANDARD FOREIGN PARENT CO NAME
-        29, # SIC 6
-        34, # NAICS 5
-        36, # DOC_CTRL_NUM
-        38, # ELEMENTAL METAL INCLUDED
-        39, # TRI CHEMICAL/COMPOUND ID
-        40, # CAS#
-        47, # PBT
-        48, # PFAS
-        49, # FORM TYPE
-        50, # UNIT OF MEASURE
-        51, # 5.1 - FUGITIVE AIR
-        52, # 5.2 - STACK AIR
-        53, # 5.3 - WATER
-        65, # ON-SITE RELEASE TOTAL
-        88, # OFF-SITE RELEASE TOTAL
-        107 # TOTAL RELEASES
+        1,
+        12,
+        13,
+        14,
+        20,
+        29,
+        34,
+        36,
+        38,
+        39,
+        40,
+        47,
+        48,
+        49,
+        50,
+        51,
+        -52,
+        -53,
+        -65,
+        88,
+        107
     ),
     raw_dir = "./raw_data/tri",
     out_dir = "./clean_data/tri_clean",

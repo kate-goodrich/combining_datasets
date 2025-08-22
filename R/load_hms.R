@@ -1,6 +1,3 @@
-# Download NOAA Hazard Mapping System Fire and Smoke Product AKA hms
-# DOWNLOADED
-
 load_hms <- function(
     save_dir = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/hms",
     date_range = c("2010-01-01", "2024-12-31"),

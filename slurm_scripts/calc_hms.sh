@@ -2,7 +2,7 @@
 #SBATCH --job-name=calc_hms
 #SBATCH --output=slurm_messages/container_output_%j.txt
 #SBATCH --error=slurm_messages/container_error_%j.txt
-#SBATCH --time=10:00:00
+#SBATCH --time=30:00:00
 #SBATCH --partition=highmem
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=20

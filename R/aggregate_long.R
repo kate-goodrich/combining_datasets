@@ -1,21 +1,3 @@
-#' Build long-form exposure table for county/tract, annual/monthly
-#'
-#' Scans a directory for CSVs matching the requested aggregation level
-#' and geography and combines them into a single long-form table.
-#' Static datasets are included in both annual and monthly outputs.
-#'
-#' @param agg "annual" or "monthly"
-#' @param level "county" or "tract"
-#' @param input_dir Directory to scan for CSVs (default: "summary_sets")
-#' @param output_dir Directory to write outputs (default: paste0("handoffs/", agg, "_", level, "_long"))
-#' @param write_csv Path to write CSV (NULL to skip). Default uses output_dir.
-#' @param write_parquet Path to write Parquet (NULL to skip). Default uses output_dir.
-#' @return A tibble. Columns:
-#'   - annual: geoid, variable, value, year, source
-#'   - monthly: geoid, variable, value, month, year, source  (month is integer; static rows have NA)
-#' @examples
-#' build_exposure_long("annual", "county")
-#' build_exposure_long("monthly", "tract")
 build_exposure_long <- function(
     agg = c("annual", "monthly"),
     level = c("county", "tract"),
@@ -76,7 +58,7 @@ build_exposure_long <- function(
             geoid = tidyselect::any_of(c("geoid", "geoid10", "geoid_county"))
         )
 
-        # year handling: if missing, tag by file name
+        # year handling
         if (!("year" %in% names(df))) {
             df <- dplyr::mutate(
                 df,
@@ -146,7 +128,6 @@ build_exposure_long <- function(
 
     # Basic sanity: month range for monthly outputs
     if (is_monthly) {
-        # keep month as integer 1..12 or NA (for static/normal if no month)
         out$month <- ifelse(
             !is.na(out$month) & out$month %in% 1:12,
             out$month,

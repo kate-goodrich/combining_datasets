@@ -155,7 +155,6 @@ list(
                     "sur_refl_b05",
                     "sur_refl_b06",
                     "sur_refl_b07",
-                    "sur_refl_qc500m",
                     "sur_refl_day_of_year"
                 ),
                 MOD11A2 = c("LST_Day_1km", "LST_Night_1km"),
@@ -477,54 +476,50 @@ list(
         format = "qs"
     ),
 
-    # ---- NLCD ----
+    # === NLCD Summaries ===
+
+    # 1. County-level, Annual
     tar_target(
-        nlcd_county_annual,
-        zonal_means_from_tifs(
-            input_dir = "clean_data/nlcd_clean",
-            zones_gpkg = CENSUS_GPKG,
+        county_nlcd_annual,
+        summarize_nlcd(
             level = "county",
             agg = "annual",
-            id_col = "geoid",
-            file_pattern = "_processed\\.tif$",
             write_csv = "summary_sets/annual_county_nlcd.csv"
-        )
+        ),
+        format = "rds"
     ),
+
+    # 2. County-level, Monthly
     tar_target(
-        nlcd_county_monthly,
-        zonal_means_from_tifs(
-            input_dir = "clean_data/nlcd_clean",
-            zones_gpkg = CENSUS_GPKG,
+        county_nlcd_monthly,
+        summarize_nlcd(
             level = "county",
             agg = "monthly",
-            id_col = "geoid",
-            file_pattern = "_processed\\.tif$",
             write_csv = "summary_sets/monthly_county_nlcd.csv"
-        )
+        ),
+        format = "rds"
     ),
+
+    # 3. Tract-level, Annual
     tar_target(
-        nlcd_tract_annual,
-        zonal_means_from_tifs(
-            input_dir = "clean_data/nlcd_clean",
-            zones_gpkg = CENSUS_GPKG,
+        tract_nlcd_annual,
+        summarize_nlcd(
             level = "tract",
             agg = "annual",
-            id_col = "geoid",
-            file_pattern = "_processed\\.tif$",
             write_csv = "summary_sets/annual_tract_nlcd.csv"
-        )
+        ),
+        format = "rds"
     ),
+
+    # 4. Tract-level, Monthly
     tar_target(
-        nlcd_tract_monthly,
-        zonal_means_from_tifs(
-            input_dir = "clean_data/nlcd_clean",
-            zones_gpkg = CENSUS_GPKG,
+        tract_nlcd_monthly,
+        summarize_nlcd(
             level = "tract",
             agg = "monthly",
-            id_col = "geoid",
-            file_pattern = "_processed\\.tif$",
             write_csv = "summary_sets/monthly_tract_nlcd.csv"
-        )
+        ),
+        format = "rds"
     ),
 
     # ---- PRISM normals ----
@@ -816,7 +811,8 @@ list(
             # run after all handoffs are created
             zip_handoffs(
                 handoffs_dir = "handoffs",
-                zipfile = "handoffs.zip"
+                zipfile = "handoffs.zip",
+                junk_paths = FALSE
             )
         },
         format = "file" # so targets tracks the zip

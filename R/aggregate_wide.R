@@ -1,24 +1,3 @@
-#' Build wide layer CSVs from long exposure data (annual/monthly, county/tract)
-#'
-#' Takes a long-form table (from build_exposure_long) and writes:
-#' - one static CSV (normals + statics averaged per variable)
-#' - dynamic CSVs per time slice:
-#'     * annual: one file per year (e.g., county_2011.csv)
-#'     * monthly: one file per year-month (e.g., county_2011_01.csv)
-#'
-#' Columns expected in `data`:
-#'   - annual: geoid, variable, value, year, source
-#'   - monthly: geoid, variable, value, month, year, source
-#'
-#' @param data Long-form tibble (output of build_exposure_long)
-#' @param agg "annual" or "monthly"
-#' @param level "county" or "tract"
-#' @param output_dir Output directory (default: paste0("handoffs/", level, "_", agg, "_layers"))
-#' @param fill_koppen_zero Replace NA with 0 for columns starting with "koppen_"
-#' @return Character vector of file paths written (useful with targets format = "file")
-#' @examples
-#' # In {targets}:
-#' # tar_target(county_annual_layers, build_exposure_wide_layers(county_annual_long, "annual", "county"), format="file")
 build_exposure_wide_layers <- function(
     data,
     agg = c("annual", "monthly"),

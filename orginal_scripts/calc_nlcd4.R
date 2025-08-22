@@ -19,12 +19,8 @@ purrr::walk(list.files("R", full.names = TRUE, pattern = "\\.R$"), source)
 
 # NLCD ------------------------------------------------------------------
 
-zonal_means_from_tifs(
-    input_dir = "clean_data/nlcd_clean",
-    zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+summarize_nlcd(
     level = "tract",
     agg = "monthly",
-    id_col = "geoid",
-    file_pattern = "_processed\\.tif$",
     write_csv = "summary_sets/monthly_tract_nlcd.csv"
 )

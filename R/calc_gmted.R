@@ -1,5 +1,3 @@
-# static_zonal_summary.R
-
 static_zonal_summary <- function(
     tif_dir,
     level = c("county", "tract"),

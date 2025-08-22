@@ -1,6 +1,3 @@
-# Load Climatology Lab GridMet AKA gridmet
-# DOWNLOADED
-
 load_gridmet <- function(
     save_dir = "raw_data/gridmet",
     years = 2010:2024,

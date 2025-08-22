@@ -1,6 +1,3 @@
-# Load Koppen-Geiger Climate Classification AKA koppen_geiger
-# DOWNLOADED
-
 load_koppen_geiger <- function(
     save_dir = "raw_data/koppen_geiger"
 ) {

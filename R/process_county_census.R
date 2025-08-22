@@ -1,5 +1,3 @@
-#' Build canonical county & tract layers (500k) for 2024
-
 build_canonical_census <- function(
     in_gpkg,
     out_gpkg = "clean_data/county_census/canonical_2024.gpkg",

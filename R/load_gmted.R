@@ -1,6 +1,3 @@
-# Download USGS6 Global Multi-resolution Terrain Elevation Data (GMTED2010) AKA gmted
-# DOWNLOADED
-
 load_gmted <- function(
     statistics = c(
         "Breakline Emphasis",

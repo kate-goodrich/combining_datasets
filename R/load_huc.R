@@ -1,11 +1,8 @@
-# Download USGS National Hydrography Dataset (NHD) AKA huc
-# DOWNLOADED
-
 load_huc <- function(
     save_dir = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/huc",
     container_path = "/ddn/gs1/group/set/chords/combining_datasets/container_combining_datasets.sif"
 ) {
-    # 1. Create download directory if needed
+    # 1. Create download directory
     dir.create(save_dir, recursive = TRUE, showWarnings = FALSE)
 
     # 2. Skip if any file already exists

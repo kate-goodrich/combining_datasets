@@ -1,6 +1,3 @@
-# Download NASA SEDAC Global Roads Open Access Data Set AKA groads
-# DOWNLOADED
-
 load_groads <- function(
     download_dir = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/groads",
     unzip_dir = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/groads",

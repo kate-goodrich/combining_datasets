@@ -92,7 +92,6 @@ clean_merra2 <- function(
                 message("Processing ", var, " (", folder, "), year ", year)
             }
 
-            # Fast existence check to avoid processing empty years
             files_year <- list.files(
                 in_path,
                 pattern = paste0("\\.", year, "(\\d{2}){2}\\.nc4$"),
@@ -229,7 +228,6 @@ clean_merra2 <- function(
         mustWork = FALSE
     ))
 
-    # OPTIONAL: write a CSV log so we can return *only* file paths for a single target
     if (!dir.exists(out_dir)) {
         dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
     }

@@ -1,6 +1,3 @@
-# Download US EPA Toxic Release Inventory (TRI) Program AKA tri
-# DOWNLOADED
-
 load_tri <- function(
     years = 2010:2024,
     save_dir = "/ddn/gs1/group/set/chords/combining_datasets/raw_data/tri"
