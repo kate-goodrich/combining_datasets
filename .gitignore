@@ -5,6 +5,7 @@ library/
 container_combining_datasets.sif
 summary_sets/
 slurm_messages/
+slurm_scripts/
 original_scripts/
 test_data/
 *.tif

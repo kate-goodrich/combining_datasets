@@ -12,6 +12,7 @@
 `county_static.csv`
 
 **Last Updated:** 2025-08-29 
+
 **Format:** Comma-Separated Values (CSV)
 
 ## Description

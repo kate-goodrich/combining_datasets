@@ -1,7 +1,9 @@
 # Dataset: Long-Form County Annual Environmental Health Dataset
 
-**File Name:** `county_annual.parquet`  
+**File Name:** `county_annual.parquet` 
+
 **Last Updated:** 2025-08-29 
+
 **Format:** Apache Parquet
 
 ## Description

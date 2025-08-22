@@ -1,7 +1,9 @@
 # Dataset: Long-Form County Monthly Environmental Health Dataset
 
-**File Name:** `county_monthly.parquet`  
+**File Name:** `county_monthly.parquet` 
+
 **Last Updated:** 2025-08-29 
+
 **Format:** Apache Parquet
 
 ## Description
