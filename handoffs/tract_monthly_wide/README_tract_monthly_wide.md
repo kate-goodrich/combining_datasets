@@ -28,10 +28,10 @@ This dataset is designed to support geospatial epidemiological analyses and envi
 
 ## Structure
 
-Each file (`tract_<year>.csv`) is a wide-form dataset where:
+Each file (`tract_<year_month>.csv`) is a wide-form dataset where:
 
 - Each row represents a single census tract (identified by `geoid`).
-- Each column represents an environmental or climate variable for that year.
+- Each column represents an environmental or climate variable for that year and month.
 - The `tract_static.csv` file contains variables that do not vary by year.
 - See Covariate Descriptions below for a coprehensive list of variables included 
 
