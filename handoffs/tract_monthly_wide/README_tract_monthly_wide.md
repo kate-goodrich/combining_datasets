@@ -105,12 +105,6 @@ This file was generated using data from:
 | ts                             | merra2        | dynamic | Surface skin temperature                              | K              |
 | u10m                           | merra2        | dynamic | Zonal wind speed at 10 m (east-west)                  | m/s            |
 | z0m                            | merra2        | dynamic | Surface roughness length                              | m              |
-| fractional_impervious_surface  | nlcd          | dynamic | Fraction of impervious land surface                   | %              |
-| impervious_descriptor          | nlcd          | dynamic | Categorical impervious descriptor                     | categorical    |
-| land_cover_change              | nlcd          | dynamic | Land cover change class                               | categorical    |
-| land_cover_confidence          | nlcd          | dynamic | Confidence in land cover classification               | %              |
-| land_cover                     | nlcd          | dynamic | Land cover class                                      | categorical    |
-| spectral_change_day            | nlcd          | dynamic | Day of detected spectral land cover change            | day-of-year    |
 | aet                            | terraclimate  | dynamic | Actual evapotranspiration                             | mm/month       |
 | def                            | terraclimate  | dynamic | Climatic water deficit                                | mm/month       |
 | pdsi                           | terraclimate  | dynamic | Palmer drought severity index                         | index          |
