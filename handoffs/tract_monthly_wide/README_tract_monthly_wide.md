@@ -23,7 +23,7 @@ This dataset includes monthly summaries of environmental and climate health vari
 
 ## Usage
 
-This dataset is designed to support geospatial epidemiological analyses and environmental exposure mapping by providing relevant covariates at the tract-annual level.
+This dataset is designed to support geospatial epidemiological analyses and environmental exposure mapping by providing relevant covariates at the tract-month level.
 
 
 ## Structure
