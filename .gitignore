@@ -10,3 +10,4 @@ test_data/
 *.tif
 *.zip
 *.csv
+*.parquet
