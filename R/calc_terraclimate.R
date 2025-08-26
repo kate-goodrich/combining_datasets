@@ -18,22 +18,25 @@ summarize_terraclimate <- function(
     zones <- sf::st_read(county_gpkg, layer = zone_layer, quiet = TRUE) |>
         sf::st_make_valid()
 
-    # --- Helper: extract years from layer names like "ppt_201001" ---
-    layer_years <- function(r) {
-        nm <- names(r)
-        ym <- sub("^[^_]*_", "", nm)
-        as.integer(substr(ym, 1, 4))
+    # --- Helpers ---
+    std_layer_names <- function(nm) {
+        out <- sub("^.*?(\\d{6})$", "\\1", nm) # YYYYMM
+        out[!grepl("^\\d{6}$", out)] <- sub(
+            "^.*?(\\d{4})$",
+            "\\1",
+            nm[!grepl("^\\d{6}$", out)]
+        ) # YYYY fallback
+        out
     }
-
-    # --- Collapse monthly → annual ---
+    layer_years <- function(r) {
+        as.integer(substr(std_layer_names(names(r)), 1, 4))
+    }
     annualize <- function(r) {
         yrs <- layer_years(r)
         ra <- terra::tapp(r, index = yrs, fun = mean, na.rm = TRUE)
         names(ra) <- as.character(sort(unique(yrs)))
         ra
     }
-
-    # --- Clean var name from filename ---
     var_from_path <- function(p) {
         nm <- tools::file_path_sans_ext(basename(p))
         sub("_processed$", "", nm)
@@ -46,7 +49,10 @@ summarize_terraclimate <- function(
 
         r_use <- switch(
             agg,
-            "monthly" = r,
+            "monthly" = {
+                names(r) <- std_layer_names(names(r))
+                r
+            },
             "annual" = annualize(r)
         )
 
@@ -59,23 +65,33 @@ summarize_terraclimate <- function(
         mat <- tibble::as_tibble(mat)
         colnames(mat) <- names(r_use)
 
-        out <- tibble(!!id_col := zones_proj[[id_col]]) |>
-            bind_cols(mat) |>
-            pivot_longer(
-                -all_of(id_col),
+        out <- tibble::tibble(!!id_col := zones_proj[[id_col]]) |>
+            dplyr::bind_cols(mat) |>
+            tidyr::pivot_longer(
+                -dplyr::all_of(id_col),
                 names_to = if (agg == "monthly") "date" else "year",
                 values_to = "value"
             ) |>
-            mutate(
+            dplyr::mutate(
                 var = var_from_path(tif_path),
                 year = if (agg == "monthly") {
-                    as.integer(substr(date, 1, 4))
+                    as.integer(substr(.data$date, 1, 4))
                 } else {
-                    as.integer(year)
+                    as.integer(.data$year)
                 },
-                date = if (agg == "monthly") date else NULL
+                month = if (agg == "monthly") {
+                    as.integer(substr(.data$date, 5, 6))
+                } else {
+                    NA_integer_
+                }
             ) |>
-            select(any_of(c(id_col, "year", "date", "var", "value")))
+            dplyr::select(dplyr::any_of(c(
+                id_col,
+                "year",
+                if (agg == "monthly") "month",
+                "var",
+                "value"
+            )))
 
         return(out)
     }

@@ -1,5 +1,5 @@
-build_exposure_wide_layers <- function(
-    data,
+build_exposure_wide_layers_from_dataset <- function(
+    dataset_dir,
     agg = c("annual", "monthly"),
     level = c("county", "tract"),
     output_dir = NULL,
@@ -8,176 +8,165 @@ build_exposure_wide_layers <- function(
     agg <- match.arg(agg)
     level <- match.arg(level)
 
-    stopifnot(is.data.frame(data))
-    required_cols <- c("geoid", "variable", "value", "year")
-    if (agg == "monthly") {
-        required_cols <- c(required_cols, "month")
-    }
-    missing_cols <- setdiff(required_cols, names(data))
-    if (length(missing_cols)) {
-        stop(
-            "Missing required columns in `data`: ",
-            paste(missing_cols, collapse = ", ")
-        )
-    }
+    suppressPackageStartupMessages({
+        library(arrow)
+        library(dplyr)
+        library(tidyr)
+        library(stringr)
+        library(readr)
+    })
 
     if (is.null(output_dir)) {
         output_dir <- file.path("handoffs", paste0(level, "_", agg, "_layers"))
     }
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
-    suppressPackageStartupMessages({
-        library(dplyr)
-        library(tidyr)
-        library(stringr)
-        library(purrr)
-        library(readr)
-    })
+    ds <- arrow::open_dataset(dataset_dir, format = "parquet")
 
-    # ---- 1) Deduplicate within keys ----
-    data <- data %>% mutate(year = as.character(.data$year))
-    if (agg == "annual") {
-        data_dedup <- data %>%
-            group_by(.data$geoid, .data$year, .data$variable) %>%
-            summarise(value = mean(.data$value, na.rm = TRUE), .groups = "drop")
-    } else {
-        data_dedup <- data %>%
-            mutate(month = suppressWarnings(as.integer(.data$month))) %>%
-            group_by(.data$geoid, .data$year, .data$month, .data$variable) %>%
-            summarise(value = mean(.data$value, na.rm = TRUE), .groups = "drop")
+    # Helper to coerce and dedup within keys, but only for a subset we collect
+    dedup_frame <- function(tbl, monthly = FALSE) {
+        if (monthly) {
+            tbl %>%
+                group_by(geoid, year, month, variable) %>%
+                summarise(value = mean(value, na.rm = TRUE), .groups = "drop")
+        } else {
+            tbl %>%
+                group_by(geoid, year, variable) %>%
+                summarise(value = mean(value, na.rm = TRUE), .groups = "drop")
+        }
     }
 
-    # ---- 2) Split static/normal vs numeric years ----
-    is_numeric_year <- function(x) {
-        !is.na(suppressWarnings(as.integer(x))) & str_detect(x, "^[0-9]{4}$")
-    }
+    written <- character(0)
 
-    static_long <- data_dedup %>%
-        filter(!is_numeric_year(.data$year)) %>%
-        mutate(
-            year = if_else(
-                str_detect(.data$year, "(?i)normal"),
-                "normal",
-                "static"
-            )
-        )
+    # ---------- Static/normal (one file) ----------
+    static_tbl <- ds %>%
+        filter(!(stringr::str_detect(year, "^\\d{4}$"))) %>%
+        select(geoid, variable, value, year)
 
-    dynamic_long <- data_dedup %>% filter(is_numeric_year(.data$year))
+    if (static_tbl %>% head(1) %>% collect() %>% nrow() > 0) {
+        static_df <- static_tbl %>% collect() %>% dedup_frame(monthly = FALSE)
 
-    # ---- 3) Static wide (one file) ----
-    written_files <- character(0)
-    if (nrow(static_long) > 0) {
-        static_wide <- static_long %>%
-            {
-                if (agg == "monthly") {
-                    select(., .data$geoid, .data$variable, .data$value)
-                } else {
-                    select(., .data$geoid, .data$variable, .data$value)
-                }
-            } %>%
-            group_by(.data$geoid, .data$variable) %>%
-            summarise(
-                value = mean(.data$value, na.rm = TRUE),
-                .groups = "drop"
+        # Collapse multiple static/normal sources to a single row per geoid/variable
+        static_wide <- static_df %>%
+            group_by(geoid, variable) %>%
+            summarise(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
+            tidyr::pivot_wider(
+                id_cols = geoid,
+                names_from = variable,
+                values_from = value
             ) %>%
-            pivot_wider(
-                id_cols = .data$geoid,
-                names_from = .data$variable,
-                values_from = .data$value
-            ) %>%
-            arrange(.data$geoid)
+            arrange(geoid)
 
         if (fill_koppen_zero) {
-            static_wide <- static_wide %>%
-                mutate(across(starts_with("koppen_"), ~ replace_na(.x, 0)))
+            kop_cols <- grep("^koppen_", names(static_wide), value = TRUE)
+            if (length(kop_cols)) {
+                static_wide[kop_cols] <- lapply(
+                    static_wide[kop_cols],
+                    function(x) {
+                        x[is.na(x)] <- 0
+                        x
+                    }
+                )
+            }
         }
 
-        static_path <- file.path(output_dir, paste0(level, "_static.csv"))
-        write_csv(static_wide, static_path)
-        written_files <- c(written_files, static_path)
+        p <- file.path(output_dir, paste0(level, "_static.csv"))
+        readr::write_csv(static_wide, p)
+        written <- c(written, p)
     }
 
-    # ---- 4) Dynamic wide (per year or per year-month) ----
-    if (nrow(dynamic_long) > 0) {
+    # ---------- Dynamic ----------
+    dyn_keys <- ds %>%
+        filter(stringr::str_detect(year, "^\\d{4}$")) %>%
+        select(year, dplyr::any_of("month")) %>%
+        distinct()
+
+    dyn_keys_df <- dyn_keys %>% collect()
+
+    if (nrow(dyn_keys_df)) {
         if (agg == "annual") {
-            years <- dynamic_long %>%
-                distinct(.data$year) %>%
-                arrange(.data$year) %>%
-                pull(.data$year)
-            files <- map_chr(years, function(y) {
-                yr_wide <- dynamic_long %>%
-                    filter(.data$year == y) %>%
-                    select(.data$geoid, .data$variable, .data$value) %>%
-                    group_by(.data$geoid, .data$variable) %>%
-                    summarise(
-                        value = mean(.data$value, na.rm = TRUE),
-                        .groups = "drop"
+            years <- sort(unique(dyn_keys_df$year))
+            for (y in years) {
+                yr_tbl <- ds %>%
+                    filter(year == y) %>%
+                    select(geoid, variable, value, year)
+
+                yr_df <- yr_tbl %>% collect() %>% dedup_frame(monthly = FALSE)
+
+                yr_wide <- yr_df %>%
+                    select(geoid, variable, value) %>%
+                    tidyr::pivot_wider(
+                        id_cols = geoid,
+                        names_from = variable,
+                        values_from = value
                     ) %>%
-                    pivot_wider(
-                        id_cols = .data$geoid,
-                        names_from = .data$variable,
-                        values_from = .data$value
-                    ) %>%
-                    arrange(.data$geoid)
+                    arrange(geoid)
 
                 if (fill_koppen_zero) {
-                    yr_wide <- yr_wide %>%
-                        mutate(across(
-                            starts_with("koppen_"),
-                            ~ replace_na(.x, 0)
-                        ))
+                    kop_cols <- grep("^koppen_", names(yr_wide), value = TRUE)
+                    if (length(kop_cols)) {
+                        yr_wide[kop_cols] <- lapply(
+                            yr_wide[kop_cols],
+                            function(x) {
+                                x[is.na(x)] <- 0
+                                x
+                            }
+                        )
+                    }
                 }
 
                 out_path <- file.path(output_dir, paste0(level, "_", y, ".csv"))
-                write_csv(yr_wide, out_path)
-                out_path
-            })
-            written_files <- c(written_files, files)
+                readr::write_csv(yr_wide, out_path)
+                written <- c(written, out_path)
+            }
         } else {
             # monthly
-            # keep valid months or NA (if any slipped in)
-            dynamic_long <- dynamic_long %>%
-                mutate(month = ifelse(month %in% 1:12, month, NA_integer_))
-            ym <- dynamic_long %>%
-                filter(!is.na(.data$month)) %>%
-                distinct(.data$year, .data$month) %>%
-                arrange(.data$year, .data$month)
+            dyn_keys_df <- dyn_keys_df %>% filter(!is.na(month))
+            dyn_keys_df$month <- as.integer(dyn_keys_df$month)
+            dyn_keys_df <- dyn_keys_df %>% arrange(year, month)
 
-            files <- pmap_chr(ym, function(year, month) {
-                mm <- sprintf("%02d", as.integer(month))
-                ym_wide <- dynamic_long %>%
-                    filter(.data$year == year, .data$month == month) %>%
-                    select(.data$geoid, .data$variable, .data$value) %>%
-                    group_by(.data$geoid, .data$variable) %>%
-                    summarise(
-                        value = mean(.data$value, na.rm = TRUE),
-                        .groups = "drop"
+            for (i in seq_len(nrow(dyn_keys_df))) {
+                y <- dyn_keys_df$year[i]
+                m <- dyn_keys_df$month[i]
+                mm <- sprintf("%02d", m)
+
+                ym_tbl <- ds %>%
+                    filter(year == y, month == m) %>%
+                    select(geoid, variable, value, year, month)
+
+                ym_df <- ym_tbl %>% collect() %>% dedup_frame(monthly = TRUE)
+
+                ym_wide <- ym_df %>%
+                    select(geoid, variable, value) %>%
+                    tidyr::pivot_wider(
+                        id_cols = geoid,
+                        names_from = variable,
+                        values_from = value
                     ) %>%
-                    pivot_wider(
-                        id_cols = .data$geoid,
-                        names_from = .data$variable,
-                        values_from = .data$value
-                    ) %>%
-                    arrange(.data$geoid)
+                    arrange(geoid)
 
                 if (fill_koppen_zero) {
-                    ym_wide <- ym_wide %>%
-                        mutate(across(
-                            starts_with("koppen_"),
-                            ~ replace_na(.x, 0)
-                        ))
+                    kop_cols <- grep("^koppen_", names(ym_wide), value = TRUE)
+                    if (length(kop_cols)) {
+                        ym_wide[kop_cols] <- lapply(
+                            ym_wide[kop_cols],
+                            function(x) {
+                                x[is.na(x)] <- 0
+                                x
+                            }
+                        )
+                    }
                 }
 
                 out_path <- file.path(
                     output_dir,
-                    paste0(level, "_", year, "_", mm, ".csv")
+                    paste0(level, "_", y, "_", mm, ".csv")
                 )
-                write_csv(ym_wide, out_path)
-                out_path
-            })
-            written_files <- c(written_files, files)
+                readr::write_csv(ym_wide, out_path)
+                written <- c(written, out_path)
+            }
         }
     }
 
-    unique(written_files)
+    unique(written)
 }

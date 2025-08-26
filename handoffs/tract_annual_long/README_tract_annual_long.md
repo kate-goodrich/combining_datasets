@@ -60,15 +60,14 @@ This file was generated using data from:
 | Variable                       | Source        | Type    | Description                                           | Units          |
 |--------------------------------|---------------|---------|-------------------------------------------------------|----------------|
 | etr                            | gridmet       | dynamic | Reference alfalfa evaportranspiration                 | mm/day         |
-| pet                            | gridmet       | dynamic | Reference grass evaportranspiration                   | mm/day         |
 | pr                             | gridmet       | dynamic | Precipitation                                         | mm/day         |
 | rmax                           | gridmet       | dynamic | Maximum Near-Surface Relative Humidity                | %              |
 | rmin                           | gridmet       | dynamic | Minimum Near-Surface Relative Humidity                | %              |
 | sph                            | gridmet       | dynamic | Near-Surface Specific Humidity                        | kg/kg          |
 | srad                           | gridmet       | dynamic | Surface Downwelling Solar Radiation                   | W/m²           |
 | th                             | gridmet       | dynamic | Wind direction at 10 m                                | degrees        |
-| tmmn                           | gridmet       | dynamic | Minimum Near-Surface Air Temperature                  | °C             |
-| tmmx                           | gridmet       | dynamic | Maximum Near-Surface Air Temperature                  | °C             |
+| tmmn                           | gridmet       | dynamic | Daily minimum Near-Surface Air Temperature            | K              |
+| tmmx                           | gridmet       | dynamic | Daily maximum Near-Surface Air Temperature            | K              |
 | vs                             | gridmet       | dynamic | Wind speed at 10 m                                    | m/s            |
 | prop_light_coverage            | hms           | dynamic | Proportion of light wilfire smoke cover               | proportion     |
 | prop_med_coverage              | hms           | dynamic | Proportion of medium wilfire smoke cover              | proportion     |
@@ -104,6 +103,7 @@ This file was generated using data from:
 | vap                            | terraclimate  | dynamic | Vapor pressure                                        | kPa            |
 | vpd                            | terraclimate  | dynamic | Vapor pressure deficit                                | kPa            |
 | ws                             | terraclimate  | dynamic | Wind speed                                            | m/s            |
+| pet                            | terraclimate  | dynamic | Monthly potential evapotranspiration                  | mm/month       |
 | total_air_lb                   | tri           | dynamic | Total air emissions (fugitive and stack)              | lb             |
 | total_air_lb_per_km2           | tri           | dynamic | Total air emissions per area                          | lb/km²         |
 | total_air_lb_plus4km           | tri           | dynamic | Total air emissions plus 4 km buffer                  | lb             |
@@ -145,7 +145,7 @@ This file was generated using data from:
 | prop_cover_landsea             | huc           | static  | Proportion of zone covered by land-sea boundary       | proportion     |
 | prop_cover_nhdarea             | huc           | static  | Proportion of zone covered by NHD area                | proportion     |
 | prop_cover_nhdwaterbody        | huc           | static  | Proportion of zone covered by NHD waterbody           | proportion     |
-| confidence                     | koppen_geiger | static  | Confidence metric for Koppen_Geiger zone coverage     | %              |
+| koppen_confidence              | koppen_geiger | static  | Confidence metric for Koppen_Geiger zone coverage     | %              |
 | koppen_1                       | koppen_geiger | static  | Coverage Af – Tropical, rainforest                    | proportion     |
 | koppen_2                       | koppen_geiger | static  | Coverage Am – Tropical, monsoon                       | proportion     |
 | koppen_3                       | koppen_geiger | static  | Coverage Aw – Tropical, savannah                      | proportion     |
@@ -183,7 +183,6 @@ This file was generated using data from:
 | sur_refl_b05                   | modis         | dynamic | Surface reflectance for band 5 (scale factor 0.0001)  | unitless       |
 | sur_refl_b06                   | modis         | dynamic | Surface reflectance for band 6 (scale factor 0.0001)  | unitless       |
 | sur_refl_b07                   | modis         | dynamic | Surface reflectance for band 7 (scale factor 0.0001)  | unitless       |
-| sur_refl_day_of_year           | modis         | dynamic | Day of year of composite                              | day of year    |
 | lST_day_1km                    | modis         | dynamic | Daytime land surface temperature                      | K              |
 | lST_night_1km                  | modis         | dynamic | Nighttime land surface temperature                    | K              |
 | ndvi                           | modis         | dynamic | Normalized Difference Vegetation Index                | index (–1 to 1)|

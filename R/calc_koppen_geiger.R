@@ -79,7 +79,7 @@ koppen_geiger_summary <- function(
     # --- Append confidence as separate variable ---
     conf_df <- tibble::tibble(
         !!id_col := zones[[id_col]],
-        var = "confidence",
+        var = "koppen_confidence",
         value = avg_conf
     )
 

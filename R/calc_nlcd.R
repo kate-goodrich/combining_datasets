@@ -6,38 +6,19 @@ summarize_nlcd <- function(
     nlcd_dir = "clean_data/nlcd_clean",
     write_csv = NULL
 ) {
-    # -------------------------------
-    # Load libraries
-    # -------------------------------
-    library(terra)
-    library(sf)
-    library(dplyr)
-    library(tidyr)
-    library(stringr)
-    library(exactextractr)
-    library(circular)
-    library(readr)
-    library(purrr)
-
-    # -------------------------------
-    # Step 1: Parse inputs
-    # -------------------------------
+    # Match arguments
     level <- match.arg(level)
     agg <- match.arg(agg)
     if (is.null(zone_layer)) {
         zone_layer <- if (level == "county") "counties_500k" else "tracts_500k"
     }
 
-    # -------------------------------
-    # Step 2: Read geometries
-    # -------------------------------
-    zones <- st_read(zones_gpkg, layer = zone_layer, quiet = TRUE) |>
-        st_make_valid() |>
-        select(geoid)
+    # Load zones
+    zones <- sf::st_read(zones_gpkg, layer = zone_layer, quiet = TRUE) |>
+        sf::st_make_valid() |>
+        dplyr::select(geoid)
 
-    # -------------------------------
-    # Step 3: List & categorize rasters
-    # -------------------------------
+    # Load raster files
     tif_files <- list.files(
         nlcd_dir,
         pattern = "_processed\\.tif$",
@@ -45,133 +26,127 @@ summarize_nlcd <- function(
         recursive = TRUE
     )
 
-    meta <- tibble(file = tif_files) |>
+    # Allowed land cover codes
+    allowed_classes <- c(
+        11,
+        12,
+        21,
+        22,
+        23,
+        24,
+        31,
+        41,
+        42,
+        43,
+        52,
+        71,
+        81,
+        82,
+        90,
+        95
+    )
+
+    # Define metadata
+    meta <- tibble::tibble(file = tif_files) |>
         mutate(
-            variable = str_extract(basename(file), "^[^_]+(?:_[^_]+)*"),
-            year = as.integer(str_extract(file, "\\d{4}")),
+            base = stringr::str_remove(
+                basename(file),
+                "_\\d{4}_processed\\.tif$"
+            ),
+            variable = tolower(base),
+            year = as.integer(stringr::str_extract(file, "\\d{4}")),
             type = case_when(
-                str_detect(
-                    file,
-                    "Fractional_Impervious_Surface|Land_Cover_Confidence"
-                ) ~
-                    "proportion",
-                str_detect(file, "Land_Cover") ~ "categorical",
-                str_detect(file, "Spectral_Change_Day_of_Year") ~ "doy",
+                base == "Fractional_Impervious_Surface" ~ "proportion",
+                base == "Land_Cover_Confidence" ~ "proportion",
+                base == "Land_Cover" ~ "categorical",
                 TRUE ~ "skip"
             )
         ) |>
-        filter(type != "skip")
+        dplyr::filter(type != "skip")
 
-    # -------------------------------
-    # Step 4: Summarize all rasters
-    # -------------------------------
+    # Initialize result list
     results_all <- vector("list", nrow(meta))
 
     for (i in seq_len(nrow(meta))) {
         row <- meta[i, ]
         message("Processing: ", basename(row$file))
-        r <- rast(row$file)[[1]]
-        zones_proj <- st_transform(zones, crs(r))
+
+        r <- terra::rast(row$file)[[1]]
+        zones_proj <- sf::st_transform(zones, terra::crs(r))
 
         result <- switch(
             row$type,
             "proportion" = {
-                values <- exact_extract(
+                val <- exactextractr::exact_extract(
                     r,
                     zones_proj,
-                    function(val, cov) weighted.mean(val, cov, na.rm = TRUE),
+                    fun = function(values, coverage_fractions) {
+                        weighted.mean(values, coverage_fractions, na.rm = TRUE)
+                    },
                     progress = FALSE
                 )
-                tibble(
+                tibble::tibble(
                     geoid = zones$geoid,
-                    variable = row$variable,
-                    value = values,
+                    variable = row$variable, # <-- removed "_mean"
+                    value = val,
                     year = row$year
                 )
             },
             "categorical" = {
-                summary_list <- exact_extract(
+                lc_props <- exactextractr::exact_extract(
                     r,
                     zones_proj,
-                    function(val, cov) {
-                        valid <- !is.na(val) & !is.na(cov)
-                        val <- val[valid]
-                        cov <- cov[valid]
-                        if (length(val) == 0) {
-                            return(list())
+                    fun = function(values, coverage_fractions) {
+                        valid <- !is.na(values) & !is.na(coverage_fractions)
+                        values <- values[valid]
+                        coverage_fractions <- coverage_fractions[valid]
+                        if (length(values) == 0) {
+                            return(as.list(numeric(0)))
                         }
-                        tab <- tapply(cov, val, sum)
+
+                        tab <- tapply(coverage_fractions, values, sum)
+                        tab <- tab[names(tab) %in% allowed_classes]
                         props <- tab / sum(tab)
-                        out <- setNames(
-                            as.list(as.numeric(props)),
-                            paste0(row$variable, "_", names(props))
-                        )
-                        list(out)
+                        names(props) <- paste0("land_cover_", names(props))
+                        as.list(props)
                     },
                     progress = FALSE
                 )
-                bind_cols(geoid = zones$geoid, summary_list) |>
-                    pivot_longer(
+
+                dplyr::tibble(
+                    geoid = zones$geoid,
+                    props = lc_props
+                ) |>
+                    tidyr::unnest_wider(props) |>
+                    tidyr::pivot_longer(
                         -geoid,
                         names_to = "variable",
                         values_to = "value"
                     ) |>
-                    mutate(year = row$year)
-            },
-            "doy" = {
-                values <- exact_extract(
-                    r,
-                    zones_proj,
-                    function(val, cov) {
-                        val <- val[!is.na(val)]
-                        cov <- cov[!is.na(val)]
-                        if (length(val) == 0 || length(cov) == 0) {
-                            return(NA_real_)
-                        }
-                        circ <- circular(
-                            val * 2 * pi / 365,
-                            units = "radians",
-                            template = "none"
-                        )
-                        as.numeric(mean.circular(circ)) %%
-                            (2 * pi) *
-                            365 /
-                            (2 * pi)
-                    },
-                    progress = FALSE
-                )
-                tibble(
-                    geoid = zones$geoid,
-                    variable = paste0(row$variable, "_doy_circ_mean"),
-                    value = values,
-                    year = row$year
-                )
+                    dplyr::mutate(year = row$year)
             }
         )
 
         results_all[[i]] <- result
     }
 
-    # -------------------------------
-    # Step 5: Combine and format
-    # -------------------------------
-    final <- bind_rows(results_all)
+    # Combine results
+    final <- dplyr::bind_rows(results_all)
 
+    # Add monthly duplication if needed
     if (agg == "monthly") {
         final <- final |>
-            crossing(month = 1:12) |>
-            select(geoid, variable, value, month, year)
+            tidyr::crossing(month = 1:12) |>
+            dplyr::select(geoid, variable, value, month, year)
     } else {
         final <- final |>
-            select(geoid, variable, value, year)
+            dplyr::select(geoid, variable, value, year)
     }
 
-    # -------------------------------
-    # Step 6: Write to CSV if requested
-    # -------------------------------
+    # Write CSV if requested
     if (!is.null(write_csv)) {
-        dir.create(dirname(write_csv), recursive = TRUE, showWarnings = FALSE)
-        write_csv(final, write_csv)
+        dir.create(dirname(write_csv), showWarnings = FALSE, recursive = TRUE)
+        readr::write_csv(final, write_csv)
     }
 
     return(final)
