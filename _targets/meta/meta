@@ -11,7 +11,6 @@ load_prism|function|6198e8d45af01967
 koppen_geiger|stem|e71ed5f2ddf07878|4b962fd74979b81e|40260efb1b38c206|957966354||t20306.7741371393s|s269b|269|rds|local|vector|||0.008||
 process_modis_var_date|function|abd60a290268f23b
 modis_grid|stem||a5afc5eae9d8470a|2c530c1562a7fbd1|-912509875||t20311.7991840548s||0|rds|local|vector|||71.502||character string is not in a standard unambiguous format
-modis|stem|bc2460ccb403257e|5e51e620f99821c4|5941e92aa9f0d523|-1526643308||t20311.7994033032s|s1001271b|1001271|rds|local|vector|||18.672||
 modis_outputs_|branch||985f21b995f29a11|8ed1edad4fc8ff02|704272367||t20311.799405593s||0|file|local|vector|modis_outputs||0.015||object 'modis_grid' not found
 modis_outputs|pattern|e1dd9aa33b3af3ae|985f21b995f29a11||-425437668||||0|file|local|vector||modis_outputs_|0.015||
 process_one_modis|function|e6b82389977b5934
@@ -5317,7 +5316,6 @@ prism|stem|5eb7bd775a5d641e|cf70a79620041624|9cc0260e5258384f|-2023822628||t2031
 modis_files|stem||221b991b068172d6|89febe50c9d85b95|459574385||t20311.8304945262s||0|rds|local|vector|||0.005||unused argument (format = 'file')
 groads_files|stem|d21181387a4c690e|2fa8ab866d9ac622|307cb7cb3c9e0b92|1116955896|/ddn/gs1/group/set/chords/combining_datasets/clean_data/groads_clean/groads_clean.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/groads_clean/groads_log.csv|t20314.5229719176s|s196448398b|196448398|file|local|vector|||20.664||
 hms_files|stem|e963841b8b72e848|d012c81f45889532|ea891c79319d4b39|1431110894|/ddn/gs1/group/set/chords/combining_datasets/clean_data/hms_clean/hms_log.csv|t20314.5351364406s|s11535b|11535|file|local|vector|||1050.86|rbind failed for 2010-06: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2010-07: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2010-08: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2010-09: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2010-10: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2010-11: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2010-12: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2011-01: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2011-02: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2011-03: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2011-04: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2011-05: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2011-06: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2011-07: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2011-08: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2011-09: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2011-10: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2011-11: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2011-12: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2012-01: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2012-02: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2012-03: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2012-04: 'rbind' is not an exported object from 'namespace:terra'.   rbind failed for 2012-05: 'rbind' is not an exported object from 'na|
-tri_files|stem|96364455c7d253b3|ff3d8d0c9d47a0cf|8cbde4c57890b0ed|-689180442|/ddn/gs1/group/set/chords/combining_datasets/clean_data/tri_clean/tri_2010_processed.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/tri_clean/tri_2011_processed.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/tri_clean/tri_2012_processed.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/tri_clean/tri_2013_processed.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/tri_clean/tri_2014_processed.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/tri_clean/tri_2015_processed.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/tri_clean/tri_2016_processed.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/tri_clean/tri_2017_processed.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/tri_clean/tri_2018_processed.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/tri_clean/tri_2019_processed.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/tri_clean/tri_2020_processed.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/tri_clean/tri_2021_processed.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/tri_clean/tri_2022_processed.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/tri_clean/tri_2023_processed.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/tri_clean/tri_2024_processed.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/tri_clean/tri_log.csv|t20314.5437918338s|s472278814b|472278814|file|local|vector|||747.803||
 merra2|stem|a17b6b2bcbd37aa4|73c0927d465678d6|a8b58ad27e6ab6a7|1129135428||t20314.5438880249s|s202829b|202829|rds|local|vector|||6.973||
 huc_files|stem|c8074c31e6b794e2|172ef3da53cc65f3|9598e0333e123ce1|-1072550900|/ddn/gs1/group/set/chords/combining_datasets/clean_data/huc_clean/BurnAddWaterbody.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/huc_clean/LandSea.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/huc_clean/Catchment.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/huc_clean/CatchmentSP.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/huc_clean/NHDArea.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/huc_clean/NHDWaterbody.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/huc_clean/HUC12.gpkg*/ddn/gs1/group/set/chords/combining_datasets/clean_data/huc_clean/huc_log.csv|t20314.5488565637s|s15039034210b|15039034210|file|local|vector|||429.251||
 gridmet_files|stem|7e4f18d068d7a7ff|bbec561589dfcacb|a112628c69540a1b|-563405698|/ddn/gs1/group/set/chords/combining_datasets/clean_data/gridmet_clean/etr_clean.tif*/ddn/gs1/group/set/chords/combining_datasets/clean_data/gridmet_clean/pet_clean.tif*/ddn/gs1/group/set/chords/combining_datasets/clean_data/gridmet_clean/pr_clean.tif*/ddn/gs1/group/set/chords/combining_datasets/clean_data/gridmet_clean/rmax_clean.tif*/ddn/gs1/group/set/chords/combining_datasets/clean_data/gridmet_clean/rmin_clean.tif*/ddn/gs1/group/set/chords/combining_datasets/clean_data/gridmet_clean/sph_clean.tif*/ddn/gs1/group/set/chords/combining_datasets/clean_data/gridmet_clean/srad_clean.tif*/ddn/gs1/group/set/chords/combining_datasets/clean_data/gridmet_clean/th_clean.tif*/ddn/gs1/group/set/chords/combining_datasets/clean_data/gridmet_clean/tmmn_clean.tif*/ddn/gs1/group/set/chords/combining_datasets/clean_data/gridmet_clean/tmmx_clean.tif*/ddn/gs1/group/set/chords/combining_datasets/clean_data/gridmet_clean/vs_clean.tif*/ddn/gs1/group/set/chords/combining_datasets/clean_data/gridmet_clean/gridmet_log.csv|t20315.0068635137s|s51829105386b|51829105386|file|local|vector|||18062.732||
@@ -5329,71 +5327,20 @@ terraclimate_files|stem|9bd0c21f9391f15e|c3c5bd325070eea3|ea85df736bdd2f35|11791
 modis_clean_log|stem|428e8010c23b4715|3629375ba2be2f8a|19548086a85b85fc|1912511101||t20321.2121707314s|s245458b|245458|rds|local|vector|||219715.36||
 tracts_500k|stem|f144ef920b121852|8123c13354b6423a|09e27f1ae84bd1b5|665008022||t20321.2122502849s|s56211601b|56211601|rds|local|vector|||3.398||
 counties_500k|stem|9e9b735907ac158e|e539e5d45ea66751|09e27f1ae84bd1b5|331240446||t20321.2122692951s|s11865183b|11865183|rds|local|vector|||0.915||
-load_modis|function|2be00bfbd54aa3cf
-clean_prism_normals|function|ce723992a67fd6c5
-summarize_terraclimate|function|9eae17a63c85b841
-load_koppen_geiger|function|2aa6658a861f09be
-.unary_union|function|7e230da5a8fa0b1c
-load_groads|function|c38448056242f103
-road_density_zonal|function|26dcf0c6a788ab58
 zonal_means_from_tifs|function|3d801faf96e3e746
-clean_hms|function|fb520883ae782c37
-.Random.seed|object|c6b13a46e402a2ef
-clean_tri|function|ed7b60032203f8c7
-LAYER|object|ef70d45841dee03c
-clean_gmted|function|4fe39fa4bd346e1c
-build_modis_clean|function|fcfad9c6f3f5570f
-build_exposure_wide_layers|function|099d8f16cff82798
-load_gridmet|function|fd4738856cbe44a0
-static_zonal_summary|function|b6b9e305c9d02228
-load_gmted|function|17f8af240d43d675
-clean_koppen_geiger|function|50100e39946163d5
-summarise_tri_air_totals|function|88b99e09a11a9b74
-YEARS|object|f3b00d3fc636351b
-load_huc|function|fe229827d598500e
-summarize_modis|function|5168dc078a073e05
-prism_normals_from_tifs|function|0d479b73090f05aa
-koppen_geiger_summary|function|ba41492572a27365
-clean_nlcd|function|fabfdca02b66a8c0
-clean_merra2|function|bb8f3598f551a6c3
-merra2_summary|function|b083335ed24baf47
-build_exposure_long|function|b560ccc089108284
-load_terraclimate|function|c42f46d1c776868d
-clean_huc_layers|function|4c612a67d640af5f
-zip_handoffs|function|2bd2b684be9df62e
-clean_gridmet|function|ab6d65b0e1f9648e
-clean_terraclimate|function|cdc1ed6fd04eb2fa
-load_nlcd|function|37d1831e9d26ed53
-load_tri|function|54c69f67fa83c7c4
-MONTHS|object|742bd2b6c65a9221
-CENSUS_GPKG|object|d890d05a34fdb624
-load_merra2|function|0645e19b77292d02
-load_hms|function|a4727ee0426881e7
-gridmet_zonal|function|4e9d8a04a79f0cc4
-clean_groads|function|b9f90c05e84e54ab
-build_canonical_census|function|a7345914e49f123e
-download_and_unzip_prism|function|17b6ec95dd23c257
-hms_fire_exposure|function|52ef5297886965f6
-huc_coverage_long|function|5cf7dd4f61547c84
 nlcd_county_annual|stem||36e8c0e6ddb85555|3b5ee6c0f607f028|-5902797||t20321.7676537264s||0|rds|local|vector|||9536.003||ℹ In index: 15. Caused by error in `map2()`: ! Can't recycle `.x` (size 2) to match `.y` (size 3144).
-tract_monthly_long|stem|bb7404e0dad53ade|c4ef0097081084c1|1a21ac66f89b5d67|1644524110||t20321.7783860258s|s1477822329b|1477822329|rds|local|vector|||476.641||
 tri_tract_annual|stem|29aa90baf79bd0a0|00e474ca29580816|3070fe78e28df9f8|-1544037724||t20321.7982603463s|s10206437b|10206437|rds|local|vector|||1715.314||
-county_annual_long|stem|0fc53da3e6bf5a80|baab3aa99883b0a5|1a21ac66f89b5d67|2096445754||t20321.7983874737s|s19686679b|19686679|rds|local|vector|||7.465||
 gridmet_county_monthly|stem|fadccca422bcd5f4|da3847add6b35cff|43fc46cb2aa7453b|1849957714||t20321.8100060348s|s25742313b|25742313|rds|local|vector|||997.304||
 gridmet_tract_monthly|stem|9e12898a8f5544fa|bae22a02705f4542|73a8aa68c55dd0e1|2090004126||t20321.826144182s|s669432034b|669432034|rds|local|vector|||1223.582||
 merra2_county_annual|stem|820c6605bfe5eab5|16c69daf4db9e283|3424c45210805674|1384126845||t20321.9575295071s|s5294502b|5294502|rds|local|vector|||11350.323||
-county_monthly_long|stem|294f80651d12eb77|3f4070d5df219382|1a21ac66f89b5d67|-1520461929||t20321.958753538s|s167259957b|167259957|rds|local|vector|||63.197||
 canonical_gpkg|stem|bc95a50a66b0b036|2a6d11e26de0cfed|89a7b9263b9571b5|1482647820|/project/clean_data/county_census/canonical_2024.gpkg|t20321.9593400882s|s123895808b|123895808|file|local|vector|||50.476||
 hms_county_annual|stem|ea135c2c42410f61|1e8912009e175049|d67206ef7da0d945|157026536||t20321.9855423471s|s930641b|930641|rds|local|vector|||2263.761|x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.|
 prism_county_monthly_normals|stem|6e5e50d590cae6ac|7e26e2cb9d0e773a|f2746b5857c71eae|-1777053440||t20321.9892019866s|s1939383b|1939383|rds|local|vector|||315.681||
 hms_tract_monthly|stem|828b3830fdfdff40|7f67a31f3ff3c3e6|d67206ef7da0d945|1433436094||t20322.176743998s|s53049268b|53049268|rds|local|vector|||16189.19|x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.|
-terraclimate_tract_monthly|stem||f108686944ef20f3|7c513c50206b31da|14809793||t20322.1850711413s||0|file|local|vector|||||_build_ target terraclimate_tract_monthly did not return a character. File targets (targets with format = 'file') must return character vectors of file or directory paths.
 modis_county_monthly|stem|55ddc4a7f849ae4a|9b8b2f0e3e7eb50d|18d11ccc6caaad78|161019283||t20322.6881159892s|s33852775b|33852775|qs|local|vector|||43461.963||
-huc_county_summary|stem||e434a17e439db5aa|b737c7fdd3502b0e|-1436481946||t20322.6881166917s||0|rds|local|vector|||0.002||could not find function 'huc_overlap_summary'
 gridmet_tract_annual|stem|37023e4412bd8d75|89639056738b2d38|73a8aa68c55dd0e1|-1695356183||t20322.7008706539s|s58966829b|58966829|rds|local|vector|||1087.037||
 modis_tract_monthly|stem|81fa3ace0957e314|bc25aa436a0cfefa|18d11ccc6caaad78|1663817780||t20324.1849626448s|s897836480b|897836480|qs|local|vector|||128205.013||
 tri_county_annual|stem|501f0af952871da2|ea625bc843f5e01f|3070fe78e28df9f8|909015075||t20324.189921846s|s2592307b|2592307|rds|local|vector|||427.899||
-tract_annual_long|stem|1004d5de5b0b8801|7bd9d30e01a835ff|1a21ac66f89b5d67|-486783842||t20324.1929690589s|s550526246b|550526246|rds|local|vector|||150.864||
 groads_county_long|stem|e334562d6737ec62|a53bd7b71ea204b4|88f3ab11b06a5e73|-1822592868||t20324.1935093539s|s81803b|81803|rds|local|vector|||46.458||
 gridmet_county_annual|stem|4edd66010ad433ff|5f4afec813dfcf55|43fc46cb2aa7453b|1925101335||t20324.2046100327s|s2169802b|2169802|rds|local|vector|||958.535||
 nlcd_county_monthly|stem||be9b8f1c852d6dd8|3b5ee6c0f607f028|-1089619275||t20324.4227171678s||0|rds|local|vector|||18844.429||ℹ In index: 29. Caused by error in `map2()`: ! Can't recycle `.x` (size 2) to match `.y` (size 3144).
@@ -5456,3 +5403,57 @@ modis|stem|bc2460ccb403257e|5e51e620f99821c4|3e8c1ba6a1ba595e|-1526643308||t2031
 county_monthly_long|stem|4d693b7d68d29fff|3f4070d5df219382|e54fb7b3b1b4e7e1|-1520461929||t20326.6099489045s|s172596459b|172596459|rds|local|vector|||58.45||
 tri_files|stem|f3937d6eca7b10fa|ff3d8d0c9d47a0cf|f9c90a5f158ea194|-689180442|/project/clean_data/tri_clean/tri_log.csv|t20326.6145121454s|s787b|787|file|local|vector|||394.187|Failed year 2010: j mixes positives and negatives.   Failed year 2011: j mixes positives and negatives.   Failed year 2012: j mixes positives and negatives.   Failed year 2013: j mixes positives and negatives.   Failed year 2014: j mixes positives and negatives.   Failed year 2015: j mixes positives and negatives.   Failed year 2016: j mixes positives and negatives.   Failed year 2017: j mixes positives and negatives.   Failed year 2018: j mixes positives and negatives.   Failed year 2019: j mixes positives and negatives.   Failed year 2020: j mixes positives and negatives.   Failed year 2021: j mixes positives and negatives.   Failed year 2022: j mixes positives and negatives.   Failed year 2023: j mixes positives and negatives.   Failed year 2024: j mixes positives and negatives|
 terraclimate_tract_monthly|stem||f108686944ef20f3|7c513c50206b31da|14809793||t20322.1850711413s||0|file|local|vector|||||_build_ target terraclimate_tract_monthly did not return a character. File targets (targets with format = 'file') must return character vectors of file or directory paths.
+county_nlcd_monthly|stem|ebdca1429e19e475|3078de55990aa755|33a0850186162032|2044000281||t20327.3541711593s|s6970320b|6970320|rds|local|vector|||63181.905||
+huc_county_summary|stem||e434a17e439db5aa|b737c7fdd3502b0e|-1436481946||t20322.6881166917s||0|rds|local|vector|||0.003||could not find function 'huc_overlap_summary'
+tract_annual_long|stem|5e9e5db3666bad66|7bd9d30e01a835ff|e54fb7b3b1b4e7e1|-486783842||t20327.3566738806s|s543941577b|543941577|rds|local|vector|||119.75||
+load_modis|function|ea594941c43211e5
+clean_prism_normals|function|ce723992a67fd6c5
+summarize_terraclimate|function|0d083efc5a33199d
+load_koppen_geiger|function|2aa6658a861f09be
+.unary_union|function|7e230da5a8fa0b1c
+load_groads|function|c38448056242f103
+road_density_zonal|function|7e8a62fb88ec4be5
+summarize_nlcd|function|3cfd84da435b6168
+clean_hms|function|fb520883ae782c37
+.Random.seed|object|60d86a33e837f369
+clean_tri|function|4c600b0915eb2990
+LAYER|object|ef70d45841dee03c
+clean_gmted|function|4fe39fa4bd346e1c
+build_modis_clean|function|fcfad9c6f3f5570f
+load_gridmet|function|fd4738856cbe44a0
+static_zonal_summary|function|b6b9e305c9d02228
+load_gmted|function|17f8af240d43d675
+build_exposure_long_streamed|function|8484c224fb8612a5
+clean_koppen_geiger|function|50100e39946163d5
+summarise_tri_air_totals|function|88b99e09a11a9b74
+YEARS|object|f3b00d3fc636351b
+load_huc|function|fe229827d598500e
+summarize_modis|function|be5ce1ec2d4d295d
+prism_normals_from_tifs|function|0d479b73090f05aa
+koppen_geiger_summary|function|7fc1d838bb0e6888
+clean_nlcd|function|fabfdca02b66a8c0
+clean_merra2|function|bb8f3598f551a6c3
+merra2_summary|function|b083335ed24baf47
+load_terraclimate|function|c42f46d1c776868d
+clean_huc_layers|function|4c612a67d640af5f
+zip_handoffs|function|15c39c0369b05f56
+clean_gridmet|function|ab6d65b0e1f9648e
+clean_terraclimate|function|cdc1ed6fd04eb2fa
+load_nlcd|function|37d1831e9d26ed53
+load_tri|function|54c69f67fa83c7c4
+MONTHS|object|742bd2b6c65a9221
+CENSUS_GPKG|object|d890d05a34fdb624
+load_merra2|function|0645e19b77292d02
+build_exposure_wide_layers_from_dataset|function|46e8881a2fdd167e
+load_hms|function|a4727ee0426881e7
+gridmet_zonal|function|4e9d8a04a79f0cc4
+clean_groads|function|b9f90c05e84e54ab
+build_canonical_census|function|a7345914e49f123e
+download_and_unzip_prism|function|17b6ec95dd23c257
+hms_fire_exposure|function|52ef5297886965f6
+huc_coverage_long|function|97692665086fedf9
+tract_monthly_long|stem|ddcab3854bb34c94|c4ef0097081084c1|2c530c1562a7fbd1|1644524110||t20325.860493336s||4401513730|rds|local|vector|||0.012||could not find function 'build_exposure_long'
+county_annual_long|stem|40e1e1a6e0c17bdc|baab3aa99883b0a5|2c530c1562a7fbd1|2096445754||t20325.8606190786s||24022810|rds|local|vector|||0.003||could not find function 'build_exposure_long'
+modis|stem|bc2460ccb403257e|5e51e620f99821c4|3e8c1ba6a1ba595e|-1526643308||t20311.7994033032s||1001271|rds|local|vector|||0.071||argument 4 is empty
+county_monthly_long|stem|4d693b7d68d29fff|3f4070d5df219382|2c530c1562a7fbd1|-1520461929||t20326.6099489045s||172596459|rds|local|vector|||0.003||could not find function 'build_exposure_long'
+terraclimate_tract_monthly|stem||f108686944ef20f3|2f8748f73eaebee7|14809793||t20322.1850711413s||0|file|local|vector|||||_build_ target terraclimate_tract_monthly did not return a character. File targets (targets with format = 'file') must return character vectors of file or directory paths.

@@ -77,24 +77,22 @@ prism_normals_from_tifs <- function(
             df
         }
     ) |>
-        mutate(level = level) |>
-        relocate(!!sym(id_col), level, variable, month, value)
+        mutate(level = level)
 
     # --- Aggregate/shape ---
     out <-
         if (agg == "monthly") {
             normals_long |>
-                arrange(!!sym(id_col), variable, month)
+                arrange(!!sym(id_col), variable, month) |>
+                select(!!sym(id_col), level, variable, month, value)
         } else {
-            # annual = mean over months 1..12
             normals_long |>
                 group_by(!!sym(id_col), level, variable) |>
                 summarise(
                     value = mean(value, na.rm = TRUE),
                     .groups = "drop"
                 ) |>
-                mutate(year = NA_integer_, month = NA_integer_) |>
-                relocate(!!sym(id_col), level, variable, year, month, value)
+                select(!!sym(id_col), level, variable, value)
         }
 
     if (!is.null(write_csv)) {

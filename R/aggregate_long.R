@@ -2,21 +2,18 @@ build_exposure_long_streamed <- function(
     agg = c("annual", "monthly"),
     level = c("county", "tract"),
     input_dir = "summary_sets",
-    dataset_dir = NULL # on-disk Arrow dataset (partitioned)
+    handoff_dir = "handoffs"
 ) {
     agg <- match.arg(agg)
     level <- match.arg(level)
 
-    if (is.null(dataset_dir)) {
-        dataset_dir <- file.path(
-            "handoffs",
-            "long_dataset",
-            paste0(agg, "_", level)
-        )
-    }
-    dir.create(dataset_dir, recursive = TRUE, showWarnings = FALSE)
+    # --- Set up directories ---
+    long_dir <- file.path(handoff_dir, paste0(level, "_", agg, "_long"))
+    wide_dir <- file.path(handoff_dir, paste0(level, "_", agg, "_wide"))
+    dir.create(long_dir, recursive = TRUE, showWarnings = FALSE)
+    dir.create(wide_dir, recursive = TRUE, showWarnings = FALSE)
 
-    # Files to include (always include normals + statics)
+    # --- File matching (always include normals + statics) ---
     pattern <- sprintf(
         "^(%s_%s|normal_%s|static_%s).*\\.csv$",
         agg,
@@ -38,40 +35,39 @@ build_exposure_long_streamed <- function(
         library(dplyr)
         library(stringr)
         library(arrow)
+        library(tidyr)
     })
 
+    # --- Normalization helper ---
     normalize_one <- function(file, is_monthly) {
         df <- readr::read_csv(file, show_col_types = FALSE)
-        nm <- names(df)
-        ln <- tolower(nm)
-        names(df) <- ln
+        names(df) <- tolower(names(df))
 
-        # Standardize names where possible
-        if ("var" %in% ln && !("variable" %in% ln)) {
-            df <- dplyr::rename(df, variable = "var")
+        # variable
+        if ("var" %in% names(df)) {
+            df <- rename(df, variable = var)
         }
-        if (!("variable" %in% names(df))) {
+
+        if (!"variable" %in% names(df)) {
             stop("Missing 'variable' column in ", basename(file))
         }
 
-        # value column (pick the first present)
+        # value
         candidates <- c("value", "annual_mean", "mean", "val")
         have <- candidates[candidates %in% names(df)]
         if (length(have) == 0) {
-            stop("Missing a value column in ", basename(file))
+            stop("Missing value column in ", basename(file))
         }
-        if ("value" %in% have) {
-            # ok
-        } else {
-            df <- dplyr::rename(df, value = have[1])
+        if (have[1] != "value") {
+            df <- rename(df, value = !!have[1])
         }
 
         # geoid
-        if (!("geoid" %in% names(df))) {
+        if (!"geoid" %in% names(df)) {
             if ("geoid10" %in% names(df)) {
-                df <- dplyr::rename(df, geoid = "geoid10")
+                df <- rename(df, geoid = geoid10)
             } else if ("geoid_county" %in% names(df)) {
-                df <- dplyr::rename(df, geoid = "geoid_county")
+                df <- rename(df, geoid = geoid_county)
             } else {
                 stop("Missing geoid column in ", basename(file))
             }
@@ -80,30 +76,28 @@ build_exposure_long_streamed <- function(
         file_name <- basename(file)
 
         # year
-        if (!("year" %in% names(df))) {
-            df <- df %>%
-                mutate(
-                    year = dplyr::case_when(
-                        str_detect(file_name, "^normal_") ~ "normal",
-                        str_detect(file_name, "^static_") ~ "static",
-                        TRUE ~ NA_character_
-                    )
+        if (!"year" %in% names(df)) {
+            df <- mutate(
+                df,
+                year = case_when(
+                    str_detect(file_name, "^normal_") ~ "normal",
+                    str_detect(file_name, "^static_") ~ "static",
+                    TRUE ~ NA_character_
                 )
+            )
         } else {
             df$year <- as.character(df$year)
         }
 
-        # month for monthly agg
+        # month
         if (is_monthly) {
-            if (!("month" %in% names(df))) {
+            if (!"month" %in% names(df)) {
                 df$month <- NA_integer_
             } else {
                 df$month <- suppressWarnings(as.integer(df$month))
             }
         } else {
-            if ("month" %in% names(df)) {
-                df$month <- NULL
-            }
+            if ("month" %in% names(df)) df$month <- NULL
         }
 
         df %>%
@@ -111,32 +105,78 @@ build_exposure_long_streamed <- function(
                 variable = variable %>%
                     tolower() %>%
                     str_remove("_\\d{4}$") %>%
-                    str_remove("_clean$")
+                    str_remove("_clean$"),
+                value = if_else(
+                    str_starts(variable, "land_cover_") & is.na(value),
+                    0,
+                    value
+                )
             ) %>%
-            select(geoid, variable, value, dplyr::any_of("month"), year)
+            select(geoid, variable, value, any_of("month"), year)
     }
 
     is_monthly <- identical(agg, "monthly")
 
-    # Stream: write each file into a partitioned Arrow dataset
-    for (f in csv_files) {
-        chunk <- normalize_one(f, is_monthly)
-        # Ensure types are consistent
-        chunk$geoid <- as.character(chunk$geoid)
-        chunk$variable <- as.character(chunk$variable)
-        chunk$year <- as.character(chunk$year)
-        if (is_monthly && "month" %in% names(chunk)) {
-            chunk$month <- as.integer(chunk$month)
-        }
+    # --- Collect all normalized chunks ---
+    all_data <- purrr::map_dfr(
+        csv_files,
+        normalize_one,
+        is_monthly = is_monthly
+    )
 
-        arrow::write_dataset(
-            chunk,
-            path = dataset_dir,
-            format = "parquet",
-            partitioning = c(if (is_monthly) "month", "year"),
-            existing_data_behavior = "overwrite"
-        )
+    # --- Write long outputs ---
+    long_csv <- file.path(long_dir, paste0(level, "_", agg, ".csv"))
+    long_parq <- file.path(long_dir, paste0(level, "_", agg, ".parquet"))
+
+    readr::write_csv(all_data, long_csv)
+    arrow::write_parquet(all_data, long_parq)
+
+    # --- Write wide outputs ---
+    if (is_monthly) {
+        # One file per year-month, plus normals & statics
+        all_data %>%
+            mutate(year = as.character(year)) %>%
+            group_split(year, month) %>%
+            purrr::walk(function(chunk) {
+                y <- unique(chunk$year)
+                m <- unique(chunk$month)
+                if (length(y) != 1 || length(m) != 1) {
+                    stop("Unexpected grouping")
+                }
+
+                if (y == "normal") {
+                    fn <- file.path(wide_dir, paste0(level, "_normal.csv"))
+                } else if (y == "static") {
+                    fn <- file.path(wide_dir, paste0(level, "_static.csv"))
+                } else {
+                    fn <- file.path(
+                        wide_dir,
+                        sprintf("%s_%s_%02d.csv", level, y, m)
+                    )
+                }
+                readr::write_csv(chunk, fn)
+            })
+    } else {
+        # Annual: one file per year, plus normals & statics
+        all_data %>%
+            mutate(year = as.character(year)) %>%
+            group_split(year) %>%
+            purrr::walk(function(chunk) {
+                y <- unique(chunk$year)
+                if (length(y) != 1) {
+                    stop("Unexpected grouping")
+                }
+
+                if (y == "normal") {
+                    fn <- file.path(wide_dir, paste0(level, "_normal.csv"))
+                } else if (y == "static") {
+                    fn <- file.path(wide_dir, paste0(level, "_static.csv"))
+                } else {
+                    fn <- file.path(wide_dir, sprintf("%s_%s.csv", level, y))
+                }
+                readr::write_csv(chunk, fn)
+            })
     }
 
-    dataset_dir
+    list(long_csv = long_csv, long_parquet = long_parq, wide_dir = wide_dir)
 }

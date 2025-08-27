@@ -28,10 +28,9 @@ road_density_zonal <- function(
         dplyr::select(!!id_col)
 
     roads <- sf::st_read(roads_gpkg, quiet = TRUE) |>
-        sf::st_make_valid() |>
-        dplyr::select(LENGTH_KM)
+        sf::st_make_valid()
 
-    # --- Project to equal-area CRS (meters) ---
+    # --- Project to equal-area CRS (EPSG:5070, meters) ---
     crs_m <- 5070
     zones_m <- sf::st_transform(zones, crs_m)
     roads_m <- sf::st_transform(roads, crs_m)
@@ -43,25 +42,27 @@ road_density_zonal <- function(
         sf::st_drop_geometry() |>
         dplyr::select(!!id_col, area_km2)
 
-    # --- Assign roads to intersecting zones ---
-    roads_in_zones <- sf::st_join(
+    # --- Clip roads to zones and calculate lengths ---
+    roads_split <- sf::st_intersection(
         roads_m,
-        zones_m |> dplyr::select(!!id_col),
-        join = sf::st_intersects,
-        left = FALSE
+        zones_m |> dplyr::select(!!id_col)
     )
 
-    # --- Summarize and reshape ---
-    summary_wide <- roads_in_zones |>
+    roads_split <- roads_split |>
+        dplyr::mutate(road_km = as.numeric(sf::st_length(roads_split)) / 1000)
+
+    # --- Summarise per zone ---
+    summary_wide <- roads_split |>
         sf::st_drop_geometry() |>
         dplyr::group_by(.data[[id_col]]) |>
         dplyr::summarise(
-            total_road_km = sum(LENGTH_KM, na.rm = TRUE),
+            total_road_km = sum(road_km, na.rm = TRUE),
             .groups = "drop"
         ) |>
         dplyr::left_join(area_tbl, by = id_col) |>
         dplyr::mutate(road_density_km_per_km2 = total_road_km / area_km2)
 
+    # --- Long format for consistency ---
     summary_long <- summary_wide |>
         tidyr::pivot_longer(
             cols = c(total_road_km, area_km2, road_density_km_per_km2),

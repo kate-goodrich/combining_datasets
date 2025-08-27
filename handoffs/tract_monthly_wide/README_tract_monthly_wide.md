@@ -59,12 +59,14 @@ This file was generated using data from:
 
 - All datasets were downloaded and processed using `amadeus` in R. 
 - Tract and county geometries are from `canonical_2024.gpkg`.
-- Area-weighted means were calculated using `exactextractr` in R, applied to county and tract geometries.s
+- Area-weighted means were calculated using `exactextractr` in R, applied to county and tract geometries.
 - Coverage: 2010–2024 for all dynamic datasets, except merra2 (2010 excluded due to metadata inconsistencies), and nlcd (2024 not yet available).
-- MODIS scale factors (e.g., reflectance ×0.0001, EVI ×0.0001) were applied prior to aggregation
+- MODIS scale factors (e.g., reflectance ×0.0001, EVI ×0.0001) were applied prior to aggregation.
 - TRI point source emissions were summed by tract; additional per-area and +4 km buffer summaries included.
 - PRISM normals represent 1991–2020 climatological averages (static).
-- NCD and TRI data are taken at the annual level but repeated monthly for harmonization with other datasets
+- NCD and TRI data are taken at the annual level but repeated monthly for harmonization with other datasets.
+- Geographic coverage spans the 48 contiguous U.S. states. Alaska and Hawaii are excluded from gridMET, NLCD, PRISM, and MODIS here.
+
  
 
 ## Covariate Descriptions
@@ -91,7 +93,7 @@ This file was generated using data from:
 | evap                           | merra2        | dynamic | Evaporation from turbulence                           | kg m⁻² s⁻¹     |
 | grn                            | merra2        | dynamic | Greenness index (fraction of green vegetation)        | proportion     |
 | gwetroot                       | merra2        | dynamic | Root zone soil wetness                                | proportion     |
-| lai                            | merra2        | dynamic | Leaf area index                                       | proportion     |
+| lai                            | merra2        | dynamic | Leaf area index                                       | dimensionless  |
 | lwgab                          | merra2        | dynamic | Surface absorbed longwave radiation                   | W m⁻²          |
 | pblh                           | merra2        | dynamic | Planetary boundary layer height                       | m              |
 | precsno                        | merra2        | dynamic | Snowfall precipitation                                | kg m⁻² s⁻¹     |
@@ -107,9 +109,9 @@ This file was generated using data from:
 | aet                            | terraclimate  | dynamic | Actual evapotranspiration                             | mm/month       |
 | def                            | terraclimate  | dynamic | Climatic water deficit                                | mm/month       |
 | pdsi                           | terraclimate  | dynamic | Palmer drought severity index                         | index          |
-| ppt                            | terraclimate  | dynamic | Precipitation                                         | mm             |
-| soil                           | terraclimate  | dynamic | Soil moisture                                         | mm             |
-| swe                            | terraclimate  | dynamic | Snow water equivalent                                 | mm             |
+| ppt                            | terraclimate  | dynamic | Precipitation                                         | mm/month       |
+| soil                           | terraclimate  | dynamic | Soil moisture                                         | mm/month       |
+| swe                            | terraclimate  | dynamic | Snow water equivalent                                 | mm/month       |
 | tmax                           | terraclimate  | dynamic | Maximum temperature                                   | °C             |
 | tmin                           | terraclimate  | dynamic | Minimum temperature                                   | °C             |
 | vap                            | terraclimate  | dynamic | Vapor pressure                                        | kPa            |
@@ -125,9 +127,9 @@ This file was generated using data from:
 | total_stack_air_lb             | tri           | dynamic | Stack (point-source) air emissions                    | lb             |
 | total_stack_air_lb_per_km2     | tri           | dynamic | Stack emissions per area                              | lb/km²         |
 | total_stack_air_lb_plus4km     | tri           | dynamic | Stack emissions plus 4 km buffer                      | lb             |
-| solclear                       | prism         | normal  | Solar radiation under clear sky                       | W/m²           |
-| solslope                       | prism         | normal  | Solar shortwave radiation sloped surface              | W/m²           |
-| soltotal                       | prism         | normal  | Solar shortwave radiation horizontal surface          | W/m²           |
+| solclear                       | prism         | normal  | Solar radiation under clear sky                       | MJ/m²/day      |
+| solslope                       | prism         | normal  | Solar shortwave radiation sloped surface              | MJ/m²/day      |
+| soltotal                       | prism         | normal  | Solar shortwave radiation horizontal surface          | MJ/m²/day      |
 | soltrans                       | prism         | normal  | Atmospheric transmittance                             | fraction       |
 | tdmean                         | prism         | normal  | Mean daily dew point temperature                      | °C             |
 | tmean                          | prism         | normal  | Mean temperature                                      | °C             |
@@ -143,13 +145,6 @@ This file was generated using data from:
 | area_km2                       | boundaries    | static  | Area of county or census tract                        | km²            |
 | road_density_km_per_km2        | groads        | static  | Road density                                          | km/km²         |
 | total_road_km                  | groads        | static  | Total length of roads                                 | km             |
-| num_features_burnaddwaterbody  | huc           | static  | Count of BurnAdd waterbody features intersecting zone | count          |
-| num_features_catchment         | huc           | static  | Count of catchment features                           | count          |
-| num_features_catchmentsp       | huc           | static  | Count of catchment (small polygon) features           | count          |
-| num_features_huc12             | huc           | static  | Count of HUC12 watershed features                     | count          |
-| num_features_landsea           | huc           | static  | Count of land-sea boundary features                   | count          |
-| num_features_nhdarea           | huc           | static  | Count of NHD area features                            | count          |
-| num_features_nhdwaterbody      | huc           | static  | Count of NHD waterbody features                       | count          |
 | prop_cover_burnaddwaterbody    | huc           | static  | Proportion of zone covered by BurnAdd waterbody       | proportion     |
 | prop_cover_catchment           | huc           | static  | Proportion of zone covered by catchment               | proportion     |
 | prop_cover_catchmentsp         | huc           | static  | Proportion of zone covered by small catchments        | proportion     |

@@ -722,84 +722,50 @@ list(
     # AGGREGATE
     # ======================
 
-    # 1) Long-form builders (produce CSV + Parquet AND return tibble)
+    # County - Annual
     tar_target(
-        county_annual_long,
-        build_exposure_long(
+        county_annual,
+        build_exposure_long_streamed(
             agg = "annual",
             level = "county",
-            write_csv = "handoffs/county_annual_long/county_annual.csv",
-            write_parquet = "handoffs/county_annual_long/county_annual.parquet"
-        )
-    ),
-    tar_target(
-        county_monthly_long,
-        build_exposure_long(
-            agg = "monthly",
-            level = "county",
-            write_csv = "handoffs/county_monthly_long/county_monthly.csv",
-            write_parquet = "handoffs/county_monthly_long/county_monthly.parquet"
-        )
+            input_dir = "summary_sets",
+            handoff_dir = "handoffs"
+        ),
+        format = "file" # output is files on disk
     ),
 
-    # 2) Wide-layer exporters (return file paths, so mark as files)
+    # County - Monthly
     tar_target(
-        county_annual_layers,
-        build_exposure_wide_layers(
-            data = county_annual_long,
-            agg = "annual",
-            level = "county",
-            output_dir = "handoffs/county_annual_wide"
-        ),
-        format = "file"
-    ),
-    tar_target(
-        county_monthly_layers,
-        build_exposure_wide_layers(
-            data = county_monthly_long,
+        county_monthly,
+        build_exposure_long_streamed(
             agg = "monthly",
             level = "county",
-            output_dir = "handoffs/county_monthly_wide"
+            input_dir = "summary_sets",
+            handoff_dir = "handoffs"
         ),
         format = "file"
     ),
 
-    # Repeat for tract
+    # Tract - Annual
     tar_target(
-        tract_annual_long,
-        build_exposure_long(
+        tract_annual,
+        build_exposure_long_streamed(
             agg = "annual",
             level = "tract",
-            write_csv = "handoffs/tract_annual_long/tract_annual.csv",
-            write_parquet = "handoffs/tract_annual_long/tract_annual.parquet"
-        )
-    ),
-    tar_target(
-        tract_monthly_long,
-        build_exposure_long(
-            agg = "monthly",
-            level = "tract",
-            write_csv = "handoffs/tract_monthly_long/tract_monthly.csv",
-            write_parquet = "handoffs/tract_monthly_long/tract_monthly.parquet"
-        )
-    ),
-    tar_target(
-        tract_annual_layers,
-        build_exposure_wide_layers(
-            data = tract_annual_long,
-            agg = "annual",
-            level = "tract",
-            output_dir = "handoffs/tract_annual_wide"
+            input_dir = "summary_sets",
+            handoff_dir = "handoffs"
         ),
         format = "file"
     ),
+
+    # Tract - Monthly
     tar_target(
-        tract_monthly_layers,
-        build_exposure_wide_layers(
-            data = tract_monthly_long,
+        tract_monthly,
+        build_exposure_long_streamed(
             agg = "monthly",
             level = "tract",
-            output_dir = "handoffs/tract_monthly_wide"
+            input_dir = "summary_sets",
+            handoff_dir = "handoffs"
         ),
         format = "file"
     ),

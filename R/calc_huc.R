@@ -23,24 +23,28 @@ huc_coverage_long <- function(
         zone_layer <- if (level == "county") "counties_500k" else "tracts_500k"
     }
 
-    # Read and prepare zones
+    # Precision settings based on level
+    prec_val <- if (level == "county") 1e4 else 1e5
+
+    # ---- Read and prepare zones ----
     zones <- sf::st_read(zones_gpkg, layer = zone_layer, quiet = TRUE) |>
         sf::st_make_valid() |>
         dplyr::select(!!id_col) |>
-        sf::st_transform(5070) |>
-        sf::st_set_precision(1) |>
-        lwgeom::st_snap_to_grid(1)
+        sf::st_transform(5070)
 
     stopifnot(id_col %in% names(zones))
 
     zones_area_tbl <- zones |>
         dplyr::mutate(
-            zone_area_km2 = as.numeric(set_units(st_area(zones), km^2))
+            zone_area_km2 = as.numeric(units::set_units(
+                sf::st_area(zones),
+                km^2
+            ))
         ) |>
-        st_drop_geometry() |>
+        sf::st_drop_geometry() |>
         dplyr::select(!!id_col, zone_area_km2)
 
-    # List GPKG datasets
+    # ---- List GPKG datasets ----
     gpkg_files <- list.files(gpkg_dir, pattern = "\\.gpkg$", full.names = TRUE)
     if (!is.null(include_datasets)) {
         base_names <- tools::file_path_sans_ext(basename(gpkg_files))
@@ -52,35 +56,33 @@ huc_coverage_long <- function(
 
     # ---- Helper: dissolve messy polygon footprints ----
     dissolve_footprint <- function(g) {
-        g <- st_make_valid(g)
+        g <- sf::st_make_valid(g)
         poly_types <- c("POLYGON", "MULTIPOLYGON")
         g <- g[
-            st_geometry_type(g, by_geometry = TRUE) %in% poly_types,
+            sf::st_geometry_type(g, by_geometry = TRUE) %in% poly_types,
             ,
             drop = FALSE
         ]
 
         if (nrow(g) == 0L) {
-            return(st_sfc(st_polygon(), crs = st_crs(g)))
+            return(sf::st_sfc(sf::st_polygon(), crs = sf::st_crs(g)))
         }
 
-        g <- st_collection_extract(g, "POLYGON", warn = FALSE) |>
-            st_set_precision(1) |>
-            lwgeom::st_snap_to_grid(1) |>
-            st_make_valid()
+        g <- sf::st_collection_extract(g, "POLYGON", warn = FALSE) |>
+            sf::st_make_valid()
 
         u <- try(.unary_union(g), silent = TRUE)
         if (inherits(u, "try-error")) {
-            u <- try(.unary_union(st_buffer(g, 0)), silent = TRUE)
+            u <- try(.unary_union(sf::st_buffer(g, 0)), silent = TRUE)
         }
         if (inherits(u, "try-error")) {
-            g2 <- st_set_precision(g, 5) |>
-                lwgeom::st_snap_to_grid(5) |>
-                st_make_valid()
+            g2 <- sf::st_set_precision(g, prec_val) |>
+                lwgeom::st_snap_to_grid(prec_val) |>
+                sf::st_make_valid()
             u <- .unary_union(g2)
         }
 
-        st_cast(u, "MULTIPOLYGON", warn = FALSE)
+        sf::st_cast(u, "MULTIPOLYGON", warn = FALSE)
     }
 
     # ---- Helper: summarise one dataset ----
@@ -88,11 +90,10 @@ huc_coverage_long <- function(
         lyr_names <- sf::st_layers(gpkg_path)$name
         lyr <- if (length(lyr_names)) lyr_names[1] else NA_character_
         if (is.na(lyr)) {
-            return(tibble(
+            return(tibble::tibble(
                 !!id_col := character(0),
                 dataset = character(0),
-                prop_area = numeric(0),
-                n_features = integer(0)
+                prop_area = numeric(0)
             ))
         }
 
@@ -101,30 +102,23 @@ huc_coverage_long <- function(
 
         if (nrow(ds) == 0L) {
             return(
-                st_drop_geometry(zones_aea) |>
-                    mutate(
-                        dataset = dataset_name,
-                        prop_area = 0,
-                        n_features = 0
-                    ) |>
-                    select(!!id_col, dataset, prop_area, n_features)
+                sf::st_drop_geometry(zones_aea) |>
+                    dplyr::mutate(dataset = dataset_name, prop_area = 0) |>
+                    dplyr::select(!!id_col, dataset, prop_area)
             )
         }
 
-        ds <- ds |> st_make_valid() |> st_transform(st_crs(zones_aea))
-        geom_types <- unique(st_geometry_type(ds, by_geometry = TRUE))
+        ds <- ds |>
+            sf::st_make_valid() |>
+            sf::st_transform(sf::st_crs(zones_aea))
+        geom_types <- unique(sf::st_geometry_type(ds, by_geometry = TRUE))
         has_polys <- any(geom_types %in% c("POLYGON", "MULTIPOLYGON"))
-
-        idx <- st_intersects(zones_aea, ds, sparse = TRUE)
-        n_features_vec <- lengths(idx)
 
         if (has_polys) {
             ds_union <- dissolve_footprint(ds)
 
             inter <- try(
-                {
-                    st_intersection(zones_aea, st_buffer(ds_union, 0))
-                },
+                sf::st_intersection(zones_aea, ds_union),
                 silent = TRUE
             )
 
@@ -132,33 +126,32 @@ huc_coverage_long <- function(
                 if (!is.null(log_failed)) {
                     cat(dataset_name, "\n", file = log_failed, append = TRUE)
                 }
-                return(tibble(
-                    !!id_col := st_drop_geometry(zones_aea)[[id_col]],
+                return(tibble::tibble(
+                    !!id_col := sf::st_drop_geometry(zones_aea)[[id_col]],
                     dataset = dataset_name,
-                    prop_area = 0,
-                    n_features = n_features_vec
+                    prop_area = 0
                 ))
             }
 
-            inter_area <- as.numeric(set_units(st_area(inter), km^2))
+            inter_area <- as.numeric(units::set_units(sf::st_area(inter), km^2))
             prop_tbl <- inter |>
-                st_drop_geometry() |>
-                mutate(overlap_km2 = inter_area) |>
-                group_by(.data[[id_col]]) |>
-                summarise(
+                sf::st_drop_geometry() |>
+                dplyr::mutate(overlap_km2 = inter_area) |>
+                dplyr::group_by(.data[[id_col]]) |>
+                dplyr::summarise(
                     overlap_km2 = sum(overlap_km2, na.rm = TRUE),
                     .groups = "drop"
                 )
         } else {
-            prop_tbl <- tibble(
-                !!id_col := st_drop_geometry(zones_aea)[[id_col]],
+            prop_tbl <- tibble::tibble(
+                !!id_col := sf::st_drop_geometry(zones_aea)[[id_col]],
                 overlap_km2 = 0
             )
         }
 
         prop_tbl <- prop_tbl |>
-            right_join(zones_area_tbl, by = id_col) |>
-            mutate(
+            dplyr::right_join(zones_area_tbl, by = id_col) |>
+            dplyr::mutate(
                 overlap_km2 = if_else(is.na(overlap_km2), 0, overlap_km2),
                 prop_area = if_else(
                     zone_area_km2 > 0,
@@ -166,13 +159,12 @@ huc_coverage_long <- function(
                     NA_real_
                 )
             ) |>
-            select(!!id_col, prop_area)
+            dplyr::select(!!id_col, prop_area)
 
-        tibble(
-            !!id_col := st_drop_geometry(zones_aea)[[id_col]],
+        tibble::tibble(
+            !!id_col := sf::st_drop_geometry(zones_aea)[[id_col]],
             dataset = dataset_name,
-            prop_area = prop_tbl$prop_area,
-            n_features = n_features_vec
+            prop_area = prop_tbl$prop_area
         )
     }
 
@@ -183,30 +175,22 @@ huc_coverage_long <- function(
         zones_aea = zones
     )
     all_datasets <- sort(unique(metrics_wide$dataset))
-    all_zones <- st_drop_geometry(zones)[[id_col]]
+    all_zones <- sf::st_drop_geometry(zones)[[id_col]]
 
     metrics_complete <- tidyr::complete(
         metrics_wide,
         !!rlang::sym(id_col) := all_zones,
         dataset = all_datasets,
-        fill = list(prop_area = 0, n_features = 0)
+        fill = list(prop_area = 0)
     )
 
     long_out <- metrics_complete |>
-        tidyr::pivot_longer(
-            cols = c(prop_area, n_features),
-            names_to = "metric",
-            values_to = "value"
+        dplyr::mutate(
+            var = paste0("prop_cover_", dataset),
+            value = prop_area
         ) |>
-        mutate(
-            var = case_when(
-                metric == "prop_area" ~ paste0("prop_cover_", dataset),
-                metric == "n_features" ~ paste0("num_features_", dataset),
-                TRUE ~ paste0(metric, "_", dataset)
-            )
-        ) |>
-        select(!!id_col, var, value) |>
-        arrange(.data[[id_col]], var)
+        dplyr::select(!!id_col, var, value) |>
+        dplyr::arrange(.data[[id_col]], var)
 
     if (!is.null(write_csv)) {
         readr::write_csv(long_out, write_csv)
