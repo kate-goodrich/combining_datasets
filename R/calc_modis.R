@@ -152,7 +152,7 @@ summarize_modis <- function(
         1e-4,
         "clean_data/modis_clean/MOD09A1/sur_refl_b07",
         "sur_refl_b07",
-        1.0,
+        1e-4,
         "clean_data/modis_clean/MOD11A2/LST_Day_1km",
         "LST_Day_1km_K",
         0.02,

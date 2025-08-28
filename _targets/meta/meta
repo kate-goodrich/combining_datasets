@@ -5337,7 +5337,6 @@ canonical_gpkg|stem|bc95a50a66b0b036|2a6d11e26de0cfed|89a7b9263b9571b5|148264782
 hms_county_annual|stem|ea135c2c42410f61|1e8912009e175049|d67206ef7da0d945|157026536||t20321.9855423471s|s930641b|930641|rds|local|vector|||2263.761|x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.|
 prism_county_monthly_normals|stem|6e5e50d590cae6ac|7e26e2cb9d0e773a|f2746b5857c71eae|-1777053440||t20321.9892019866s|s1939383b|1939383|rds|local|vector|||315.681||
 hms_tract_monthly|stem|828b3830fdfdff40|7f67a31f3ff3c3e6|d67206ef7da0d945|1433436094||t20322.176743998s|s53049268b|53049268|rds|local|vector|||16189.19|x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.. x is already of type POLYGON.|
-modis_county_monthly|stem|55ddc4a7f849ae4a|9b8b2f0e3e7eb50d|18d11ccc6caaad78|161019283||t20322.6881159892s|s33852775b|33852775|qs|local|vector|||43461.963||
 gridmet_tract_annual|stem|37023e4412bd8d75|89639056738b2d38|73a8aa68c55dd0e1|-1695356183||t20322.7008706539s|s58966829b|58966829|rds|local|vector|||1087.037||
 modis_tract_monthly|stem|81fa3ace0957e314|bc25aa436a0cfefa|18d11ccc6caaad78|1663817780||t20324.1849626448s|s897836480b|897836480|qs|local|vector|||128205.013||
 tri_county_annual|stem|501f0af952871da2|ea625bc843f5e01f|3070fe78e28df9f8|909015075||t20324.189921846s|s2592307b|2592307|rds|local|vector|||427.899||
@@ -5350,62 +5349,19 @@ hms_county_monthly|stem|750ad8f5b74e8377|293a74c4c3511584|d67206ef7da0d945|-1264
 modis_county_annual|stem|daa2a514f5a4d3d7|862751267c15df4a|18d11ccc6caaad78|-119029672||t20325.1941553909s|s3692352b|3692352|qs|local|vector|||44016.093||
 koppen_tract_long|stem|4a1372437e31cd53|00ed005a8af219cc|6d865ac9b23e2150|1434744204||t20325.1962958254s|s532336b|532336|rds|local|vector|||184.775||
 prism_tract_monthly_normals|stem|c510f50b883deecd|4c8cfab28fb985c2|f2746b5857c71eae|1530692917||t20325.2200608183s|s51665056b|51665056|rds|local|vector|||2040.107||
-load_modis|function|ea594941c43211e5
-clean_prism_normals|function|ce723992a67fd6c5
-summarize_terraclimate|function|9eae17a63c85b841
-load_koppen_geiger|function|2aa6658a861f09be
-.unary_union|function|7e230da5a8fa0b1c
-load_groads|function|c38448056242f103
-road_density_zonal|function|26dcf0c6a788ab58
-summarize_nlcd|function|3cfd84da435b6168
-clean_hms|function|fb520883ae782c37
-.Random.seed|object|3f95e5a62855d058
-clean_tri|function|4c600b0915eb2990
-LAYER|object|ef70d45841dee03c
-clean_gmted|function|4fe39fa4bd346e1c
-build_modis_clean|function|fcfad9c6f3f5570f
 build_exposure_wide_layers|function|099d8f16cff82798
-load_gridmet|function|fd4738856cbe44a0
-static_zonal_summary|function|b6b9e305c9d02228
-load_gmted|function|17f8af240d43d675
-clean_koppen_geiger|function|50100e39946163d5
-summarise_tri_air_totals|function|88b99e09a11a9b74
-YEARS|object|f3b00d3fc636351b
-load_huc|function|fe229827d598500e
-summarize_modis|function|5168dc078a073e05
-prism_normals_from_tifs|function|0d479b73090f05aa
-koppen_geiger_summary|function|ba41492572a27365
-clean_nlcd|function|fabfdca02b66a8c0
-clean_merra2|function|bb8f3598f551a6c3
-merra2_summary|function|b083335ed24baf47
 build_exposure_long|function|aed6156dc4bd6bf2
-load_terraclimate|function|c42f46d1c776868d
-clean_huc_layers|function|4c612a67d640af5f
-zip_handoffs|function|15c39c0369b05f56
-clean_gridmet|function|ab6d65b0e1f9648e
-clean_terraclimate|function|cdc1ed6fd04eb2fa
-load_nlcd|function|37d1831e9d26ed53
-load_tri|function|54c69f67fa83c7c4
-MONTHS|object|742bd2b6c65a9221
-CENSUS_GPKG|object|d890d05a34fdb624
-load_merra2|function|0645e19b77292d02
-load_hms|function|a4727ee0426881e7
-gridmet_zonal|function|4e9d8a04a79f0cc4
-clean_groads|function|b9f90c05e84e54ab
-build_canonical_census|function|a7345914e49f123e
-download_and_unzip_prism|function|17b6ec95dd23c257
-hms_fire_exposure|function|52ef5297886965f6
-huc_coverage_long|function|5cf7dd4f61547c84
-tract_monthly_long|stem|ddcab3854bb34c94|c4ef0097081084c1|e54fb7b3b1b4e7e1|1644524110||t20325.860493336s|s4401513730b|4401513730|rds|local|vector|||1435.225||
-county_annual_long|stem|40e1e1a6e0c17bdc|baab3aa99883b0a5|e54fb7b3b1b4e7e1|2096445754||t20325.8606190786s|s24022810b|24022810|rds|local|vector|||5.419||
 county_nlcd_annual|stem|376f51a485c8f577|40e928e650156570|33a0850186162032|348133460||t20326.6088088143s|s5755135b|5755135|rds|local|vector|||64643.148||
-modis|stem|bc2460ccb403257e|5e51e620f99821c4|3e8c1ba6a1ba595e|-1526643308||t20311.7994033032s||1001271|rds|local|vector|||0.059||argument 4 is empty
-county_monthly_long|stem|4d693b7d68d29fff|3f4070d5df219382|e54fb7b3b1b4e7e1|-1520461929||t20326.6099489045s|s172596459b|172596459|rds|local|vector|||58.45||
 tri_files|stem|f3937d6eca7b10fa|ff3d8d0c9d47a0cf|f9c90a5f158ea194|-689180442|/project/clean_data/tri_clean/tri_log.csv|t20326.6145121454s|s787b|787|file|local|vector|||394.187|Failed year 2010: j mixes positives and negatives.   Failed year 2011: j mixes positives and negatives.   Failed year 2012: j mixes positives and negatives.   Failed year 2013: j mixes positives and negatives.   Failed year 2014: j mixes positives and negatives.   Failed year 2015: j mixes positives and negatives.   Failed year 2016: j mixes positives and negatives.   Failed year 2017: j mixes positives and negatives.   Failed year 2018: j mixes positives and negatives.   Failed year 2019: j mixes positives and negatives.   Failed year 2020: j mixes positives and negatives.   Failed year 2021: j mixes positives and negatives.   Failed year 2022: j mixes positives and negatives.   Failed year 2023: j mixes positives and negatives.   Failed year 2024: j mixes positives and negatives|
-terraclimate_tract_monthly|stem||f108686944ef20f3|7c513c50206b31da|14809793||t20322.1850711413s||0|file|local|vector|||||_build_ target terraclimate_tract_monthly did not return a character. File targets (targets with format = 'file') must return character vectors of file or directory paths.
 county_nlcd_monthly|stem|ebdca1429e19e475|3078de55990aa755|33a0850186162032|2044000281||t20327.3541711593s|s6970320b|6970320|rds|local|vector|||63181.905||
-huc_county_summary|stem||e434a17e439db5aa|b737c7fdd3502b0e|-1436481946||t20322.6881166917s||0|rds|local|vector|||0.003||could not find function 'huc_overlap_summary'
 tract_annual_long|stem|5e9e5db3666bad66|7bd9d30e01a835ff|e54fb7b3b1b4e7e1|-486783842||t20327.3566738806s|s543941577b|543941577|rds|local|vector|||119.75||
+tract_monthly_long|stem|ddcab3854bb34c94|c4ef0097081084c1|2c530c1562a7fbd1|1644524110||t20325.860493336s||4401513730|rds|local|vector|||0.012||could not find function 'build_exposure_long'
+county_annual_long|stem|40e1e1a6e0c17bdc|baab3aa99883b0a5|2c530c1562a7fbd1|2096445754||t20325.8606190786s||24022810|rds|local|vector|||0.003||could not find function 'build_exposure_long'
+modis|stem|bc2460ccb403257e|5e51e620f99821c4|3e8c1ba6a1ba595e|-1526643308||t20311.7994033032s||1001271|rds|local|vector|||0.071||argument 4 is empty
+county_monthly_long|stem|4d693b7d68d29fff|3f4070d5df219382|2c530c1562a7fbd1|-1520461929||t20326.6099489045s||172596459|rds|local|vector|||0.003||could not find function 'build_exposure_long'
+terraclimate_tract_monthly|stem||f108686944ef20f3|2f8748f73eaebee7|14809793||t20322.1850711413s||0|file|local|vector|||||_build_ target terraclimate_tract_monthly did not return a character. File targets (targets with format = 'file') must return character vectors of file or directory paths.
+modis_county_monthly|stem|bf4fbb4426e44751|9b8b2f0e3e7eb50d|f6f3dc6d3e9f069b|161019283||t20328.3628502982s|s31021470b|31021470|qs|local|vector|||49501.1||
+huc_county_summary|stem||e434a17e439db5aa|b737c7fdd3502b0e|-1436481946||t20322.6881166917s||0|rds|local|vector|||0.004||could not find function 'huc_overlap_summary'
 load_modis|function|ea594941c43211e5
 clean_prism_normals|function|ce723992a67fd6c5
 summarize_terraclimate|function|0d083efc5a33199d
@@ -5415,7 +5371,7 @@ load_groads|function|c38448056242f103
 road_density_zonal|function|7e8a62fb88ec4be5
 summarize_nlcd|function|3cfd84da435b6168
 clean_hms|function|fb520883ae782c37
-.Random.seed|object|60d86a33e837f369
+.Random.seed|object|692e85f8e9131e3a
 clean_tri|function|4c600b0915eb2990
 LAYER|object|ef70d45841dee03c
 clean_gmted|function|4fe39fa4bd346e1c
@@ -5423,13 +5379,13 @@ build_modis_clean|function|fcfad9c6f3f5570f
 load_gridmet|function|fd4738856cbe44a0
 static_zonal_summary|function|b6b9e305c9d02228
 load_gmted|function|17f8af240d43d675
-build_exposure_long_streamed|function|8484c224fb8612a5
+build_exposure_long_streamed|function|a188110496e95bb7
 clean_koppen_geiger|function|50100e39946163d5
 summarise_tri_air_totals|function|88b99e09a11a9b74
 YEARS|object|f3b00d3fc636351b
 load_huc|function|fe229827d598500e
 summarize_modis|function|be5ce1ec2d4d295d
-prism_normals_from_tifs|function|0d479b73090f05aa
+prism_normals_from_tifs|function|cba5f76f78422c31
 koppen_geiger_summary|function|7fc1d838bb0e6888
 clean_nlcd|function|fabfdca02b66a8c0
 clean_merra2|function|bb8f3598f551a6c3
@@ -5451,9 +5407,52 @@ clean_groads|function|b9f90c05e84e54ab
 build_canonical_census|function|a7345914e49f123e
 download_and_unzip_prism|function|17b6ec95dd23c257
 hms_fire_exposure|function|52ef5297886965f6
-huc_coverage_long|function|97692665086fedf9
-tract_monthly_long|stem|ddcab3854bb34c94|c4ef0097081084c1|2c530c1562a7fbd1|1644524110||t20325.860493336s||4401513730|rds|local|vector|||0.012||could not find function 'build_exposure_long'
-county_annual_long|stem|40e1e1a6e0c17bdc|baab3aa99883b0a5|2c530c1562a7fbd1|2096445754||t20325.8606190786s||24022810|rds|local|vector|||0.003||could not find function 'build_exposure_long'
-modis|stem|bc2460ccb403257e|5e51e620f99821c4|3e8c1ba6a1ba595e|-1526643308||t20311.7994033032s||1001271|rds|local|vector|||0.071||argument 4 is empty
-county_monthly_long|stem|4d693b7d68d29fff|3f4070d5df219382|2c530c1562a7fbd1|-1520461929||t20326.6099489045s||172596459|rds|local|vector|||0.003||could not find function 'build_exposure_long'
-terraclimate_tract_monthly|stem||f108686944ef20f3|2f8748f73eaebee7|14809793||t20322.1850711413s||0|file|local|vector|||||_build_ target terraclimate_tract_monthly did not return a character. File targets (targets with format = 'file') must return character vectors of file or directory paths.
+huc_coverage_long|function|368588e04d33d9df
+tract_monthly|stem||5887ebc28a2bbb6f|aaae20edfe9ad00d|-551363877||t20328.5778085703s||0|file|local|vector|||||_build_ target tract_monthly did not return a character. File targets (targets with format = 'file') must return character vectors of file or directory paths.
+load_modis|function|ea594941c43211e5
+clean_prism_normals|function|ce723992a67fd6c5
+summarize_terraclimate|function|0d083efc5a33199d
+load_koppen_geiger|function|2aa6658a861f09be
+.unary_union|function|7e230da5a8fa0b1c
+load_groads|function|c38448056242f103
+road_density_zonal|function|7e8a62fb88ec4be5
+summarize_nlcd|function|3cfd84da435b6168
+clean_hms|function|fb520883ae782c37
+.Random.seed|object|80af960a4f6d6684
+clean_tri|function|4c600b0915eb2990
+LAYER|object|ef70d45841dee03c
+clean_gmted|function|4fe39fa4bd346e1c
+build_modis_clean|function|fcfad9c6f3f5570f
+load_gridmet|function|fd4738856cbe44a0
+static_zonal_summary|function|b6b9e305c9d02228
+load_gmted|function|17f8af240d43d675
+build_exposure_long_streamed|function|a188110496e95bb7
+clean_koppen_geiger|function|50100e39946163d5
+summarise_tri_air_totals|function|88b99e09a11a9b74
+YEARS|object|f3b00d3fc636351b
+load_huc|function|fe229827d598500e
+summarize_modis|function|04176a0bb91c96cc
+prism_normals_from_tifs|function|cba5f76f78422c31
+koppen_geiger_summary|function|7fc1d838bb0e6888
+clean_nlcd|function|fabfdca02b66a8c0
+clean_merra2|function|bb8f3598f551a6c3
+merra2_summary|function|b083335ed24baf47
+load_terraclimate|function|c42f46d1c776868d
+clean_huc_layers|function|4c612a67d640af5f
+zip_handoffs|function|15c39c0369b05f56
+clean_gridmet|function|ab6d65b0e1f9648e
+clean_terraclimate|function|cdc1ed6fd04eb2fa
+load_nlcd|function|37d1831e9d26ed53
+load_tri|function|54c69f67fa83c7c4
+MONTHS|object|742bd2b6c65a9221
+CENSUS_GPKG|object|d890d05a34fdb624
+load_merra2|function|0645e19b77292d02
+build_exposure_wide_layers_from_dataset|function|46e8881a2fdd167e
+load_hms|function|a4727ee0426881e7
+gridmet_zonal|function|4e9d8a04a79f0cc4
+clean_groads|function|b9f90c05e84e54ab
+build_canonical_census|function|a7345914e49f123e
+download_and_unzip_prism|function|17b6ec95dd23c257
+hms_fire_exposure|function|52ef5297886965f6
+huc_coverage_long|function|368588e04d33d9df
+tract_monthly|stem||5887ebc28a2bbb6f|aaae20edfe9ad00d|-551363877||t20328.5778085703s||0|file|local|vector|||||_build_ target tract_monthly did not return a character. File targets (targets with format = 'file') must return character vectors of file or directory paths.
