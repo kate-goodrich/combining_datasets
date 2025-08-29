@@ -359,50 +359,49 @@ animate_geo_gif <- function(
 ###########################################################################################
 # Examples — county/monthly
 
-# merra dusmass25 (kg/m^3 -> µg/m^3)
-# merra2 dusmass25 (kg/m^3 -> µg/m^3)
-animate_geo_gif(
-    var = "dusmass25",
-    level = "county",
-    agg = "monthly",
-    include_alaska = TRUE,
-    include_hawaii = FALSE,
-    bbox = c(-170, -60, 18, 72),
-    legend_title = expression("Dust (µg·m"^-3 * ")"),
-    palette = "magma",
-    direction = 1,
-    trans = "log10",
-    labels = scales::label_number(accuracy = 0.1),
-    value_fun = function(x) x * 1e9,
-    fps = 4,
-    out_path = ds("figures/county_monthly_dusmass.gif"),
-    title = "County monthly merra2 dusmass25 — {current_frame}"
-)
+# # merra dusmass25 (kg/m^3 -> µg/m^3)
+# # merra2 dusmass25 (kg/m^3 -> µg/m^3)
+# animate_geo_gif(
+#     var = "dusmass25",
+#     level = "county",
+#     agg = "monthly",
+#     include_alaska = TRUE,
+#     include_hawaii = FALSE,
+#     bbox = c(-170, -60, 18, 72),
+#     legend_title = expression("Dust (µg·m"^-3 * ")"),
+#     palette = "magma",
+#     direction = 1,
+#     trans = "log10",
+#     labels = scales::label_number(accuracy = 0.1),
+#     value_fun = function(x) x * 1e9,
+#     fps = 4,
+#     out_path = ds("figures/county_monthly_dusmass.gif"),
+#     title = "County monthly merra2 dusmass25 — {current_frame}"
+# )
+#
+#
+# # gridmet rmax
+# animate_geo_gif(
+#     var = "rmax",
+#     level = "county",
+#     agg = "monthly",
+#     include_alaska = FALSE,
+#     include_hawaii = FALSE,
+#     bbox = c(-125, -66, 24, 50),
+#     legend_title = "Rmax",
+#     palette = "plasma",
+#     direction = 1,
+#     out_path = ds("figures/county_monthly_rmax.gif"),
+#     title = "County monthly gridmet rmax — {current_frame}"
+# )
 
-
-# gridmet rmax
-animate_geo_gif(
-    var = "rmax",
-    level = "county",
-    agg = "monthly",
-    include_alaska = FALSE,
-    include_hawaii = FALSE,
-    bbox = c(-125, -66, 24, 50),
-    legend_title = "Rmax",
-    palette = "plasma",
-    direction = 1,
-    out_path = ds("figures/county_monthly_rmax.gif"),
-    title = "County monthly gridmet rmax — {current_frame}"
-)
-
-# terraclimate tmin (°C)
+# just remove bbox entirely
 animate_geo_gif(
     var = "tmin",
     level = "county",
     agg = "monthly",
     include_alaska = TRUE,
     include_hawaii = FALSE,
-    bbox = c(-125, -66, 24, 50),
     legend_title = expression(T[min] * " (°C)"),
     palette = "turbo",
     direction = 1,
@@ -410,14 +409,12 @@ animate_geo_gif(
     title = "County monthly terraclimate tmin — {current_frame}"
 )
 
-# TRI total air emissions per area (lb/km^2)
 animate_geo_gif(
-    var = "total_air_lb_per_km2",
+    var = "annual_total_air_lb_per_km2",
     level = "county",
     agg = "monthly",
     include_alaska = TRUE,
     include_hawaii = FALSE,
-    bbox = c(-125, -66, 24, 50),
     legend_title = expression("TRI air emissions per area (lb·km"^-2 * ")"),
     palette = "rocket",
     direction = -1,
@@ -425,17 +422,19 @@ animate_geo_gif(
     title = "County monthly TRI air emissions — {current_frame}"
 )
 
-# MODIS EVI (already scaled)
-animate_geo_gif(
-    var = "evi",
-    level = "county",
-    agg = "monthly",
-    include_alaska = FALSE,
-    include_hawaii = FALSE,
-    bbox = c(-125, -66, 24, 50),
-    legend_title = "EVI",
-    palette = "viridis",
-    direction = 1,
-    out_path = ds("figures/county_monthly_evi.gif"),
-    title = "County monthly MODIS EVI — {current_frame}"
-)
+#
+# # MODIS EVI (already scaled)
+# animate_geo_gif(
+#     var = "evi",
+#     level = "county",
+#     agg = "monthly",
+#     include_alaska = FALSE,
+#     include_hawaii = FALSE,
+#     bbox = c(-125, -66, 24, 50),
+#     legend_title = "EVI",
+#     palette = "viridis",
+#     direction = 1,
+#     out_path = ds("figures/county_monthly_evi.gif"),
+#     title = "County monthly MODIS EVI — {current_frame}"
+# )
+#

@@ -6,7 +6,7 @@ prism_normals_from_tifs <- function(
     agg = c("annual", "monthly"),
     id_col = "geoid",
     file_pattern = "\\.tif$",
-    write_csv = NULL
+    write_csv = NULL # NULL = no write; TRUE = auto-name; character = that path
 ) {
     level <- match.arg(level)
     agg <- match.arg(agg)
@@ -19,7 +19,7 @@ prism_normals_from_tifs <- function(
     zones <- sf::st_read(zones_gpkg, layer = zone_layer, quiet = TRUE) |>
         sf::st_make_valid()
     if (!(id_col %in% names(zones))) {
-        abort(paste0(
+        rlang::abort(paste0(
             "id_col '",
             id_col,
             "' not found in zones. Available: ",
@@ -37,7 +37,7 @@ prism_normals_from_tifs <- function(
         recursive = TRUE
     )
     if (length(tif_paths) == 0L) {
-        abort(paste0(
+        rlang::abort(paste0(
             "No TIFFs found in ",
             input_dir,
             " matching pattern ",
@@ -50,8 +50,8 @@ prism_normals_from_tifs <- function(
         fn <- tools::file_path_sans_ext(basename(path))
         tibble::tibble(
             file = path,
-            variable = tolower(stringr::str_extract(fn, "^[^_]+")), # e.g., "ppt"
-            month = as.integer(stringr::str_extract(fn, "(?<=_)\\d{2}$")) # "01" -> 1
+            variable = tolower(stringr::str_extract(fn, "^[^_]+")),
+            month = as.integer(stringr::str_extract(fn, "(?<=_)\\d{2}$"))
         )
     }
     meta <- purrr::map_dfr(tif_paths, parse_meta)
@@ -80,41 +80,42 @@ prism_normals_from_tifs <- function(
         dplyr::mutate(level = level)
 
     # --- Aggregate/shape ---
-    out <-
-        if (agg == "monthly") {
-            normals_long |>
-                dplyr::arrange(
-                    !!rlang::sym(id_col),
-                    .data$variable,
-                    .data$month
-                ) |>
-                dplyr::mutate(year = "normals") |>
-                dplyr::select(
-                    !!rlang::sym(id_col),
-                    .data$year,
-                    .data$level,
-                    .data$variable,
-                    .data$month,
-                    .data$value
-                )
-        } else {
-            normals_long |>
-                dplyr::group_by(
-                    !!rlang::sym(id_col),
-                    .data$level,
-                    .data$variable
-                ) |>
-                dplyr::summarise(
-                    value = mean(.data$value, na.rm = TRUE),
-                    .groups = "drop"
-                ) |>
-                dplyr::select(
-                    !!rlang::sym(id_col),
-                    .data$level,
-                    .data$variable,
-                    .data$value
-                )
-        }
+    out <- if (agg == "monthly") {
+        normals_long |>
+            dplyr::arrange(
+                !!rlang::sym(id_col),
+                .data$variable,
+                .data$month
+            ) |>
+            dplyr::mutate(year = "normal") |>
+            dplyr::select(
+                !!rlang::sym(id_col),
+                .data$year,
+                .data$level,
+                .data$variable,
+                .data$month,
+                .data$value
+            )
+    } else {
+        normals_long |>
+            dplyr::group_by(
+                !!rlang::sym(id_col),
+                .data$level,
+                .data$variable
+            ) |>
+            dplyr::summarise(
+                value = mean(.data$value, na.rm = TRUE),
+                .groups = "drop"
+            ) |>
+            dplyr::mutate(year = "normal") |>
+            dplyr::select(
+                !!rlang::sym(id_col),
+                .data$year,
+                .data$level,
+                .data$variable,
+                .data$value
+            )
+    }
 
     # --- Rename tmin/tmax variables to *_norm ---
     out <- out |>
@@ -126,9 +127,19 @@ prism_normals_from_tifs <- function(
             )
         )
 
-    if (!is.null(write_csv)) {
-        dir.create(dirname(write_csv), recursive = TRUE, showWarnings = FALSE)
-        readr::write_csv(out, write_csv)
+    # --- Optional write with requested naming convention ---
+    write_path <- NULL
+    if (isTRUE(write_csv)) {
+        # auto-name: normal_<agg>_<level>_prism.csv
+        fname <- sprintf("normal_%s_%s_prism.csv", agg, level)
+        write_path <- file.path("summary_sets", fname)
+    } else if (is.character(write_csv) && nzchar(write_csv[1])) {
+        write_path <- write_csv
+    }
+
+    if (!is.null(write_path)) {
+        dir.create(dirname(write_path), recursive = TRUE, showWarnings = FALSE)
+        readr::write_csv(out, write_path)
     }
 
     out

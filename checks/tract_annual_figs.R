@@ -174,7 +174,7 @@ tract_annual <- open_dataset(ds(
 # # --- Save animation ---
 # gganimate::anim_save(ds("figures/tract_annual_hms_smoke.gif"), anim)
 #
-
+#
 # ---- Generic GIF animator for tract × annual/monthly ----
 
 animate_geo_gif <- function(
@@ -337,7 +337,7 @@ animate_geo_gif <- function(
     invisible(out_path)
 }
 
-
+#
 #
 # # merra dusmass25 tract annual animated map (with AK)
 #
@@ -376,24 +376,21 @@ animate_geo_gif <- function(
 # )
 #
 #
-# # terra tmin
-#
-# animate_geo_gif(
-#     var = "tmin",
-#     level = "tract",
-#     agg = "annual",
-#     include_alaska = TRUE,
-#     include_hawaii = FALSE,
-#     bbox = c(-125, -66, 24, 50),
-#     legend_title = expression(T[min] * " (°C)"),
-#     palette = "turbo",
-#     direction = 1,
-#     out_path = ds("figures/tract_annual_tmin.gif"),
-#     title = "Tract annual terraclimate tmin — Year: {current_frame}"
-# )
-#
-#
-#
+# terra tmin
+
+animate_geo_gif(
+    var = "tmin",
+    level = "tract",
+    agg = "annual",
+    include_alaska = TRUE,
+    include_hawaii = FALSE,
+    legend_title = expression(T[min] * " (°C)"),
+    palette = "turbo",
+    direction = 1,
+    out_path = ds("figures/tract_annual_tmin.gif"),
+    title = "Tract annual terraclimate tmin — Year: {current_frame}"
+)
+
 
 # tri
 
@@ -403,7 +400,6 @@ animate_geo_gif(
     agg = "annual",
     include_alaska = TRUE,
     include_hawaii = FALSE,
-    bbox = c(-125, -66, 24, 50),
     legend_title = expression("TRI air emissions per area (lb·km"^-2 * ")"),
     palette = "rocket",
     direction = -1,
@@ -411,194 +407,194 @@ animate_geo_gif(
     title = "Tract annual tri total_air_lb_per_km2 — Year: {current_frame}"
 )
 
-
-# MODIS EVI — tract/annual, CONUS only (values already scaled to [-1, 1], so no conversion)
-animate_geo_gif(
-    var = "evi",
-    level = "tract",
-    agg = "annual",
-    include_alaska = FALSE,
-    include_hawaii = FALSE,
-    bbox = c(-125, -66, 24, 50),
-    legend_title = "EVI",
-    palette = "viridis",
-    direction = 1,
-    out_path = ds("figures/tract_annual_evi.gif"),
-    title = "Tract annual MODIS EVI — Year: {current_frame}"
-)
-
-
-# nlcd plot
-
-# --- Pick year and 3 NLCD categories ---
-target_year <- 2021
-vars <- c(
-    "land_cover_24", # Developed, High Intensity
-    "land_cover_42", # Evergreen Forest
-    "land_cover_82"
-) # Cultivated Crops
-
-pretty_names <- c(
-    land_cover_24 = "Developed, High Intensity",
-    land_cover_42 = "Evergreen Forest",
-    land_cover_82 = "Cultivated Crops"
-)
-
-# One distinct high color per category (0→white, 1→color)
-high_colors <- c(
-    land_cover_24 = "#5e503f", # red
-    land_cover_42 = "#606c38", # green
-    land_cover_82 = "#dda15e" # orange
-)
-
-# --- Load CONUS tracts (drop AK + HI) ---
-tracts_conus <- sf::st_read(
-    ds("clean_data/county_census/canonical_2024.gpkg"),
-    layer = "tracts_500k",
-    quiet = TRUE
-) |>
-    sf::st_make_valid() |>
-    dplyr::filter(!substr(geoid, 1, 2) %in% c("02", "15"))
-
-# --- Pull NLCD proportions for the chosen year ---
-nlcd_df <- tract_annual |>
-    dplyr::filter(variable %in% vars, year == target_year) |>
-    dplyr::select(geoid, variable, value) |>
-    dplyr::collect() |>
-    tidyr::pivot_wider(names_from = variable, values_from = value)
-
-plot_df <- dplyr::left_join(tracts_conus, nlcd_df, by = "geoid")
-
-# --- Helper to build one map for a column ---
-map_one <- function(col_name) {
-    ggplot(plot_df) +
-        geom_sf(aes(fill = .data[[col_name]]), color = NA) +
-        scale_fill_gradient(
-            low = "white",
-            high = high_colors[[col_name]],
-            limits = c(0, 1),
-            oob = scales::squish,
-            name = "Proportion",
-            na.value = "grey90",
-            breaks = c(0, 0.25, 0.5, 0.75, 1)
-        ) +
-        coord_sf(xlim = c(-125, -66), ylim = c(24, 50), expand = FALSE) +
-        labs(
-            title = paste0(pretty_names[[col_name]], " — ", target_year)
-        ) +
-        theme_minimal() +
-        theme(
-            plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
-            legend.position = "bottom",
-            legend.title = element_text(size = 9),
-            legend.text = element_text(size = 8)
-        )
-}
-
-p1 <- map_one(vars[1])
-p2 <- map_one(vars[2])
-p3 <- map_one(vars[3])
-
-panel <- cowplot::plot_grid(p1, p2, p3, ncol = 3)
-
-# --- Save the panel PNG (headless-safe via ragg) ---
-outfile <- ds("figures/tract_annual_nlcd.png")
-ggsave(
-    outfile,
-    panel,
-    device = ragg::agg_png,
-    width = 15,
-    height = 6,
-    units = "in",
-    dpi = 150
-)
-message("Saved: ", normalizePath(outfile))
-
-#Koppen
-
-# --- Pick year and 3 Köppen categories ---
-target_year <- "static"
-vars <- c(
-    "koppen_14", # Cfa, Temperate, no dry season, hot summer
-    "koppen_7", # BSk, Arid, steppe, cold
-    "koppen_26" # Dfb, Cold, no dry season, warm summer
-)
-
-pretty_names <- c(
-    koppen_14 = "Cfa — Temperate, no dry season, hot summer",
-    koppen_7 = "BSk — Arid, steppe, cold",
-    koppen_26 = "Dfb — Cold, no dry season, warm summer"
-)
-
-high_colors <- c(
-    koppen_14 = "#254e2c",
-    koppen_7 = "#8da4ac",
-    koppen_26 = "#edcc6f"
-)
-
-# --- Load tracts (include AK, drop HI only) ---
-tracts_ak_conus <- sf::st_read(
-    ds("clean_data/county_census/canonical_2024.gpkg"),
-    layer = "tracts_500k",
-    quiet = TRUE
-) |>
-    sf::st_make_valid() |>
-    dplyr::filter(substr(geoid, 1, 2) != "15") # keep AK ('02'), drop HI ('15')
-
-# --- Wider bbox to show AK + CONUS ---
-bbox <- c(-170, -60, 18, 72) # xmin, xmax, ymin, ymax
-
-# --- Pull Köppen proportions for the chosen year ---
-koppen_df <- tract_annual |>
-    dplyr::filter(variable %in% vars, year == target_year) |>
-    dplyr::select(geoid, variable, value) |>
-    dplyr::collect() |>
-    tidyr::pivot_wider(names_from = variable, values_from = value)
-
-plot_df <- dplyr::left_join(tracts_ak_conus, koppen_df, by = "geoid")
-
-# --- Helper to build one map for a column ---
-map_one <- function(col_name) {
-    ggplot(plot_df) +
-        geom_sf(aes(fill = .data[[col_name]]), color = NA) +
-        scale_fill_gradient(
-            low = "white",
-            high = high_colors[[col_name]],
-            limits = c(0, 1),
-            oob = scales::squish,
-            name = "Proportion",
-            na.value = "grey90",
-            breaks = c(0, 0.25, 0.5, 0.75, 1)
-        ) +
-        coord_sf(xlim = bbox[1:2], ylim = bbox[3:4], expand = FALSE) +
-        labs(title = paste0(pretty_names[[col_name]], " — ", target_year)) +
-        theme_minimal() +
-        theme(
-            plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
-            legend.position = "bottom",
-            legend.title = element_text(size = 9),
-            legend.text = element_text(size = 8)
-        )
-}
-
-p1 <- map_one(vars[1])
-p2 <- map_one(vars[2])
-p3 <- map_one(vars[3])
-panel <- cowplot::plot_grid(p1, p2, p3, ncol = 3)
-
-# --- Save PNG ---
-outfile <- ds("figures/tract_annual_koppen.png")
-ggsave(
-    outfile,
-    panel,
-    device = ragg::agg_png,
-    width = 15,
-    height = 6,
-    units = "in",
-    dpi = 150
-)
-message("Saved: ", normalizePath(outfile))
-
+#
+# # MODIS EVI — tract/annual, CONUS only (values already scaled to [-1, 1], so no conversion)
+# animate_geo_gif(
+#     var = "evi",
+#     level = "tract",
+#     agg = "annual",
+#     include_alaska = FALSE,
+#     include_hawaii = FALSE,
+#     bbox = c(-125, -66, 24, 50),
+#     legend_title = "EVI",
+#     palette = "viridis",
+#     direction = 1,
+#     out_path = ds("figures/tract_annual_evi.gif"),
+#     title = "Tract annual MODIS EVI — Year: {current_frame}"
+# )
+#
+#
+# # nlcd plot
+#
+# # --- Pick year and 3 NLCD categories ---
+# target_year <- 2021
+# vars <- c(
+#     "land_cover_24", # Developed, High Intensity
+#     "land_cover_42", # Evergreen Forest
+#     "land_cover_82"
+# ) # Cultivated Crops
+#
+# pretty_names <- c(
+#     land_cover_24 = "Developed, High Intensity",
+#     land_cover_42 = "Evergreen Forest",
+#     land_cover_82 = "Cultivated Crops"
+# )
+#
+# # One distinct high color per category (0→white, 1→color)
+# high_colors <- c(
+#     land_cover_24 = "#5e503f", # red
+#     land_cover_42 = "#606c38", # green
+#     land_cover_82 = "#dda15e" # orange
+# )
+#
+# # --- Load CONUS tracts (drop AK + HI) ---
+# tracts_conus <- sf::st_read(
+#     ds("clean_data/county_census/canonical_2024.gpkg"),
+#     layer = "tracts_500k",
+#     quiet = TRUE
+# ) |>
+#     sf::st_make_valid() |>
+#     dplyr::filter(!substr(geoid, 1, 2) %in% c("02", "15"))
+#
+# # --- Pull NLCD proportions for the chosen year ---
+# nlcd_df <- tract_annual |>
+#     dplyr::filter(variable %in% vars, year == target_year) |>
+#     dplyr::select(geoid, variable, value) |>
+#     dplyr::collect() |>
+#     tidyr::pivot_wider(names_from = variable, values_from = value)
+#
+# plot_df <- dplyr::left_join(tracts_conus, nlcd_df, by = "geoid")
+#
+# # --- Helper to build one map for a column ---
+# map_one <- function(col_name) {
+#     ggplot(plot_df) +
+#         geom_sf(aes(fill = .data[[col_name]]), color = NA) +
+#         scale_fill_gradient(
+#             low = "white",
+#             high = high_colors[[col_name]],
+#             limits = c(0, 1),
+#             oob = scales::squish,
+#             name = "Proportion",
+#             na.value = "grey90",
+#             breaks = c(0, 0.25, 0.5, 0.75, 1)
+#         ) +
+#         coord_sf(xlim = c(-125, -66), ylim = c(24, 50), expand = FALSE) +
+#         labs(
+#             title = paste0(pretty_names[[col_name]], " — ", target_year)
+#         ) +
+#         theme_minimal() +
+#         theme(
+#             plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+#             legend.position = "bottom",
+#             legend.title = element_text(size = 9),
+#             legend.text = element_text(size = 8)
+#         )
+# }
+#
+# p1 <- map_one(vars[1])
+# p2 <- map_one(vars[2])
+# p3 <- map_one(vars[3])
+#
+# panel <- cowplot::plot_grid(p1, p2, p3, ncol = 3)
+#
+# # --- Save the panel PNG (headless-safe via ragg) ---
+# outfile <- ds("figures/tract_annual_nlcd.png")
+# ggsave(
+#     outfile,
+#     panel,
+#     device = ragg::agg_png,
+#     width = 15,
+#     height = 6,
+#     units = "in",
+#     dpi = 150
+# )
+# message("Saved: ", normalizePath(outfile))
+#
+# #Koppen
+#
+# # --- Pick year and 3 Köppen categories ---
+# target_year <- "static"
+# vars <- c(
+#     "koppen_14", # Cfa, Temperate, no dry season, hot summer
+#     "koppen_7", # BSk, Arid, steppe, cold
+#     "koppen_26" # Dfb, Cold, no dry season, warm summer
+# )
+#
+# pretty_names <- c(
+#     koppen_14 = "Cfa — Temperate, no dry season, hot summer",
+#     koppen_7 = "BSk — Arid, steppe, cold",
+#     koppen_26 = "Dfb — Cold, no dry season, warm summer"
+# )
+#
+# high_colors <- c(
+#     koppen_14 = "#254e2c",
+#     koppen_7 = "#8da4ac",
+#     koppen_26 = "#edcc6f"
+# )
+#
+# # --- Load tracts (include AK, drop HI only) ---
+# tracts_ak_conus <- sf::st_read(
+#     ds("clean_data/county_census/canonical_2024.gpkg"),
+#     layer = "tracts_500k",
+#     quiet = TRUE
+# ) |>
+#     sf::st_make_valid() |>
+#     dplyr::filter(substr(geoid, 1, 2) != "15") # keep AK ('02'), drop HI ('15')
+#
+# # --- Wider bbox to show AK + CONUS ---
+# bbox <- c(-170, -60, 18, 72) # xmin, xmax, ymin, ymax
+#
+# # --- Pull Köppen proportions for the chosen year ---
+# koppen_df <- tract_annual |>
+#     dplyr::filter(variable %in% vars, year == target_year) |>
+#     dplyr::select(geoid, variable, value) |>
+#     dplyr::collect() |>
+#     tidyr::pivot_wider(names_from = variable, values_from = value)
+#
+# plot_df <- dplyr::left_join(tracts_ak_conus, koppen_df, by = "geoid")
+#
+# # --- Helper to build one map for a column ---
+# map_one <- function(col_name) {
+#     ggplot(plot_df) +
+#         geom_sf(aes(fill = .data[[col_name]]), color = NA) +
+#         scale_fill_gradient(
+#             low = "white",
+#             high = high_colors[[col_name]],
+#             limits = c(0, 1),
+#             oob = scales::squish,
+#             name = "Proportion",
+#             na.value = "grey90",
+#             breaks = c(0, 0.25, 0.5, 0.75, 1)
+#         ) +
+#         coord_sf(xlim = bbox[1:2], ylim = bbox[3:4], expand = FALSE) +
+#         labs(title = paste0(pretty_names[[col_name]], " — ", target_year)) +
+#         theme_minimal() +
+#         theme(
+#             plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+#             legend.position = "bottom",
+#             legend.title = element_text(size = 9),
+#             legend.text = element_text(size = 8)
+#         )
+# }
+#
+# p1 <- map_one(vars[1])
+# p2 <- map_one(vars[2])
+# p3 <- map_one(vars[3])
+# panel <- cowplot::plot_grid(p1, p2, p3, ncol = 3)
+#
+# # --- Save PNG ---
+# outfile <- ds("figures/tract_annual_koppen.png")
+# ggsave(
+#     outfile,
+#     panel,
+#     device = ragg::agg_png,
+#     width = 15,
+#     height = 6,
+#     units = "in",
+#     dpi = 150
+# )
+# message("Saved: ", normalizePath(outfile))
+#
 
 # ---- Generic static map function (Arrow-safe, standardized filenames) ----
 plot_static_map <- function(
@@ -709,40 +705,40 @@ plot_static_map <- function(
     invisible(out_file)
 }
 
+#
+# # GMTED mean elevation
+# plot_static_map(
+#     var = "mn30_grd",
+#     level = "tract",
+#     include_alaska = TRUE,
+#     include_hawaii = FALSE,
+#     legend_title = "Elevation (m)",
+#     palette = "turbo",
+#     direction = -1,
+#     title = "Tract static GMTED Mean Elevation"
+# )
+#
+# # Road density
+# plot_static_map(
+#     var = "road_density_km_per_km2",
+#     level = "tract",
+#     include_alaska = TRUE,
+#     include_hawaii = FALSE,
+#     legend_title = "Road Density (km/km²)",
+#     palette = "mako",
+#     direction = -1,
+#     title = "Tract static Road Density"
+# )
+#
 
-# GMTED mean elevation
 plot_static_map(
-    var = "mn30_grd",
+    var = "prop_cover_nhdarea",
     level = "tract",
     include_alaska = TRUE,
     include_hawaii = FALSE,
-    legend_title = "Elevation (m)",
-    palette = "turbo",
-    direction = -1,
-    title = "Tract static GMTED Mean Elevation"
-)
-
-# Road density
-plot_static_map(
-    var = "road_density_km_per_km2",
-    level = "tract",
-    include_alaska = TRUE,
-    include_hawaii = FALSE,
-    legend_title = "Road Density (km/km²)",
-    palette = "mako",
-    direction = -1,
-    title = "Tract static Road Density"
-)
-
-
-plot_static_map(
-    var = "prop_cover_nhdwaterbody",
-    level = "tract",
-    include_alaska = TRUE,
-    include_hawaii = FALSE,
-    legend_title = "Proportion NHD Waterbody",
+    legend_title = "Proportion NHD Area",
     palette = "cividis",
-    title = "Tract static NHD Waterbody Proportion"
+    title = "Tract static NHD Area Proportion"
 )
 
 

@@ -13,18 +13,20 @@ build_exposure_long_streamed <- function(
     dir.create(long_dir, recursive = TRUE, showWarnings = FALSE)
     dir.create(wide_dir, recursive = TRUE, showWarnings = FALSE)
 
-    # --- File matching (always include normals + statics) ---
+    # --- File matching (always include normal + static) ---
+    # Matches:
+    #   <agg>_<level>*.csv
+    #   normal_*_<level>*.csv   (e.g., normal_annual_county_prism.csv)
+    #   static_<level>*.csv
     pattern <- sprintf(
-        "^(%s_%s|normal_%s|static_%s).*\\.csv$",
+        "^(%1$s_%2$s|normal_.*_%2$s|static_%2$s).*\\.csv$",
         agg,
-        level,
-        level,
         level
     )
     csv_files <- list.files(input_dir, pattern = pattern, full.names = TRUE)
     if (length(csv_files) == 0) {
         stop(sprintf(
-            "No files matched pattern in '%s': %s",
+            "No files matched in '%s' with pattern: %s",
             input_dir,
             pattern
         ))
@@ -36,6 +38,7 @@ build_exposure_long_streamed <- function(
         library(stringr)
         library(arrow)
         library(tidyr)
+        library(purrr)
     })
 
     # --- Normalization helper ---
@@ -47,7 +50,6 @@ build_exposure_long_streamed <- function(
         if ("var" %in% names(df)) {
             df <- rename(df, variable = var)
         }
-
         if (!"variable" %in% names(df)) {
             stop("Missing 'variable' column in ", basename(file))
         }
@@ -89,7 +91,7 @@ build_exposure_long_streamed <- function(
             df$year <- as.character(df$year)
         }
 
-        # month
+        # month handling
         if (is_monthly) {
             if (!"month" %in% names(df)) {
                 df$month <- NA_integer_
@@ -104,7 +106,7 @@ build_exposure_long_streamed <- function(
             mutate(
                 variable = variable %>%
                     tolower() %>%
-                    str_remove("_\\d{4}$") %>%
+                    str_remove("_\\d{4}$") %>% # drop trailing year in names if present
                     str_remove("_clean$"),
                 value = if_else(
                     str_starts(variable, "land_cover_") & is.na(value),
@@ -133,7 +135,7 @@ build_exposure_long_streamed <- function(
 
     # --- Write wide outputs ---
     if (is_monthly) {
-        # One file per year-month, plus normals & statics
+        # One file per year-month, plus normal & static
         all_data %>%
             mutate(year = as.character(year)) %>%
             group_split(year, month) %>%
@@ -157,7 +159,7 @@ build_exposure_long_streamed <- function(
                 readr::write_csv(chunk, fn)
             })
     } else {
-        # Annual: one file per year, plus normals & statics
+        # Annual: one file per year, plus normal & static
         all_data %>%
             mutate(year = as.character(year)) %>%
             group_split(year) %>%

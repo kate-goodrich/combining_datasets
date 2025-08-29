@@ -304,6 +304,7 @@ var_summary <- county_monthly %>%
   arrange(variable) %>%
   collect()
 
+print(var_summary, n = Inf)
 
 # Compare observed vs expected
 comparison <- var_summary %>%
