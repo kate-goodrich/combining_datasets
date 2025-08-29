@@ -5456,3 +5456,5 @@ download_and_unzip_prism|function|17b6ec95dd23c257
 hms_fire_exposure|function|52ef5297886965f6
 huc_coverage_long|function|368588e04d33d9df
 tract_monthly|stem||5887ebc28a2bbb6f|aaae20edfe9ad00d|-551363877||t20328.5778085703s||0|file|local|vector|||||_build_ target tract_monthly did not return a character. File targets (targets with format = 'file') must return character vectors of file or directory paths.
+tract_nlcd_annual|stem|d87685a175b6ada4|167cff9c30e947a4|33a0850186162032|-1707863761||t20329.66594018s|s116876150b|116876150|rds|local|vector|||91317.622||
+tri_tract_monthly|stem|361888c11b0be856|b0e70dde8aad8590|3070fe78e28df9f8|-873404998||t20329.6909773093s|s18911708b|18911708|rds|local|vector|||2151.19||

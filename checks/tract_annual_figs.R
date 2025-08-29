@@ -53,154 +53,154 @@ tract_annual <- open_dataset(ds(
 
 ###########################################################################################
 
-############## HMS smoke tract annual animated map ##############
-
-# --- Load tract geometries (includes Alaska + Hawaii) ---
-tracts_all <- sf::st_read(
-    ds("clean_data/county_census/canonical_2024.gpkg"),
-    layer = "tracts_500k",
-    quiet = TRUE
-) %>%
-    sf::st_make_valid()
-
-# --- Extract HMS smoke proportion variables ---
-smoke_df <- tract_annual %>%
-    filter(
-        variable %in%
-            c(
-                "prop_light_coverage",
-                "prop_med_coverage",
-                "prop_heavy_coverage"
-            )
-    ) %>%
-    select(geoid, year, variable, value) %>%
-    collect()
-
-# --- Pivot to wide format for priority calculation ---
-smoke_wide <- smoke_df %>%
-    tidyr::pivot_wider(
-        names_from = variable,
-        values_from = value,
-        values_fill = 0
-    ) %>%
-    mutate(
-        category = dplyr::case_when(
-            prop_heavy_coverage > 0 ~ "Heavy",
-            prop_med_coverage > 0 ~ "Medium",
-            prop_light_coverage > 0 ~ "Light",
-            TRUE ~ "None"
-        ),
-        final_value = dplyr::case_when(
-            category == "Heavy" ~ prop_heavy_coverage,
-            category == "Medium" ~ prop_med_coverage,
-            category == "Light" ~ prop_light_coverage,
-            TRUE ~ 0
-        )
-    )
-
-# --- Join geometries ---
-plot_df <- tracts_all %>%
-    left_join(smoke_wide, by = "geoid") %>%
-    sf::st_as_sf() %>%
-    filter(!sf::st_is_empty(sf::st_geometry(.)))
-
-# --- Remove Hawaii ONLY ---
-plot_df <- plot_df %>%
-    filter(substr(geoid, 1, 2) != "15") # Keep Alaska, drop Hawaii
-
-# --- Custom smoke colors ---
-smoke_colors <- c(
-    "Light" = "#eccc7c",
-    "Medium" = "#dc8b30",
-    "Heavy" = "#d96527",
-    "None" = "#dfdac4"
-)
-
-# --- Set category factor levels in desired order ---
-plot_df <- plot_df %>%
-    mutate(
-        category = factor(
-            category,
-            levels = c("None", "Light", "Medium", "Heavy")
-        )
-    )
-
-# --- Build animated plot ---
-p_main <- ggplot(plot_df) +
-    geom_sf(aes(fill = category, alpha = final_value), color = NA) +
-    scale_fill_manual(
-        values = smoke_colors,
-        breaks = c("None", "Light", "Medium", "Heavy"), # <- Ensures correct legend order
-        na.value = "grey80"
-    ) +
-    scale_alpha(range = c(0.2, 1), guide = "none") +
-    coord_sf(
-        xlim = c(-170, -67),
-        ylim = c(20, 72),
-        expand = FALSE
-    ) +
-    theme_void() +
-    theme(
-        legend.position = "bottom",
-        legend.title = element_text(size = 10),
-        legend.text = element_text(size = 8),
-        plot.title = element_text(hjust = 0.5, size = 14, face = "bold")
-    ) +
-    labs(
-        title = "Tract-Annual HMS Smoke Coverage — Year: {current_frame}",
-        fill = "Smoke Category"
-    ) +
-    gganimate::transition_manual(year)
-
-
-# --- Count frames safely ---
-nframes <- plot_df$year %>%
-    unique() %>%
-    sort(na.last = NA) %>%
-    length()
-
-# --- Animate using ragg ---
-anim <- gganimate::animate(
-    p_main,
-    nframes = max(1L, nframes),
-    fps = 2,
-    width = 1000,
-    height = 600,
-    units = "px",
-    renderer = gifski_renderer(),
-    device = "ragg_png"
-)
-
-# --- Save animation ---
-gganimate::anim_save(ds("figures/tract_annual_hms_smoke.gif"), anim)
-
+# ############## HMS smoke tract annual animated map ##############
+#
+# # --- Load tract geometries (includes Alaska + Hawaii) ---
+# tracts_all <- sf::st_read(
+#     ds("clean_data/county_census/canonical_2024.gpkg"),
+#     layer = "tracts_500k",
+#     quiet = TRUE
+# ) %>%
+#     sf::st_make_valid()
+#
+# # --- Extract HMS smoke proportion variables ---
+# smoke_df <- tract_annual %>%
+#     filter(
+#         variable %in%
+#             c(
+#                 "prop_light_coverage",
+#                 "prop_med_coverage",
+#                 "prop_heavy_coverage"
+#             )
+#     ) %>%
+#     select(geoid, year, variable, value) %>%
+#     collect()
+#
+# # --- Pivot to wide format for priority calculation ---
+# smoke_wide <- smoke_df %>%
+#     tidyr::pivot_wider(
+#         names_from = variable,
+#         values_from = value,
+#         values_fill = 0
+#     ) %>%
+#     mutate(
+#         category = dplyr::case_when(
+#             prop_heavy_coverage > 0 ~ "Heavy",
+#             prop_med_coverage > 0 ~ "Medium",
+#             prop_light_coverage > 0 ~ "Light",
+#             TRUE ~ "None"
+#         ),
+#         final_value = dplyr::case_when(
+#             category == "Heavy" ~ prop_heavy_coverage,
+#             category == "Medium" ~ prop_med_coverage,
+#             category == "Light" ~ prop_light_coverage,
+#             TRUE ~ 0
+#         )
+#     )
+#
+# # --- Join geometries ---
+# plot_df <- tracts_all %>%
+#     left_join(smoke_wide, by = "geoid") %>%
+#     sf::st_as_sf() %>%
+#     filter(!sf::st_is_empty(sf::st_geometry(.)))
+#
+# # --- Remove Hawaii ONLY ---
+# plot_df <- plot_df %>%
+#     filter(substr(geoid, 1, 2) != "15") # Keep Alaska, drop Hawaii
+#
+# # --- Custom smoke colors ---
+# smoke_colors <- c(
+#     "Light" = "#eccc7c",
+#     "Medium" = "#dc8b30",
+#     "Heavy" = "#d96527",
+#     "None" = "#dfdac4"
+# )
+#
+# # --- Set category factor levels in desired order ---
+# plot_df <- plot_df %>%
+#     mutate(
+#         category = factor(
+#             category,
+#             levels = c("None", "Light", "Medium", "Heavy")
+#         )
+#     )
+#
+# # --- Build animated plot ---
+# p_main <- ggplot(plot_df) +
+#     geom_sf(aes(fill = category, alpha = final_value), color = NA) +
+#     scale_fill_manual(
+#         values = smoke_colors,
+#         breaks = c("None", "Light", "Medium", "Heavy"), # <- Ensures correct legend order
+#         na.value = "grey80"
+#     ) +
+#     scale_alpha(range = c(0.2, 1), guide = "none") +
+#     coord_sf(
+#         xlim = c(-170, -67),
+#         ylim = c(20, 72),
+#         expand = FALSE
+#     ) +
+#     theme_void() +
+#     theme(
+#         legend.position = "bottom",
+#         legend.title = element_text(size = 10),
+#         legend.text = element_text(size = 8),
+#         plot.title = element_text(hjust = 0.5, size = 14, face = "bold")
+#     ) +
+#     labs(
+#         title = "Tract-Annual HMS Smoke Coverage — Year: {current_frame}",
+#         fill = "Smoke Category"
+#     ) +
+#     gganimate::transition_manual(year)
+#
+#
+# # --- Count frames safely ---
+# nframes <- plot_df$year %>%
+#     unique() %>%
+#     sort(na.last = NA) %>%
+#     length()
+#
+# # --- Animate using ragg ---
+# anim <- gganimate::animate(
+#     p_main,
+#     nframes = max(1L, nframes),
+#     fps = 2,
+#     width = 1000,
+#     height = 600,
+#     units = "px",
+#     renderer = gifski_renderer(),
+#     device = "ragg_png"
+# )
+#
+# # --- Save animation ---
+# gganimate::anim_save(ds("figures/tract_annual_hms_smoke.gif"), anim)
+#
 
 # ---- Generic GIF animator for tract × annual/monthly ----
+
 animate_geo_gif <- function(
     var,
     level = c("county", "tract"),
     agg = c("annual", "monthly"),
     include_alaska = TRUE,
     include_hawaii = FALSE,
-    bbox = NULL, # c(xmin, xmax, ymin, ymax)
+    bbox = NULL,
     legend_title = var,
     title = NULL,
     palette = "mako",
     direction = -1,
-    trans = "identity", # e.g., "log10"
+    trans = "identity",
     labels = scales::label_number(accuracy = 0.1),
     na_fill = "grey80",
     width = 1000,
     height = 600,
     fps = 2,
-    out_path = NULL, # default: figures/<var>_<level>_<agg>.gif
-    value_fun = NULL, # e.g., function(x) x * 1e9
+    out_path = NULL,
+    value_fun = NULL,
     drop_na_time = TRUE,
-    tween_shapes = FALSE # <- NEW: avoid polygon morphing by default
+    tween_shapes = FALSE
 ) {
     level <- match.arg(level)
     agg <- match.arg(agg)
-
     geom_layer <- if (level == "county") "counties_500k" else "tracts_500k"
     geom <- sf::st_read(
         ds("clean_data/county_census/canonical_2024.gpkg"),
@@ -209,7 +209,6 @@ animate_geo_gif <- function(
     ) %>%
         sf::st_make_valid() %>%
         sf::st_zm(drop = TRUE)
-
     drop_states <- c(
         if (!include_alaska) "02" else NULL,
         if (!include_hawaii) "15" else NULL
@@ -217,9 +216,7 @@ animate_geo_gif <- function(
     if (length(drop_states)) {
         geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
     }
-
     ds_obj <- get(sprintf("%s_%s", level, agg), inherits = TRUE)
-
     df <- tryCatch(
         ds_obj %>%
             dplyr::filter(variable %in% !!var) %>%
@@ -247,11 +244,9 @@ animate_geo_gif <- function(
                 dplyr::select(-variable)
         }
     )
-
     if (!is.null(value_fun)) {
         df <- dplyr::mutate(df, value = value_fun(value))
     }
-
     if (agg == "annual") {
         if (drop_na_time) {
             df <- dplyr::filter(df, !is.na(year))
@@ -278,16 +273,13 @@ animate_geo_gif <- function(
             dplyr::pull(ym)
         df <- df %>% dplyr::mutate(time_state = factor(ym, levels = levs))
     }
-
     plot_df <- dplyr::left_join(geom, df, by = "geoid") %>%
         dplyr::filter(!is.na(time_state)) %>%
         dplyr::filter(!sf::st_is_empty(sf::st_geometry(.))) %>%
         sf::st_make_valid()
-
     if (is.null(bbox)) {
         bbox <- c(-125, -66, 24, 50)
     }
-
     if (is.null(title)) {
         title <- sprintf(
             "%s-%s %s — {closest_state}",
@@ -296,12 +288,10 @@ animate_geo_gif <- function(
             var
         )
     }
-
     nframes <- plot_df %>% dplyr::distinct(time_state) %>% nrow()
     if (is.na(nframes) || nframes < 1) {
         nframes <- 1L
     }
-
     p <- ggplot(plot_df) +
         geom_sf(aes(fill = value), color = NA) +
         scale_fill_viridis_c(
@@ -319,8 +309,6 @@ animate_geo_gif <- function(
         ) +
         theme_minimal() +
         labs(title = title)
-
-    # Use manual transition by default (no polygon morphing)
     if (tween_shapes) {
         p <- p +
             gganimate::transition_states(
@@ -332,7 +320,6 @@ animate_geo_gif <- function(
     } else {
         p <- p + gganimate::transition_manual(time_state)
     }
-
     anim <- gganimate::animate(
         p,
         nframes = nframes,
@@ -343,7 +330,6 @@ animate_geo_gif <- function(
         renderer = gifski_renderer(),
         device = "ragg_png"
     )
-
     if (is.null(out_path)) {
         out_path <- ds(sprintf("figures/%s_%s_%s.gif", var, level, agg))
     }
@@ -351,63 +337,68 @@ animate_geo_gif <- function(
     invisible(out_path)
 }
 
-# merra dusmass25 tract annual animated map (with AK)
 
-animate_geo_gif(
-    var = "dusmass25",
-    level = "tract",
-    agg = "annual",
-    include_alaska = TRUE,
-    include_hawaii = FALSE,
-    bbox = c(-170, -60, 18, 72),
-    legend_title = expression("Dust (µg·m"^-3 * ")"),
-    palette = "magma",
-    direction = 1,
-    trans = "log10",
-    labels = scales::label_number(accuracy = 0.1),
-    value_fun = function(x) x * 1e9, # kg/m^3 -> µg/m^3
-    out_path = ds("figures/tract_annual_dusmass.gif"),
-    title = "Tract annual merra2 dusmass25 — Year: {current_frame}"
-)
-
-
-# gridmet rmax tract annual
-
-animate_geo_gif(
-    var = "rmax",
-    level = "tract",
-    agg = "annual",
-    include_alaska = FALSE,
-    include_hawaii = FALSE,
-    bbox = c(-125, -66, 24, 50),
-    legend_title = "Rmax",
-    palette = "plasma",
-    direction = 1,
-    out_path = ds("figures/tract_annual_rmax.gif"),
-    title = "Tract annual gridmet rmax — Year: {current_frame}"
-)
-
-
-# terra tmin
-
-animate_geo_gif(
-    var = "tmin",
-    level = "tract",
-    agg = "annual",
-    include_alaska = TRUE,
-    include_hawaii = FALSE,
-    bbox = c(-125, -66, 24, 50),
-    legend_title = expression(T[min] * " (°C)"),
-    palette = "turbo",
-    direction = 1,
-    out_path = ds("figures/tract_annual_tmin.gif"),
-    title = "Tract annual terraclimate tmin — Year: {current_frame}"
-)
+#
+# # merra dusmass25 tract annual animated map (with AK)
+#
+# animate_geo_gif(
+#     var = "dusmass25",
+#     level = "tract",
+#     agg = "annual",
+#     include_alaska = TRUE,
+#     include_hawaii = FALSE,
+#     bbox = c(-170, -60, 18, 72),
+#     legend_title = expression("Dust (µg·m"^-3 * ")"),
+#     palette = "magma",
+#     direction = 1,
+#     trans = "log10",
+#     labels = scales::label_number(accuracy = 0.1),
+#     value_fun = function(x) x * 1e9, # kg/m^3 -> µg/m^3
+#     out_path = ds("figures/tract_annual_dusmass.gif"),
+#     title = "Tract annual merra2 dusmass25 — Year: {current_frame}"
+# )
+#
+#
+# # gridmet rmax tract annual
+#
+# animate_geo_gif(
+#     var = "rmax",
+#     level = "tract",
+#     agg = "annual",
+#     include_alaska = FALSE,
+#     include_hawaii = FALSE,
+#     bbox = c(-125, -66, 24, 50),
+#     legend_title = "Rmax",
+#     palette = "plasma",
+#     direction = 1,
+#     out_path = ds("figures/tract_annual_rmax.gif"),
+#     title = "Tract annual gridmet rmax — Year: {current_frame}"
+# )
+#
+#
+# # terra tmin
+#
+# animate_geo_gif(
+#     var = "tmin",
+#     level = "tract",
+#     agg = "annual",
+#     include_alaska = TRUE,
+#     include_hawaii = FALSE,
+#     bbox = c(-125, -66, 24, 50),
+#     legend_title = expression(T[min] * " (°C)"),
+#     palette = "turbo",
+#     direction = 1,
+#     out_path = ds("figures/tract_annual_tmin.gif"),
+#     title = "Tract annual terraclimate tmin — Year: {current_frame}"
+# )
+#
+#
+#
 
 # tri
 
 animate_geo_gif(
-    var = "total_air_lb_per_km2",
+    var = "annual_total_air_lb_per_km2",
     level = "tract",
     agg = "annual",
     include_alaska = TRUE,

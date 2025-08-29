@@ -373,6 +373,8 @@ var_summary <- tract_annual %>%
   collect()
 
 
+print(var_summary, n = Inf)
+
 # Compare observed vs expected
 comparison <- var_summary %>%
   left_join(expected_ranges, by = "variable") %>%

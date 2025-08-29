@@ -26,7 +26,7 @@ prism_normals_from_tifs <- function(
             paste(names(zones), collapse = ", ")
         ))
     }
-    zones <- dplyr::select(zones, !!sym(id_col))
+    zones <- dplyr::select(zones, !!rlang::sym(id_col))
     zones$geom <- sf::st_geometry(zones)
 
     # --- Index files ---
@@ -48,7 +48,7 @@ prism_normals_from_tifs <- function(
     # --- Parse var & month from filename ---
     parse_meta <- function(path) {
         fn <- tools::file_path_sans_ext(basename(path))
-        tibble(
+        tibble::tibble(
             file = path,
             variable = tolower(stringr::str_extract(fn, "^[^_]+")), # e.g., "ppt"
             month = as.integer(stringr::str_extract(fn, "(?<=_)\\d{2}$")) # "01" -> 1
@@ -61,7 +61,7 @@ prism_normals_from_tifs <- function(
         r <- terra::rast(path)
         zp <- sf::st_transform(zones, terra::crs(r))
         vals <- exactextractr::exact_extract(r, zp, "mean")
-        tibble(
+        tibble::tibble(
             !!id_col := zp[[id_col]],
             value = as.numeric(vals)
         )
@@ -77,31 +77,52 @@ prism_normals_from_tifs <- function(
             df
         }
     ) |>
-        mutate(level = level)
+        dplyr::mutate(level = level)
 
     # --- Aggregate/shape ---
     out <-
         if (agg == "monthly") {
             normals_long |>
-                arrange(!!sym(id_col), variable, month) |>
-                select(!!sym(id_col), level, variable, month, value)
+                dplyr::arrange(
+                    !!rlang::sym(id_col),
+                    .data$variable,
+                    .data$month
+                ) |>
+                dplyr::mutate(year = "normals") |>
+                dplyr::select(
+                    !!rlang::sym(id_col),
+                    .data$year,
+                    .data$level,
+                    .data$variable,
+                    .data$month,
+                    .data$value
+                )
         } else {
             normals_long |>
-                group_by(!!sym(id_col), level, variable) |>
-                summarise(
-                    value = mean(value, na.rm = TRUE),
+                dplyr::group_by(
+                    !!rlang::sym(id_col),
+                    .data$level,
+                    .data$variable
+                ) |>
+                dplyr::summarise(
+                    value = mean(.data$value, na.rm = TRUE),
                     .groups = "drop"
                 ) |>
-                select(!!sym(id_col), level, variable, value)
+                dplyr::select(
+                    !!rlang::sym(id_col),
+                    .data$level,
+                    .data$variable,
+                    .data$value
+                )
         }
 
     # --- Rename tmin/tmax variables to *_norm ---
     out <- out |>
-        mutate(
+        dplyr::mutate(
             variable = dplyr::case_when(
-                variable == "tmin" ~ "tmin_norm",
-                variable == "tmax" ~ "tmax_norm",
-                TRUE ~ variable
+                .data$variable == "tmin" ~ "tmin_norm",
+                .data$variable == "tmax" ~ "tmax_norm",
+                TRUE ~ .data$variable
             )
         )
 
