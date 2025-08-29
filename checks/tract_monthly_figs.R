@@ -1,3 +1,4 @@
+# oppten apptainer in bash first
 # apptainer shell /ddn/gs1/group/set/chords/combining_datasets/container_combining_datasets.sif
 
 .libPaths("/usr/local/lib/R/site-library")
@@ -27,6 +28,7 @@ dir.create(
     recursive = TRUE
 )
 
+# Keep ragg from interpreting huge inch sizes
 options(ragg.max_dim = 10000)
 
 # packages
@@ -38,20 +40,18 @@ library(gganimate)
 library(cowplot)
 library(ragg)
 library(gifski)
-library(scales)
 
 # Resolve paths relative to root.dir set above
 ds <- function(...) file.path(project_dir, ...)
 
-# ==== DATASET: tract monthly ====
 tract_monthly <- open_dataset(ds(
     "handoffs/tract_monthly_long/tract_monthly.parquet"
 ))
 
 ###########################################################################################
-############## HMS smoke — tract monthly animated map ##############
+############## HMS smoke tract monthly animated map ##############
 
-# Tract geometries (AK+HI included initially)
+# --- Load tract geometries (includes Alaska + Hawaii) ---
 tracts_all <- sf::st_read(
     ds("clean_data/county_census/canonical_2024.gpkg"),
     layer = "tracts_500k",
@@ -59,16 +59,21 @@ tracts_all <- sf::st_read(
 ) %>%
     sf::st_make_valid()
 
-# Extract HMS smoke proportion variables
+# --- Extract HMS smoke proportion variables (monthly) ---
 smoke_df <- tract_monthly %>%
     filter(
         variable %in%
             c("prop_light_coverage", "prop_med_coverage", "prop_heavy_coverage")
     ) %>%
     select(geoid, year, month, variable, value) %>%
-    collect()
+    collect() %>%
+    mutate(
+        year = suppressWarnings(as.integer(year)),
+        month = suppressWarnings(as.integer(month))
+    )
 
-# Wide + derived category and alpha
+
+# --- Pivot to wide format for category + final_value ---
 smoke_wide <- smoke_df %>%
     tidyr::pivot_wider(
         names_from = variable,
@@ -88,17 +93,24 @@ smoke_wide <- smoke_df %>%
             category == "Light" ~ prop_light_coverage,
             TRUE ~ 0
         ),
-        ym = sprintf("%04d-%02d", year, month)
+        year = as.integer(year),
+        month = as.integer(month),
+        ym = ifelse(
+            is.na(year) | is.na(month),
+            NA_character_,
+            sprintf("%04d-%02d", year, month)
+        )
     )
 
-# Join geometries; drop HI only (keep AK)
+
+# --- Join geometries ---
 plot_df <- tracts_all %>%
     left_join(smoke_wide, by = "geoid") %>%
     sf::st_as_sf() %>%
-    filter(substr(geoid, 1, 2) != "15") %>%
     filter(!sf::st_is_empty(sf::st_geometry(.))) %>%
-    mutate(time_state = factor(ym, levels = ym %>% unique() %>% sort()))
+    filter(substr(geoid, 1, 2) != "15") # Keep Alaska, drop Hawaii
 
+# --- Custom smoke colors ---
 smoke_colors <- c(
     "Light" = "#eccc7c",
     "Medium" = "#dc8b30",
@@ -106,6 +118,16 @@ smoke_colors <- c(
     "None" = "#dfdac4"
 )
 
+# --- Set category factor levels in desired order ---
+plot_df <- plot_df %>%
+    mutate(
+        category = factor(
+            category,
+            levels = c("None", "Light", "Medium", "Heavy")
+        )
+    )
+
+# --- Build animated plot (monthly) ---
 p_main <- ggplot(plot_df) +
     geom_sf(aes(fill = category, alpha = final_value), color = NA) +
     scale_fill_manual(
@@ -114,7 +136,11 @@ p_main <- ggplot(plot_df) +
         na.value = "grey80"
     ) +
     scale_alpha(range = c(0.2, 1), guide = "none") +
-    coord_sf(xlim = c(-165, -67), ylim = c(20, 72), expand = FALSE) +
+    coord_sf(
+        xlim = c(-170, -67),
+        ylim = c(20, 72),
+        expand = FALSE
+    ) +
     theme_void() +
     theme(
         legend.position = "bottom",
@@ -126,9 +152,15 @@ p_main <- ggplot(plot_df) +
         title = "Tract-Monthly HMS Smoke Coverage — {current_frame}",
         fill = "Smoke Category"
     ) +
-    gganimate::transition_manual(time_state)
+    gganimate::transition_manual(ym)
 
-nframes <- plot_df$time_state %>% unique() %>% length()
+# --- Count frames safely ---
+nframes <- plot_df$ym %>%
+    unique() %>%
+    sort(na.last = NA) %>%
+    length()
+
+# --- Animate using ragg ---
 anim <- gganimate::animate(
     p_main,
     nframes = max(1L, nframes),
@@ -139,15 +171,17 @@ anim <- gganimate::animate(
     renderer = gifski_renderer(),
     device = "ragg_png"
 )
+
+# --- Save animation ---
 gganimate::anim_save(ds("figures/tract_monthly_hms_smoke.gif"), anim)
 
 ###########################################################################################
-# ---- Generic GIF animator (defaults: tract + monthly) ----
+# ---- Generic GIF animator for tract × monthly ----
 
 animate_geo_gif <- function(
     var,
-    level = c("tract", "county"),
-    agg = c("monthly", "annual"),
+    level = c("county", "tract"),
+    agg = c("annual", "monthly"),
     include_alaska = TRUE,
     include_hawaii = FALSE,
     bbox = NULL, # c(xmin, xmax, ymin, ymax)
@@ -155,14 +189,14 @@ animate_geo_gif <- function(
     title = NULL,
     palette = "mako",
     direction = -1,
-    trans = "identity",
+    trans = "identity", # e.g., "log10"
     labels = scales::label_number(accuracy = 0.1),
     na_fill = "grey80",
     width = 1000,
     height = 600,
     fps = 4,
-    out_path = NULL,
-    value_fun = NULL,
+    out_path = NULL, # default: figures/<var>_<level>_<agg>.gif
+    value_fun = NULL, # e.g., function(x) x * 1e9
     drop_na_time = TRUE,
     tween_shapes = FALSE
 ) {
@@ -186,31 +220,16 @@ animate_geo_gif <- function(
         geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
     }
 
-    # dataset objects expected in the environment
     ds_obj <- get(sprintf("%s_%s", level, agg), inherits = TRUE)
 
     df <- tryCatch(
         ds_obj %>%
             dplyr::filter(variable %in% !!var) %>%
-            {
-                if (agg == "monthly") {
-                    dplyr::select(., geoid, year, month, value)
-                } else {
-                    dplyr::select(., geoid, year, value)
-                }
-            } %>%
+            dplyr::select(geoid, year, month, value) %>%
             dplyr::collect(),
         error = function(e) {
             ds_obj %>%
-                dplyr::select(
-                    geoid,
-                    year,
-                    dplyr::all_of(
-                        if (agg == "monthly") c("month") else character(0)
-                    ),
-                    variable,
-                    value
-                ) %>%
+                dplyr::select(geoid, year, month, variable, value) %>%
                 dplyr::collect() %>%
                 dplyr::filter(variable == var) %>%
                 dplyr::select(-variable)
@@ -221,32 +240,24 @@ animate_geo_gif <- function(
         df <- dplyr::mutate(df, value = value_fun(value))
     }
 
-    if (agg == "monthly") {
-        if (drop_na_time) {
-            df <- dplyr::filter(df, !is.na(year), !is.na(month))
-        }
-        df <- df %>% dplyr::mutate(ym = sprintf("%04d-%02d", year, month))
-        levs <- df %>%
-            dplyr::arrange(year, month) %>%
-            dplyr::distinct(ym) %>%
-            dplyr::pull(ym)
-        df <- df %>% dplyr::mutate(time_state = factor(ym, levels = levs))
-    } else {
-        if (drop_na_time) {
-            df <- dplyr::filter(df, !is.na(year))
-        }
-        levs <- df %>%
-            dplyr::arrange(year) %>%
-            dplyr::distinct(year) %>%
-            dplyr::pull(year)
-        df <- df %>%
-            dplyr::mutate(
-                time_state = factor(
-                    as.character(year),
-                    levels = as.character(levs)
-                )
-            )
+    if (drop_na_time) {
+        df <- dplyr::filter(df, !is.na(year), !is.na(month))
     }
+    df <- df %>%
+        mutate(
+            year = as.integer(year),
+            month = as.integer(month),
+            ym = ifelse(
+                is.na(year) | is.na(month),
+                NA_character_,
+                sprintf("%04d-%02d", year, month)
+            )
+        )
+    levs <- df %>%
+        arrange(year, month) %>%
+        distinct(ym) %>%
+        pull(ym)
+    df <- df %>% mutate(time_state = factor(ym, levels = levs))
 
     plot_df <- dplyr::left_join(geom, df, by = "geoid") %>%
         dplyr::filter(!is.na(time_state)) %>%
@@ -254,12 +265,12 @@ animate_geo_gif <- function(
         sf::st_make_valid()
 
     if (is.null(bbox)) {
-        bbox <- c(-125, -66, 24, 50)
+        bbox <- c(-125, -66, 24, 50) # CONUS default
     }
 
     if (is.null(title)) {
         title <- sprintf(
-            "%s-%s %s — {current_frame}",
+            "%s-%s %s — {closest_state}",
             tools::toTitleCase(level),
             agg,
             var
@@ -319,14 +330,10 @@ animate_geo_gif <- function(
     invisible(out_path)
 }
 
-# Provide dataset aliases so animate_geo_gif() can find them
-tract_monthly <- tract_monthly
-tract_annual <- NULL # not used here, but avoids get() errors if you flip agg
-
 ###########################################################################################
-# Examples — tract monthly animations
+# Examples — tract/monthly
 
-# MERRA-2 dust (if monthly available; applies unit conversion)
+# merra dusmass25 (kg/m^3 -> µg/m^3)
 animate_geo_gif(
     var = "dusmass25",
     level = "tract",
@@ -341,10 +348,10 @@ animate_geo_gif(
     labels = scales::label_number(accuracy = 0.1),
     value_fun = function(x) x * 1e9,
     out_path = ds("figures/tract_monthly_dusmass.gif"),
-    title = "Tract monthly merra2 dusmass25 — {current_frame}"
+    title = "Tract monthly merra2 dusmass25 — {closest_state}"
 )
 
-# gridMET rmax
+# gridmet rmax
 animate_geo_gif(
     var = "rmax",
     level = "tract",
@@ -354,12 +361,12 @@ animate_geo_gif(
     bbox = c(-125, -66, 24, 50),
     legend_title = "Rmax",
     palette = "plasma",
-    direction = -1,
+    direction = 1,
     out_path = ds("figures/tract_monthly_rmax.gif"),
-    title = "Tract monthly gridmet rmax — {current_frame}"
+    title = "Tract monthly gridmet rmax — {closest_state}"
 )
 
-# TerraClimate tmin (°C)
+# terraclimate tmin (°C)
 animate_geo_gif(
     var = "tmin",
     level = "tract",
@@ -371,10 +378,25 @@ animate_geo_gif(
     palette = "turbo",
     direction = 1,
     out_path = ds("figures/tract_monthly_tmin.gif"),
-    title = "Tract monthly terraclimate tmin — {current_frame}"
+    title = "Tract monthly terraclimate tmin — {closest_state}"
 )
 
-# MODIS EVI (already scaled to [-1, 1])
+# TRI total air emissions per area (lb/km^2)
+animate_geo_gif(
+    var = "total_air_lb_per_km2",
+    level = "tract",
+    agg = "monthly",
+    include_alaska = TRUE,
+    include_hawaii = FALSE,
+    bbox = c(-125, -66, 24, 50),
+    legend_title = expression("TRI air emissions per area (lb·km"^-2 * ")"),
+    palette = "rocket",
+    direction = -1,
+    out_path = ds("figures/tract_monthly_total_air_lb_per_km2.gif"),
+    title = "Tract monthly TRI air emissions — {closest_state}"
+)
+
+# MODIS EVI (already scaled)
 animate_geo_gif(
     var = "evi",
     level = "tract",
@@ -384,160 +406,7 @@ animate_geo_gif(
     bbox = c(-125, -66, 24, 50),
     legend_title = "EVI",
     palette = "viridis",
-    direction = -1,
+    direction = 1,
     out_path = ds("figures/tract_monthly_evi.gif"),
-    title = "Tract monthly MODIS EVI — {current_frame}"
+    title = "Tract monthly MODIS EVI — {closest_state}"
 )
-
-###########################################################################################
-# NLCD panel (tracts) — pull from monthly dataset by averaging across months in target year
-
-target_year <- 2021
-vars <- c("land_cover_24", "land_cover_42", "land_cover_82")
-
-pretty_names <- c(
-    land_cover_24 = "Developed, High Intensity",
-    land_cover_42 = "Evergreen Forest",
-    land_cover_82 = "Cultivated Crops"
-)
-
-high_colors <- c(
-    land_cover_24 = "#5e503f",
-    land_cover_42 = "#606c38",
-    land_cover_82 = "#dda15e"
-)
-
-tracts_conus <- sf::st_read(
-    ds("clean_data/county_census/canonical_2024.gpkg"),
-    layer = "tracts_500k",
-    quiet = TRUE
-) |>
-    sf::st_make_valid() |>
-    dplyr::filter(!substr(geoid, 1, 2) %in% c("02", "15"))
-
-nlcd_df <- tract_monthly |>
-    dplyr::filter(variable %in% vars, year == target_year) |>
-    dplyr::select(geoid, variable, value) |>
-    dplyr::collect() |>
-    dplyr::group_by(geoid, variable) |>
-    dplyr::summarise(value = mean(value, na.rm = TRUE), .groups = "drop") |>
-    tidyr::pivot_wider(names_from = variable, values_from = value)
-
-plot_df <- dplyr::left_join(tracts_conus, nlcd_df, by = "geoid")
-
-map_one <- function(col_name) {
-    ggplot(plot_df) +
-        geom_sf(aes(fill = .data[[col_name]]), color = NA) +
-        scale_fill_gradient(
-            low = "white",
-            high = high_colors[[col_name]],
-            limits = c(0, 1),
-            oob = scales::squish,
-            name = "Proportion",
-            na.value = "grey90",
-            breaks = c(0, 0.25, 0.5, 0.75, 1)
-        ) +
-        coord_sf(xlim = c(-125, -66), ylim = c(24, 50), expand = FALSE) +
-        labs(title = paste0(pretty_names[[col_name]], " — ", target_year)) +
-        theme_minimal() +
-        theme(
-            plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
-            legend.position = "bottom",
-            legend.title = element_text(size = 9),
-            legend.text = element_text(size = 8)
-        )
-}
-
-panel <- cowplot::plot_grid(
-    map_one(vars[1]),
-    map_one(vars[2]),
-    map_one(vars[3]),
-    ncol = 3
-)
-outfile <- ds("figures/tract_monthly_nlcd.png")
-ggsave(
-    outfile,
-    panel,
-    device = ragg::agg_png,
-    width = 15,
-    height = 6,
-    units = "in",
-    dpi = 150
-)
-message("Saved: ", normalizePath(outfile))
-
-###########################################################################################
-# Köppen panel (tracts) — pull “static” from monthly dataset, averaging across months if repeated
-
-vars <- c("koppen_14", "koppen_7", "koppen_26")
-pretty_names <- c(
-    koppen_14 = "Cfa — Temperate, no dry season, hot summer",
-    koppen_7 = "BSk — Arid, steppe, cold",
-    koppen_26 = "Dfb — Cold, no dry season, warm summer"
-)
-high_colors <- c(
-    koppen_14 = "#254e2c",
-    koppen_7 = "#8da4ac",
-    koppen_26 = "#edcc6f"
-)
-
-tracts_ak_conus <- sf::st_read(
-    ds("clean_data/county_census/canonical_2024.gpkg"),
-    layer = "tracts_500k",
-    quiet = TRUE
-) |>
-    sf::st_make_valid() |>
-    dplyr::filter(substr(geoid, 1, 2) != "15")
-
-bbox <- c(-170, -60, 18, 72)
-
-koppen_df <- tract_monthly |>
-    dplyr::filter(variable %in% vars, year == "static") |>
-    dplyr::select(geoid, variable, value) |>
-    dplyr::collect() |>
-    dplyr::group_by(geoid, variable) |>
-    dplyr::summarise(value = mean(value, na.rm = TRUE), .groups = "drop") |>
-    tidyr::pivot_wider(names_from = variable, values_from = value)
-
-plot_df <- dplyr::left_join(tracts_ak_conus, koppen_df, by = "geoid")
-
-map_one <- function(col_name) {
-    ggplot(plot_df) +
-        geom_sf(aes(fill = .data[[col_name]]), color = NA) +
-        scale_fill_gradient(
-            low = "white",
-            high = high_colors[[col_name]],
-            limits = c(0, 1),
-            oob = scales::squish,
-            name = "Proportion",
-            na.value = "grey90",
-            breaks = c(0, 0.25, 0.5, 0.75, 1)
-        ) +
-        coord_sf(xlim = bbox[1:2], ylim = bbox[3:4], expand = FALSE) +
-        labs(title = paste0(pretty_names[[col_name]], " — static")) +
-        theme_minimal() +
-        theme(
-            plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
-            legend.position = "bottom",
-            legend.title = element_text(size = 9),
-            legend.text = element_text(size = 8)
-        )
-}
-
-panel <- cowplot::plot_grid(
-    map_one(vars[1]),
-    map_one(vars[2]),
-    map_one(vars[3]),
-    ncol = 3
-)
-outfile <- ds("figures/tract_monthly_koppen.png")
-ggsave(
-    outfile,
-    panel,
-    device = ragg::agg_png,
-    width = 15,
-    height = 6,
-    units = "in",
-    dpi = 150
-)
-message("Saved: ", normalizePath(outfile))

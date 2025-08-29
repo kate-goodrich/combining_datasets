@@ -6,7 +6,6 @@ clean_huc_layers <- function(
         "Catchment",
         "CatchmentSP",
         "NHDArea",
-        "NHDWaterbody",
         "HUC12"
     ),
     huc_level = "huc12",

@@ -50,8 +50,8 @@ prism_normals_from_tifs <- function(
         fn <- tools::file_path_sans_ext(basename(path))
         tibble(
             file = path,
-            variable = tolower(stringr::str_extract(fn, "^[^_]+")), # "ppt"
-            month = as.integer(stringr::str_extract(fn, "(?<=_)\\d{2}$")) # "01"->1
+            variable = tolower(stringr::str_extract(fn, "^[^_]+")), # e.g., "ppt"
+            month = as.integer(stringr::str_extract(fn, "(?<=_)\\d{2}$")) # "01" -> 1
         )
     }
     meta <- purrr::map_dfr(tif_paths, parse_meta)
@@ -94,6 +94,16 @@ prism_normals_from_tifs <- function(
                 ) |>
                 select(!!sym(id_col), level, variable, value)
         }
+
+    # --- Rename tmin/tmax variables to *_norm ---
+    out <- out |>
+        mutate(
+            variable = dplyr::case_when(
+                variable == "tmin" ~ "tmin_norm",
+                variable == "tmax" ~ "tmax_norm",
+                TRUE ~ variable
+            )
+        )
 
     if (!is.null(write_csv)) {
         dir.create(dirname(write_csv), recursive = TRUE, showWarnings = FALSE)

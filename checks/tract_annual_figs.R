@@ -29,9 +29,11 @@ dir.create(
 )
 
 # Keep ragg from interpreting huge inch sizes
-options(ragg.max_dim = 10000)
+options(ragg.max_dim = 10000) # optional; with units="px" you shouldn't hit the cap
+
 
 # packages
+
 library(arrow)
 library(dplyr)
 library(tidyverse)
@@ -40,23 +42,23 @@ library(gganimate)
 library(cowplot)
 library(ragg)
 library(gifski)
-library(scales)
+
 
 # Resolve paths relative to root.dir set above
 ds <- function(...) file.path(project_dir, ...)
 
-# ==== CHANGE: use tract dataset ====
 tract_annual <- open_dataset(ds(
     "handoffs/tract_annual_long/tract_annual.parquet"
 ))
 
 ###########################################################################################
+
 ############## HMS smoke tract annual animated map ##############
 
 # --- Load tract geometries (includes Alaska + Hawaii) ---
 tracts_all <- sf::st_read(
     ds("clean_data/county_census/canonical_2024.gpkg"),
-    layer = "tracts_500k", # CHANGE: tracts layer
+    layer = "tracts_500k",
     quiet = TRUE
 ) %>%
     sf::st_make_valid()
@@ -102,9 +104,9 @@ plot_df <- tracts_all %>%
     sf::st_as_sf() %>%
     filter(!sf::st_is_empty(sf::st_geometry(.)))
 
-# --- Remove Hawaii ONLY (keep Alaska) ---
+# --- Remove Hawaii ONLY ---
 plot_df <- plot_df %>%
-    filter(substr(geoid, 1, 2) != "15")
+    filter(substr(geoid, 1, 2) != "15") # Keep Alaska, drop Hawaii
 
 # --- Custom smoke colors ---
 smoke_colors <- c(
@@ -128,12 +130,12 @@ p_main <- ggplot(plot_df) +
     geom_sf(aes(fill = category, alpha = final_value), color = NA) +
     scale_fill_manual(
         values = smoke_colors,
-        breaks = c("None", "Light", "Medium", "Heavy"),
+        breaks = c("None", "Light", "Medium", "Heavy"), # <- Ensures correct legend order
         na.value = "grey80"
     ) +
     scale_alpha(range = c(0.2, 1), guide = "none") +
     coord_sf(
-        xlim = c(-165, -67),
+        xlim = c(-170, -67),
         ylim = c(20, 72),
         expand = FALSE
     ) +
@@ -150,8 +152,12 @@ p_main <- ggplot(plot_df) +
     ) +
     gganimate::transition_manual(year)
 
+
 # --- Count frames safely ---
-nframes <- plot_df$year %>% unique() %>% sort(na.last = NA) %>% length()
+nframes <- plot_df$year %>%
+    unique() %>%
+    sort(na.last = NA) %>%
+    length()
 
 # --- Animate using ragg ---
 anim <- gganimate::animate(
@@ -165,15 +171,14 @@ anim <- gganimate::animate(
     device = "ragg_png"
 )
 
-# --- Save animation (CHANGE: filename) ---
+# --- Save animation ---
 gganimate::anim_save(ds("figures/tract_annual_hms_smoke.gif"), anim)
 
-###########################################################################################
-# ---- Generic GIF animator for tract (kept flexible but default to tract) ----
 
+# ---- Generic GIF animator for tract × annual/monthly ----
 animate_geo_gif <- function(
     var,
-    level = c("tract", "county"), # default now tract
+    level = c("county", "tract"),
     agg = c("annual", "monthly"),
     include_alaska = TRUE,
     include_hawaii = FALSE,
@@ -182,21 +187,21 @@ animate_geo_gif <- function(
     title = NULL,
     palette = "mako",
     direction = -1,
-    trans = "identity",
+    trans = "identity", # e.g., "log10"
     labels = scales::label_number(accuracy = 0.1),
     na_fill = "grey80",
     width = 1000,
     height = 600,
     fps = 2,
-    out_path = NULL,
-    value_fun = NULL,
+    out_path = NULL, # default: figures/<var>_<level>_<agg>.gif
+    value_fun = NULL, # e.g., function(x) x * 1e9
     drop_na_time = TRUE,
-    tween_shapes = FALSE
+    tween_shapes = FALSE # <- NEW: avoid polygon morphing by default
 ) {
     level <- match.arg(level)
     agg <- match.arg(agg)
 
-    geom_layer <- if (level == "county") "counties_500k" else "tracts_500k" # CHANGE: default tracts
+    geom_layer <- if (level == "county") "counties_500k" else "tracts_500k"
     geom <- sf::st_read(
         ds("clean_data/county_census/canonical_2024.gpkg"),
         layer = geom_layer,
@@ -213,9 +218,7 @@ animate_geo_gif <- function(
         geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
     }
 
-    # ==== CHANGE: default to tract_annual/tract_monthly objects ====
-    ds_obj_name <- sprintf("%s_%s", level, agg)
-    ds_obj <- get(ds_obj_name, inherits = TRUE)
+    ds_obj <- get(sprintf("%s_%s", level, agg), inherits = TRUE)
 
     df <- tryCatch(
         ds_obj %>%
@@ -287,7 +290,7 @@ animate_geo_gif <- function(
 
     if (is.null(title)) {
         title <- sprintf(
-            "%s-%s %s — Year: {current_frame}",
+            "%s-%s %s — {closest_state}",
             tools::toTitleCase(level),
             agg,
             var
@@ -317,6 +320,7 @@ animate_geo_gif <- function(
         theme_minimal() +
         labs(title = title)
 
+    # Use manual transition by default (no polygon morphing)
     if (tween_shapes) {
         p <- p +
             gganimate::transition_states(
@@ -347,12 +351,11 @@ animate_geo_gif <- function(
     invisible(out_path)
 }
 
-###########################################################################################
 # merra dusmass25 tract annual animated map (with AK)
 
 animate_geo_gif(
     var = "dusmass25",
-    level = "tract", # CHANGE
+    level = "tract",
     agg = "annual",
     include_alaska = TRUE,
     include_hawaii = FALSE,
@@ -363,31 +366,33 @@ animate_geo_gif(
     trans = "log10",
     labels = scales::label_number(accuracy = 0.1),
     value_fun = function(x) x * 1e9, # kg/m^3 -> µg/m^3
-    out_path = ds("figures/tract_annual_dusmass.gif"), # CHANGE filename
-    title = "Tract annual merra2 dusmass25 — Year: {current_frame}" # CHANGE title
+    out_path = ds("figures/tract_annual_dusmass.gif"),
+    title = "Tract annual merra2 dusmass25 — Year: {current_frame}"
 )
+
 
 # gridmet rmax tract annual
 
 animate_geo_gif(
     var = "rmax",
-    level = "tract", # CHANGE
+    level = "tract",
     agg = "annual",
     include_alaska = FALSE,
     include_hawaii = FALSE,
     bbox = c(-125, -66, 24, 50),
     legend_title = "Rmax",
     palette = "plasma",
-    direction = -1,
-    out_path = ds("figures/tract_annual_rmax.gif"), # CHANGE filename
-    title = "Tract annual gridmet rmax — Year: {current_frame}" # CHANGE title
+    direction = 1,
+    out_path = ds("figures/tract_annual_rmax.gif"),
+    title = "Tract annual gridmet rmax — Year: {current_frame}"
 )
 
-# terra tmin tract annual
+
+# terra tmin
 
 animate_geo_gif(
     var = "tmin",
-    level = "tract", # CHANGE
+    level = "tract",
     agg = "annual",
     include_alaska = TRUE,
     include_hawaii = FALSE,
@@ -395,15 +400,15 @@ animate_geo_gif(
     legend_title = expression(T[min] * " (°C)"),
     palette = "turbo",
     direction = 1,
-    out_path = ds("figures/tract_annual_tmin.gif"), # CHANGE filename
-    title = "Tract annual terraclimate tmin — Year: {current_frame}" # CHANGE title
+    out_path = ds("figures/tract_annual_tmin.gif"),
+    title = "Tract annual terraclimate tmin — Year: {current_frame}"
 )
 
-# tri total_air_lb_per_km2 tract annual
+# tri
 
 animate_geo_gif(
     var = "total_air_lb_per_km2",
-    level = "tract", # CHANGE
+    level = "tract",
     agg = "annual",
     include_alaska = TRUE,
     include_hawaii = FALSE,
@@ -411,36 +416,36 @@ animate_geo_gif(
     legend_title = expression("TRI air emissions per area (lb·km"^-2 * ")"),
     palette = "rocket",
     direction = -1,
-    out_path = ds("figures/tract_annual_total_air_lb_per_km2.gif"), # CHANGE filename
-    title = "Tract annual TRI total_air_lb_per_km2 — Year: {current_frame}" # CHANGE
+    out_path = ds("figures/tract_annual_total_air_lb_per_km2.gif"),
+    title = "Tract annual tri total_air_lb_per_km2 — Year: {current_frame}"
 )
 
-###########################################################################################
-# MODIS EVI — tract/annual, CONUS only (values already scaled to [-1, 1])
+
+# MODIS EVI — tract/annual, CONUS only (values already scaled to [-1, 1], so no conversion)
 animate_geo_gif(
     var = "evi",
-    level = "tract", # CHANGE
+    level = "tract",
     agg = "annual",
     include_alaska = FALSE,
     include_hawaii = FALSE,
     bbox = c(-125, -66, 24, 50),
     legend_title = "EVI",
     palette = "viridis",
-    direction = -1,
-    out_path = ds("figures/tract_annual_evi.gif"), # CHANGE filename
-    title = "Tract annual MODIS EVI — Year: {current_frame}" # CHANGE title
+    direction = 1,
+    out_path = ds("figures/tract_annual_evi.gif"),
+    title = "Tract annual MODIS EVI — Year: {current_frame}"
 )
 
-###########################################################################################
-# NLCD plot (tracts)
+
+# nlcd plot
 
 # --- Pick year and 3 NLCD categories ---
 target_year <- 2021
 vars <- c(
     "land_cover_24", # Developed, High Intensity
     "land_cover_42", # Evergreen Forest
-    "land_cover_82" # Cultivated Crops
-)
+    "land_cover_82"
+) # Cultivated Crops
 
 pretty_names <- c(
     land_cover_24 = "Developed, High Intensity",
@@ -450,15 +455,15 @@ pretty_names <- c(
 
 # One distinct high color per category (0→white, 1→color)
 high_colors <- c(
-    land_cover_24 = "#5e503f",
-    land_cover_42 = "#606c38",
-    land_cover_82 = "#dda15e"
+    land_cover_24 = "#5e503f", # red
+    land_cover_42 = "#606c38", # green
+    land_cover_82 = "#dda15e" # orange
 )
 
 # --- Load CONUS tracts (drop AK + HI) ---
 tracts_conus <- sf::st_read(
     ds("clean_data/county_census/canonical_2024.gpkg"),
-    layer = "tracts_500k", # CHANGE: tracts
+    layer = "tracts_500k",
     quiet = TRUE
 ) |>
     sf::st_make_valid() |>
@@ -505,7 +510,7 @@ p3 <- map_one(vars[3])
 
 panel <- cowplot::plot_grid(p1, p2, p3, ncol = 3)
 
-# --- Save the panel PNG (tract-level filename) ---
+# --- Save the panel PNG (headless-safe via ragg) ---
 outfile <- ds("figures/tract_annual_nlcd.png")
 ggsave(
     outfile,
@@ -518,15 +523,14 @@ ggsave(
 )
 message("Saved: ", normalizePath(outfile))
 
-###########################################################################################
-# Köppen plot (tracts)
+#Koppen
 
 # --- Pick year and 3 Köppen categories ---
 target_year <- "static"
 vars <- c(
-    "koppen_14", # Cfa — Temperate, no dry season, hot summer
-    "koppen_7", # BSk — Arid, steppe, cold
-    "koppen_26" # Dfb — Cold, no dry season, warm summer
+    "koppen_14", # Cfa, Temperate, no dry season, hot summer
+    "koppen_7", # BSk, Arid, steppe, cold
+    "koppen_26" # Dfb, Cold, no dry season, warm summer
 )
 
 pretty_names <- c(
@@ -544,14 +548,14 @@ high_colors <- c(
 # --- Load tracts (include AK, drop HI only) ---
 tracts_ak_conus <- sf::st_read(
     ds("clean_data/county_census/canonical_2024.gpkg"),
-    layer = "tracts_500k", # CHANGE: tracts
+    layer = "tracts_500k",
     quiet = TRUE
 ) |>
     sf::st_make_valid() |>
-    dplyr::filter(substr(geoid, 1, 2) != "15")
+    dplyr::filter(substr(geoid, 1, 2) != "15") # keep AK ('02'), drop HI ('15')
 
 # --- Wider bbox to show AK + CONUS ---
-bbox <- c(-170, -60, 18, 72)
+bbox <- c(-170, -60, 18, 72) # xmin, xmax, ymin, ymax
 
 # --- Pull Köppen proportions for the chosen year ---
 koppen_df <- tract_annual |>
@@ -591,7 +595,7 @@ p2 <- map_one(vars[2])
 p3 <- map_one(vars[3])
 panel <- cowplot::plot_grid(p1, p2, p3, ncol = 3)
 
-# --- Save PNG (tract-level filename) ---
+# --- Save PNG ---
 outfile <- ds("figures/tract_annual_koppen.png")
 ggsave(
     outfile,
@@ -604,4 +608,250 @@ ggsave(
 )
 message("Saved: ", normalizePath(outfile))
 
-# still to do static sets: prism, gmted, groads, huc. (unchanged note; now everything above is tract-level)
+
+# ---- Generic static map function (Arrow-safe, standardized filenames) ----
+plot_static_map <- function(
+    var, # string or character vector
+    level = c("county", "tract"),
+    include_alaska = TRUE,
+    include_hawaii = FALSE,
+    legend_title = if (length(var) == 1) var else "Value",
+    palette = "viridis",
+    direction = 1,
+    bbox = c(-170, -60, 18, 72), # AK + CONUS by default
+    out_file = NULL,
+    title = NULL
+) {
+    level <- match.arg(level)
+    geom_layer <- if (level == "county") "counties_500k" else "tracts_500k"
+
+    # --- Read zones ---
+    geom <- sf::st_read(
+        ds("clean_data/county_census/canonical_2024.gpkg"),
+        layer = geom_layer,
+        quiet = TRUE
+    ) |>
+        sf::st_make_valid() |>
+        sf::st_zm(drop = TRUE)
+
+    # Drop states if requested
+    drop_states <- c(
+        if (!include_alaska) "02" else NULL,
+        if (!include_hawaii) "15" else NULL
+    )
+    if (length(drop_states)) {
+        geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
+    }
+
+    # --- Arrow-safe: collect before filtering on var ---
+    df <- tract_annual |>
+        dplyr::select(geoid, year, variable, value) |>
+        dplyr::filter(year == "static") |>
+        dplyr::collect() |>
+        dplyr::filter(variable %in% var) |>
+        dplyr::select(geoid, variable, value)
+
+    if (nrow(df) == 0) {
+        stop(sprintf(
+            "No rows found for variable(s): %s",
+            paste(var, collapse = ", ")
+        ))
+    }
+
+    # --- Join and filter empties ---
+    plot_df <- dplyr::left_join(geom, df, by = "geoid")
+    keep <- !sf::st_is_empty(sf::st_geometry(plot_df))
+    if (!all(keep)) {
+        plot_df <- plot_df[keep, , drop = FALSE]
+    }
+    plot_df <- sf::st_make_valid(plot_df)
+
+    if (is.null(title)) {
+        title <- if (length(var) == 1) {
+            sprintf("%s (%s)", var, level)
+        } else {
+            sprintf("Static variables (%s)", level)
+        }
+    }
+
+    p <- ggplot(plot_df) +
+        geom_sf(aes(fill = value), color = NA) +
+        scale_fill_viridis_c(
+            option = palette,
+            direction = direction,
+            name = legend_title,
+            na.value = "grey90"
+        ) +
+        coord_sf(xlim = bbox[1:2], ylim = bbox[3:4], expand = FALSE) +
+        labs(title = title) +
+        theme_minimal() +
+        theme(
+            plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+            legend.position = "bottom",
+            legend.title = element_text(size = 9),
+            legend.text = element_text(size = 8)
+        )
+
+    if (length(var) > 1) {
+        p <- p + facet_wrap(~variable, ncol = min(length(var), 3))
+    }
+
+    # --- Standardized file naming ---
+    if (is.null(out_file)) {
+        if (length(var) == 1) {
+            out_file <- ds(sprintf("figures/%s_static_%s.png", level, var))
+        } else {
+            out_file <- ds(sprintf("figures/%s_static_panel.png", level))
+        }
+    }
+
+    ggsave(
+        out_file,
+        p,
+        device = ragg::agg_png,
+        width = 12,
+        height = 6,
+        units = "in",
+        dpi = 150
+    )
+    message("Saved: ", normalizePath(out_file))
+    invisible(out_file)
+}
+
+
+# GMTED mean elevation
+plot_static_map(
+    var = "mn30_grd",
+    level = "tract",
+    include_alaska = TRUE,
+    include_hawaii = FALSE,
+    legend_title = "Elevation (m)",
+    palette = "turbo",
+    direction = -1,
+    title = "Tract static GMTED Mean Elevation"
+)
+
+# Road density
+plot_static_map(
+    var = "road_density_km_per_km2",
+    level = "tract",
+    include_alaska = TRUE,
+    include_hawaii = FALSE,
+    legend_title = "Road Density (km/km²)",
+    palette = "mako",
+    direction = -1,
+    title = "Tract static Road Density"
+)
+
+
+plot_static_map(
+    var = "prop_cover_nhdwaterbody",
+    level = "tract",
+    include_alaska = TRUE,
+    include_hawaii = FALSE,
+    legend_title = "Proportion NHD Waterbody",
+    palette = "cividis",
+    title = "Tract static NHD Waterbody Proportion"
+)
+
+
+# ---- Generic normal map function ----
+plot_normal_map <- function(
+    var,
+    level = c("county", "tract"),
+    include_alaska = TRUE,
+    include_hawaii = FALSE,
+    legend_title = var,
+    palette = "viridis",
+    direction = 1,
+    bbox = c(-140, -60, 18, 72),
+    out_file = NULL,
+    title = NULL
+) {
+    level <- match.arg(level)
+    geom_layer <- if (level == "county") "counties_500k" else "tracts_500k"
+
+    geom <- sf::st_read(
+        ds("clean_data/county_census/canonical_2024.gpkg"),
+        layer = geom_layer,
+        quiet = TRUE
+    ) |>
+        sf::st_make_valid() |>
+        sf::st_zm(drop = TRUE)
+
+    drop_states <- c(
+        if (!include_alaska) "02" else NULL,
+        if (!include_hawaii) "15" else NULL
+    )
+    if (length(drop_states)) {
+        geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
+    }
+
+    df <- tract_annual |>
+        dplyr::select(geoid, year, variable, value) |>
+        dplyr::filter(year == "normal") |>
+        dplyr::collect() |>
+        dplyr::filter(variable == var) |>
+        dplyr::select(geoid, value)
+
+    if (nrow(df) == 0) {
+        stop(sprintf("No rows found for normal variable: %s", var))
+    }
+
+    plot_df <- dplyr::left_join(geom, df, by = "geoid")
+    keep <- !sf::st_is_empty(sf::st_geometry(plot_df))
+    if (!all(keep)) {
+        plot_df <- plot_df[keep, , drop = FALSE]
+    }
+    plot_df <- sf::st_make_valid(plot_df)
+
+    if (is.null(title)) {
+        title <- sprintf("%s normal (%s)", var, level)
+    }
+
+    p <- ggplot(plot_df) +
+        geom_sf(aes(fill = value), color = NA) +
+        scale_fill_viridis_c(
+            option = palette,
+            direction = direction,
+            name = legend_title,
+            na.value = "grey90"
+        ) +
+        coord_sf(xlim = bbox[1:2], ylim = bbox[3:4], expand = FALSE) +
+        labs(title = title) +
+        theme_minimal() +
+        theme(
+            plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+            legend.position = "bottom",
+            legend.title = element_text(size = 9),
+            legend.text = element_text(size = 8)
+        )
+
+    if (is.null(out_file)) {
+        out_file <- ds(sprintf("figures/%s_normal_%s.png", level, var))
+    }
+
+    ggsave(
+        out_file,
+        p,
+        device = ragg::agg_png,
+        width = 12,
+        height = 6,
+        units = "in",
+        dpi = 150
+    )
+    message("Saved: ", normalizePath(out_file))
+    invisible(out_file)
+}
+
+
+# PRISM normal solar radiation
+plot_normal_map(
+    var = "soltotal",
+    level = "tract",
+    include_alaska = FALSE,
+    include_hawaii = FALSE,
+    legend_title = "Solar Radiation (MJ/m²/day)",
+    palette = "inferno",
+    title = "Tract normal PRISM SolTotal"
+)

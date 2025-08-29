@@ -608,4 +608,250 @@ ggsave(
 )
 message("Saved: ", normalizePath(outfile))
 
-# still to do static sets: prism, gmted, groads, huc
+
+# ---- Generic static map function (Arrow-safe, standardized filenames) ----
+plot_static_map <- function(
+    var, # string or character vector
+    level = c("county", "tract"),
+    include_alaska = TRUE,
+    include_hawaii = FALSE,
+    legend_title = if (length(var) == 1) var else "Value",
+    palette = "viridis",
+    direction = 1,
+    bbox = c(-170, -60, 18, 72), # AK + CONUS by default
+    out_file = NULL,
+    title = NULL
+) {
+    level <- match.arg(level)
+    geom_layer <- if (level == "county") "counties_500k" else "tracts_500k"
+
+    # --- Read zones ---
+    geom <- sf::st_read(
+        ds("clean_data/county_census/canonical_2024.gpkg"),
+        layer = geom_layer,
+        quiet = TRUE
+    ) |>
+        sf::st_make_valid() |>
+        sf::st_zm(drop = TRUE)
+
+    # Drop states if requested
+    drop_states <- c(
+        if (!include_alaska) "02" else NULL,
+        if (!include_hawaii) "15" else NULL
+    )
+    if (length(drop_states)) {
+        geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
+    }
+
+    # --- Arrow-safe: collect before filtering on var ---
+    df <- county_annual |>
+        dplyr::select(geoid, year, variable, value) |>
+        dplyr::filter(year == "static") |>
+        dplyr::collect() |>
+        dplyr::filter(variable %in% var) |>
+        dplyr::select(geoid, variable, value)
+
+    if (nrow(df) == 0) {
+        stop(sprintf(
+            "No rows found for variable(s): %s",
+            paste(var, collapse = ", ")
+        ))
+    }
+
+    # --- Join and filter empties ---
+    plot_df <- dplyr::left_join(geom, df, by = "geoid")
+    keep <- !sf::st_is_empty(sf::st_geometry(plot_df))
+    if (!all(keep)) {
+        plot_df <- plot_df[keep, , drop = FALSE]
+    }
+    plot_df <- sf::st_make_valid(plot_df)
+
+    if (is.null(title)) {
+        title <- if (length(var) == 1) {
+            sprintf("%s (%s)", var, level)
+        } else {
+            sprintf("Static variables (%s)", level)
+        }
+    }
+
+    p <- ggplot(plot_df) +
+        geom_sf(aes(fill = value), color = NA) +
+        scale_fill_viridis_c(
+            option = palette,
+            direction = direction,
+            name = legend_title,
+            na.value = "grey90"
+        ) +
+        coord_sf(xlim = bbox[1:2], ylim = bbox[3:4], expand = FALSE) +
+        labs(title = title) +
+        theme_minimal() +
+        theme(
+            plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+            legend.position = "bottom",
+            legend.title = element_text(size = 9),
+            legend.text = element_text(size = 8)
+        )
+
+    if (length(var) > 1) {
+        p <- p + facet_wrap(~variable, ncol = min(length(var), 3))
+    }
+
+    # --- Standardized file naming ---
+    if (is.null(out_file)) {
+        if (length(var) == 1) {
+            out_file <- ds(sprintf("figures/%s_static_%s.png", level, var))
+        } else {
+            out_file <- ds(sprintf("figures/%s_static_panel.png", level))
+        }
+    }
+
+    ggsave(
+        out_file,
+        p,
+        device = ragg::agg_png,
+        width = 12,
+        height = 6,
+        units = "in",
+        dpi = 150
+    )
+    message("Saved: ", normalizePath(out_file))
+    invisible(out_file)
+}
+
+
+# GMTED mean elevation
+plot_static_map(
+    var = "mn30_grd",
+    level = "county",
+    include_alaska = TRUE,
+    include_hawaii = FALSE,
+    legend_title = "Elevation (m)",
+    palette = "turbo",
+    direction = -1,
+    title = "County static GMTED Mean Elevation"
+)
+
+# Road density
+plot_static_map(
+    var = "road_density_km_per_km2",
+    level = "county",
+    include_alaska = TRUE,
+    include_hawaii = FALSE,
+    legend_title = "Road Density (km/km²)",
+    palette = "mako",
+    direction = -1,
+    title = "County static Road Density"
+)
+
+
+plot_static_map(
+    var = "prop_cover_nhdarea",
+    level = "county",
+    include_alaska = TRUE,
+    include_hawaii = FALSE,
+    legend_title = "Proportion NHD Area",
+    palette = "cividis",
+    title = "County static NHD Area"
+)
+
+
+# ---- Generic normal map function ----
+plot_normal_map <- function(
+    var,
+    level = c("county", "tract"),
+    include_alaska = TRUE,
+    include_hawaii = FALSE,
+    legend_title = var,
+    palette = "viridis",
+    direction = 1,
+    bbox = c(-140, -60, 18, 72),
+    out_file = NULL,
+    title = NULL
+) {
+    level <- match.arg(level)
+    geom_layer <- if (level == "county") "counties_500k" else "tracts_500k"
+
+    geom <- sf::st_read(
+        ds("clean_data/county_census/canonical_2024.gpkg"),
+        layer = geom_layer,
+        quiet = TRUE
+    ) |>
+        sf::st_make_valid() |>
+        sf::st_zm(drop = TRUE)
+
+    drop_states <- c(
+        if (!include_alaska) "02" else NULL,
+        if (!include_hawaii) "15" else NULL
+    )
+    if (length(drop_states)) {
+        geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
+    }
+
+    df <- county_annual |>
+        dplyr::select(geoid, year, variable, value) |>
+        dplyr::filter(year == "normal") |>
+        dplyr::collect() |>
+        dplyr::filter(variable == var) |>
+        dplyr::select(geoid, value)
+
+    if (nrow(df) == 0) {
+        stop(sprintf("No rows found for normal variable: %s", var))
+    }
+
+    plot_df <- dplyr::left_join(geom, df, by = "geoid")
+    keep <- !sf::st_is_empty(sf::st_geometry(plot_df))
+    if (!all(keep)) {
+        plot_df <- plot_df[keep, , drop = FALSE]
+    }
+    plot_df <- sf::st_make_valid(plot_df)
+
+    if (is.null(title)) {
+        title <- sprintf("%s normal (%s)", var, level)
+    }
+
+    p <- ggplot(plot_df) +
+        geom_sf(aes(fill = value), color = NA) +
+        scale_fill_viridis_c(
+            option = palette,
+            direction = direction,
+            name = legend_title,
+            na.value = "grey90"
+        ) +
+        coord_sf(xlim = bbox[1:2], ylim = bbox[3:4], expand = FALSE) +
+        labs(title = title) +
+        theme_minimal() +
+        theme(
+            plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+            legend.position = "bottom",
+            legend.title = element_text(size = 9),
+            legend.text = element_text(size = 8)
+        )
+
+    if (is.null(out_file)) {
+        out_file <- ds(sprintf("figures/%s_normal_%s.png", level, var))
+    }
+
+    ggsave(
+        out_file,
+        p,
+        device = ragg::agg_png,
+        width = 12,
+        height = 6,
+        units = "in",
+        dpi = 150
+    )
+    message("Saved: ", normalizePath(out_file))
+    invisible(out_file)
+}
+
+
+# PRISM normal solar radiation
+plot_normal_map(
+    var = "soltotal",
+    level = "county",
+    include_alaska = FALSE,
+    include_hawaii = FALSE,
+    legend_title = "Solar Radiation (MJ/m²/day)",
+    palette = "inferno",
+    title = "County normal PRISM SolTotal"
+)

@@ -86,6 +86,7 @@ county_annual %>%
   collect()
 
 
+
 var_summary <- county_annual %>%
   group_by(variable) %>%
   summarise(
@@ -248,6 +249,7 @@ comparison <- var_summary %>%
   select(variable, min_val, max_val, min_exp, max_exp, passes)
 
 print(comparison, n = Inf)
+
 
 
 

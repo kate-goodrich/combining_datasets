@@ -130,7 +130,9 @@ This file was generated using data from:
 | soltotal                       | prism         | normal  | Solar shortwave radiation horizontal surface          | MJ/m²/day      |
 | soltrans                       | prism         | normal  | Atmospheric transmittance                             | proportion     |
 | tdmean                         | prism         | normal  | Mean daily dew point temperature                      | °C             |
+| tmax_norm                      | prism         | normal  | Max daily temperature                                 | °C             |
 | tmean                          | prism         | normal  | Mean temperature                                      | °C             |
+| tmin_norm                      | prism         | normal  | Minimum daily temperature                             | °C             |
 | vpdmax                         | prism         | normal  | Maximum vapor pressure deficit                        | hPa            |
 | vpdmin                         | prism         | normal  | Minimum vapor pressure deficit                        | hPa            |
 | be30_grd                       | gmted         | static  | Breakline emphasis (30-arc seconds)                   | m              |
@@ -149,7 +151,6 @@ This file was generated using data from:
 | prop_cover_huc12               | huc           | static  | Proportion of zone covered by HUC12                   | proportion     |
 | prop_cover_landsea             | huc           | static  | Proportion of zone covered by land-sea boundary       | proportion     |
 | prop_cover_nhdarea             | huc           | static  | Proportion of zone covered by NHD area                | proportion     |
-| prop_cover_nhdwaterbody        | huc           | static  | Proportion of zone covered by NHD waterbody           | proportion     |
 | koppen_confidence              | koppen_geiger | static  | Confidence metric for Koppen_Geiger zone coverage     | %              |
 | koppen_1                       | koppen_geiger | static  | Coverage Af – Tropical, rainforest                    | proportion     |
 | koppen_2                       | koppen_geiger | static  | Coverage Am – Tropical, monsoon                       | proportion     |
