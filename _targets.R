@@ -353,22 +353,26 @@ list(
 
     # ---- HUC (static) ----
     tar_target(
-        huc_county_summary,
-        huc_overlap_summary(
-            gpkg_dir = "clean_data/huc_clean",
-            zones_gpkg = CENSUS_GPKG,
+        county_huc2,
+        huc2_from_huc12_gpkg(
+            huc12_gpkg = "/ddn/gs1/group/set/chords/combining_datasets/clean_data/huc_clean/HUC12.gpkg",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
             level = "county",
-            write_csv = "summary_sets/static_county_huc.csv"
-        )
+            id_col = "geoid",
+            write_csv = "/ddn/gs1/group/set/chords/combining_datasets/summary_sets/static_county_huc.csv"
+        ),
+        format = "parquet" # optional; use if you want parquet instead of rds
     ),
+
+    # Tract-level HUC2 coverage
     tar_target(
-        huc_tract_summary,
-        huc_overlap_summary(
-            gpkg_dir = "clean_data/huc_clean",
-            zones_gpkg = CENSUS_GPKG,
+        tract_huc2,
+        huc2_from_huc12_gpkg(
+            huc12_gpkg = "/ddn/gs1/group/set/chords/combining_datasets/clean_data/huc_clean/HUC12.gpkg",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
             level = "tract",
-            zone_layer = LAYER$tract, # set if your gpkg uses this layer name
-            write_csv = "summary_sets/static_tract_huc.csv"
+            id_col = "geoid",
+            write_csv = "/ddn/gs1/group/set/chords/combining_datasets/summary_sets/static_tract_huc.csv"
         )
     ),
 

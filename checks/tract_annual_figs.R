@@ -175,168 +175,168 @@ tract_annual <- open_dataset(ds(
 # gganimate::anim_save(ds("figures/tract_annual_hms_smoke.gif"), anim)
 #
 #
-# ---- Generic GIF animator for tract × annual/monthly ----
-
-animate_geo_gif <- function(
-    var,
-    level = c("county", "tract"),
-    agg = c("annual", "monthly"),
-    include_alaska = TRUE,
-    include_hawaii = FALSE,
-    bbox = NULL,
-    legend_title = var,
-    title = NULL,
-    palette = "mako",
-    direction = -1,
-    trans = "identity",
-    labels = scales::label_number(accuracy = 0.1),
-    na_fill = "grey80",
-    width = 1000,
-    height = 600,
-    fps = 2,
-    out_path = NULL,
-    value_fun = NULL,
-    drop_na_time = TRUE,
-    tween_shapes = FALSE
-) {
-    level <- match.arg(level)
-    agg <- match.arg(agg)
-    geom_layer <- if (level == "county") "counties_500k" else "tracts_500k"
-    geom <- sf::st_read(
-        ds("clean_data/county_census/canonical_2024.gpkg"),
-        layer = geom_layer,
-        quiet = TRUE
-    ) %>%
-        sf::st_make_valid() %>%
-        sf::st_zm(drop = TRUE)
-    drop_states <- c(
-        if (!include_alaska) "02" else NULL,
-        if (!include_hawaii) "15" else NULL
-    )
-    if (length(drop_states)) {
-        geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
-    }
-    ds_obj <- get(sprintf("%s_%s", level, agg), inherits = TRUE)
-    df <- tryCatch(
-        ds_obj %>%
-            dplyr::filter(variable %in% !!var) %>%
-            {
-                if (agg == "annual") {
-                    dplyr::select(., geoid, year, value)
-                } else {
-                    dplyr::select(., geoid, year, month, value)
-                }
-            } %>%
-            dplyr::collect(),
-        error = function(e) {
-            ds_obj %>%
-                dplyr::select(
-                    geoid,
-                    year,
-                    dplyr::all_of(
-                        if (agg == "monthly") c("month") else character(0)
-                    ),
-                    variable,
-                    value
-                ) %>%
-                dplyr::collect() %>%
-                dplyr::filter(variable == var) %>%
-                dplyr::select(-variable)
-        }
-    )
-    if (!is.null(value_fun)) {
-        df <- dplyr::mutate(df, value = value_fun(value))
-    }
-    if (agg == "annual") {
-        if (drop_na_time) {
-            df <- dplyr::filter(df, !is.na(year))
-        }
-        levs <- df %>%
-            dplyr::arrange(year) %>%
-            dplyr::distinct(year) %>%
-            dplyr::pull(year)
-        df <- df %>%
-            dplyr::mutate(
-                time_state = factor(
-                    as.character(year),
-                    levels = as.character(levs)
-                )
-            )
-    } else {
-        if (drop_na_time) {
-            df <- dplyr::filter(df, !is.na(year), !is.na(month))
-        }
-        df <- df %>% dplyr::mutate(ym = sprintf("%04d-%02d", year, month))
-        levs <- df %>%
-            dplyr::arrange(year, month) %>%
-            dplyr::distinct(ym) %>%
-            dplyr::pull(ym)
-        df <- df %>% dplyr::mutate(time_state = factor(ym, levels = levs))
-    }
-    plot_df <- dplyr::left_join(geom, df, by = "geoid") %>%
-        dplyr::filter(!is.na(time_state)) %>%
-        dplyr::filter(!sf::st_is_empty(sf::st_geometry(.))) %>%
-        sf::st_make_valid()
-    if (is.null(bbox)) {
-        bbox <- c(-125, -66, 24, 50)
-    }
-    if (is.null(title)) {
-        title <- sprintf(
-            "%s-%s %s — {closest_state}",
-            tools::toTitleCase(level),
-            agg,
-            var
-        )
-    }
-    nframes <- plot_df %>% dplyr::distinct(time_state) %>% nrow()
-    if (is.na(nframes) || nframes < 1) {
-        nframes <- 1L
-    }
-    p <- ggplot(plot_df) +
-        geom_sf(aes(fill = value), color = NA) +
-        scale_fill_viridis_c(
-            option = palette,
-            direction = direction,
-            trans = trans,
-            labels = labels,
-            na.value = na_fill,
-            name = legend_title
-        ) +
-        coord_sf(
-            xlim = c(bbox[1], bbox[2]),
-            ylim = c(bbox[3], bbox[4]),
-            expand = FALSE
-        ) +
-        theme_minimal() +
-        labs(title = title)
-    if (tween_shapes) {
-        p <- p +
-            gganimate::transition_states(
-                time_state,
-                transition_length = 1,
-                state_length = 1
-            ) +
-            gganimate::ease_aes("linear")
-    } else {
-        p <- p + gganimate::transition_manual(time_state)
-    }
-    anim <- gganimate::animate(
-        p,
-        nframes = nframes,
-        fps = fps,
-        width = width,
-        height = height,
-        units = "px",
-        renderer = gifski_renderer(),
-        device = "ragg_png"
-    )
-    if (is.null(out_path)) {
-        out_path <- ds(sprintf("figures/%s_%s_%s.gif", var, level, agg))
-    }
-    gganimate::anim_save(out_path, anim)
-    invisible(out_path)
-}
-
+# # ---- Generic GIF animator for tract × annual/monthly ----
+#
+# animate_geo_gif <- function(
+#     var,
+#     level = c("county", "tract"),
+#     agg = c("annual", "monthly"),
+#     include_alaska = TRUE,
+#     include_hawaii = FALSE,
+#     bbox = NULL,
+#     legend_title = var,
+#     title = NULL,
+#     palette = "mako",
+#     direction = -1,
+#     trans = "identity",
+#     labels = scales::label_number(accuracy = 0.1),
+#     na_fill = "grey80",
+#     width = 1000,
+#     height = 600,
+#     fps = 2,
+#     out_path = NULL,
+#     value_fun = NULL,
+#     drop_na_time = TRUE,
+#     tween_shapes = FALSE
+# ) {
+#     level <- match.arg(level)
+#     agg <- match.arg(agg)
+#     geom_layer <- if (level == "county") "counties_500k" else "tracts_500k"
+#     geom <- sf::st_read(
+#         ds("clean_data/county_census/canonical_2024.gpkg"),
+#         layer = geom_layer,
+#         quiet = TRUE
+#     ) %>%
+#         sf::st_make_valid() %>%
+#         sf::st_zm(drop = TRUE)
+#     drop_states <- c(
+#         if (!include_alaska) "02" else NULL,
+#         if (!include_hawaii) "15" else NULL
+#     )
+#     if (length(drop_states)) {
+#         geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
+#     }
+#     ds_obj <- get(sprintf("%s_%s", level, agg), inherits = TRUE)
+#     df <- tryCatch(
+#         ds_obj %>%
+#             dplyr::filter(variable %in% !!var) %>%
+#             {
+#                 if (agg == "annual") {
+#                     dplyr::select(., geoid, year, value)
+#                 } else {
+#                     dplyr::select(., geoid, year, month, value)
+#                 }
+#             } %>%
+#             dplyr::collect(),
+#         error = function(e) {
+#             ds_obj %>%
+#                 dplyr::select(
+#                     geoid,
+#                     year,
+#                     dplyr::all_of(
+#                         if (agg == "monthly") c("month") else character(0)
+#                     ),
+#                     variable,
+#                     value
+#                 ) %>%
+#                 dplyr::collect() %>%
+#                 dplyr::filter(variable == var) %>%
+#                 dplyr::select(-variable)
+#         }
+#     )
+#     if (!is.null(value_fun)) {
+#         df <- dplyr::mutate(df, value = value_fun(value))
+#     }
+#     if (agg == "annual") {
+#         if (drop_na_time) {
+#             df <- dplyr::filter(df, !is.na(year))
+#         }
+#         levs <- df %>%
+#             dplyr::arrange(year) %>%
+#             dplyr::distinct(year) %>%
+#             dplyr::pull(year)
+#         df <- df %>%
+#             dplyr::mutate(
+#                 time_state = factor(
+#                     as.character(year),
+#                     levels = as.character(levs)
+#                 )
+#             )
+#     } else {
+#         if (drop_na_time) {
+#             df <- dplyr::filter(df, !is.na(year), !is.na(month))
+#         }
+#         df <- df %>% dplyr::mutate(ym = sprintf("%04d-%02d", year, month))
+#         levs <- df %>%
+#             dplyr::arrange(year, month) %>%
+#             dplyr::distinct(ym) %>%
+#             dplyr::pull(ym)
+#         df <- df %>% dplyr::mutate(time_state = factor(ym, levels = levs))
+#     }
+#     plot_df <- dplyr::left_join(geom, df, by = "geoid") %>%
+#         dplyr::filter(!is.na(time_state)) %>%
+#         dplyr::filter(!sf::st_is_empty(sf::st_geometry(.))) %>%
+#         sf::st_make_valid()
+#     if (is.null(bbox)) {
+#         bbox <- c(-125, -66, 24, 50)
+#     }
+#     if (is.null(title)) {
+#         title <- sprintf(
+#             "%s-%s %s — {closest_state}",
+#             tools::toTitleCase(level),
+#             agg,
+#             var
+#         )
+#     }
+#     nframes <- plot_df %>% dplyr::distinct(time_state) %>% nrow()
+#     if (is.na(nframes) || nframes < 1) {
+#         nframes <- 1L
+#     }
+#     p <- ggplot(plot_df) +
+#         geom_sf(aes(fill = value), color = NA) +
+#         scale_fill_viridis_c(
+#             option = palette,
+#             direction = direction,
+#             trans = trans,
+#             labels = labels,
+#             na.value = na_fill,
+#             name = legend_title
+#         ) +
+#         coord_sf(
+#             xlim = c(bbox[1], bbox[2]),
+#             ylim = c(bbox[3], bbox[4]),
+#             expand = FALSE
+#         ) +
+#         theme_minimal() +
+#         labs(title = title)
+#     if (tween_shapes) {
+#         p <- p +
+#             gganimate::transition_states(
+#                 time_state,
+#                 transition_length = 1,
+#                 state_length = 1
+#             ) +
+#             gganimate::ease_aes("linear")
+#     } else {
+#         p <- p + gganimate::transition_manual(time_state)
+#     }
+#     anim <- gganimate::animate(
+#         p,
+#         nframes = nframes,
+#         fps = fps,
+#         width = width,
+#         height = height,
+#         units = "px",
+#         renderer = gifski_renderer(),
+#         device = "ragg_png"
+#     )
+#     if (is.null(out_path)) {
+#         out_path <- ds(sprintf("figures/%s_%s_%s.gif", var, level, agg))
+#     }
+#     gganimate::anim_save(out_path, anim)
+#     invisible(out_path)
+# }
+#
 #
 #
 # # merra dusmass25 tract annual animated map (with AK)
@@ -377,36 +377,38 @@ animate_geo_gif <- function(
 #
 #
 # terra tmin
-
-animate_geo_gif(
-    var = "tmin",
-    level = "tract",
-    agg = "annual",
-    include_alaska = TRUE,
-    include_hawaii = FALSE,
-    legend_title = expression(T[min] * " (°C)"),
-    palette = "turbo",
-    direction = 1,
-    out_path = ds("figures/tract_annual_tmin.gif"),
-    title = "Tract annual terraclimate tmin — Year: {current_frame}"
-)
-
-
-# tri
-
-animate_geo_gif(
-    var = "annual_total_air_lb_per_km2",
-    level = "tract",
-    agg = "annual",
-    include_alaska = TRUE,
-    include_hawaii = FALSE,
-    legend_title = expression("TRI air emissions per area (lb·km"^-2 * ")"),
-    palette = "rocket",
-    direction = -1,
-    out_path = ds("figures/tract_annual_total_air_lb_per_km2.gif"),
-    title = "Tract annual tri total_air_lb_per_km2 — Year: {current_frame}"
-)
-
+#
+# animate_geo_gif(
+#     var = "tmin",
+#     level = "tract",
+#     agg = "annual",
+#     include_alaska = TRUE,
+#     include_hawaii = FALSE,
+#     legend_title = expression(T[min] * " (°C)"),
+#     palette = "turbo",
+#     bbox = c(-170, -60, 18, 72),
+#     direction = 1,
+#     out_path = ds("figures/tract_annual_tmin.gif"),
+#     title = "Tract annual terraclimate tmin — Year: {current_frame}"
+# )
+#
+#
+# # tri
+#
+# animate_geo_gif(
+#     var = "annual_total_air_lb_per_km2",
+#     level = "tract",
+#     agg = "annual",
+#     include_alaska = TRUE,
+#     include_hawaii = FALSE,
+#     bbox = c(-170, -60, 18, 72),
+#     legend_title = expression("TRI air emissions per area (lb·km"^-2 * ")"),
+#     palette = "rocket",
+#     direction = -1,
+#     out_path = ds("figures/tract_annual_total_air_lb_per_km2.gif"),
+#     title = "Tract annual tri total_air_lb_per_km2 — Year: {current_frame}"
+# )
+#
 #
 # # MODIS EVI — tract/annual, CONUS only (values already scaled to [-1, 1], so no conversion)
 # animate_geo_gif(
@@ -423,288 +425,330 @@ animate_geo_gif(
 #     title = "Tract annual MODIS EVI — Year: {current_frame}"
 # )
 #
-#
-# # nlcd plot
-#
-# # --- Pick year and 3 NLCD categories ---
-# target_year <- 2021
-# vars <- c(
-#     "land_cover_24", # Developed, High Intensity
-#     "land_cover_42", # Evergreen Forest
-#     "land_cover_82"
-# ) # Cultivated Crops
-#
-# pretty_names <- c(
-#     land_cover_24 = "Developed, High Intensity",
-#     land_cover_42 = "Evergreen Forest",
-#     land_cover_82 = "Cultivated Crops"
-# )
-#
-# # One distinct high color per category (0→white, 1→color)
-# high_colors <- c(
-#     land_cover_24 = "#5e503f", # red
-#     land_cover_42 = "#606c38", # green
-#     land_cover_82 = "#dda15e" # orange
-# )
-#
-# # --- Load CONUS tracts (drop AK + HI) ---
-# tracts_conus <- sf::st_read(
-#     ds("clean_data/county_census/canonical_2024.gpkg"),
-#     layer = "tracts_500k",
-#     quiet = TRUE
-# ) |>
-#     sf::st_make_valid() |>
-#     dplyr::filter(!substr(geoid, 1, 2) %in% c("02", "15"))
-#
-# # --- Pull NLCD proportions for the chosen year ---
-# nlcd_df <- tract_annual |>
-#     dplyr::filter(variable %in% vars, year == target_year) |>
-#     dplyr::select(geoid, variable, value) |>
-#     dplyr::collect() |>
-#     tidyr::pivot_wider(names_from = variable, values_from = value)
-#
-# plot_df <- dplyr::left_join(tracts_conus, nlcd_df, by = "geoid")
-#
-# # --- Helper to build one map for a column ---
-# map_one <- function(col_name) {
-#     ggplot(plot_df) +
-#         geom_sf(aes(fill = .data[[col_name]]), color = NA) +
-#         scale_fill_gradient(
-#             low = "white",
-#             high = high_colors[[col_name]],
-#             limits = c(0, 1),
-#             oob = scales::squish,
-#             name = "Proportion",
-#             na.value = "grey90",
-#             breaks = c(0, 0.25, 0.5, 0.75, 1)
-#         ) +
-#         coord_sf(xlim = c(-125, -66), ylim = c(24, 50), expand = FALSE) +
-#         labs(
-#             title = paste0(pretty_names[[col_name]], " — ", target_year)
-#         ) +
-#         theme_minimal() +
-#         theme(
-#             plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
-#             legend.position = "bottom",
-#             legend.title = element_text(size = 9),
-#             legend.text = element_text(size = 8)
-#         )
-# }
-#
-# p1 <- map_one(vars[1])
-# p2 <- map_one(vars[2])
-# p3 <- map_one(vars[3])
-#
-# panel <- cowplot::plot_grid(p1, p2, p3, ncol = 3)
-#
-# # --- Save the panel PNG (headless-safe via ragg) ---
-# outfile <- ds("figures/tract_annual_nlcd.png")
-# ggsave(
-#     outfile,
-#     panel,
-#     device = ragg::agg_png,
-#     width = 15,
-#     height = 6,
-#     units = "in",
-#     dpi = 150
-# )
-# message("Saved: ", normalizePath(outfile))
-#
-# #Koppen
-#
-# # --- Pick year and 3 Köppen categories ---
-# target_year <- "static"
-# vars <- c(
-#     "koppen_14", # Cfa, Temperate, no dry season, hot summer
-#     "koppen_7", # BSk, Arid, steppe, cold
-#     "koppen_26" # Dfb, Cold, no dry season, warm summer
-# )
-#
-# pretty_names <- c(
-#     koppen_14 = "Cfa — Temperate, no dry season, hot summer",
-#     koppen_7 = "BSk — Arid, steppe, cold",
-#     koppen_26 = "Dfb — Cold, no dry season, warm summer"
-# )
-#
-# high_colors <- c(
-#     koppen_14 = "#254e2c",
-#     koppen_7 = "#8da4ac",
-#     koppen_26 = "#edcc6f"
-# )
-#
-# # --- Load tracts (include AK, drop HI only) ---
-# tracts_ak_conus <- sf::st_read(
-#     ds("clean_data/county_census/canonical_2024.gpkg"),
-#     layer = "tracts_500k",
-#     quiet = TRUE
-# ) |>
-#     sf::st_make_valid() |>
-#     dplyr::filter(substr(geoid, 1, 2) != "15") # keep AK ('02'), drop HI ('15')
-#
-# # --- Wider bbox to show AK + CONUS ---
-# bbox <- c(-170, -60, 18, 72) # xmin, xmax, ymin, ymax
-#
-# # --- Pull Köppen proportions for the chosen year ---
-# koppen_df <- tract_annual |>
-#     dplyr::filter(variable %in% vars, year == target_year) |>
-#     dplyr::select(geoid, variable, value) |>
-#     dplyr::collect() |>
-#     tidyr::pivot_wider(names_from = variable, values_from = value)
-#
-# plot_df <- dplyr::left_join(tracts_ak_conus, koppen_df, by = "geoid")
-#
-# # --- Helper to build one map for a column ---
-# map_one <- function(col_name) {
-#     ggplot(plot_df) +
-#         geom_sf(aes(fill = .data[[col_name]]), color = NA) +
-#         scale_fill_gradient(
-#             low = "white",
-#             high = high_colors[[col_name]],
-#             limits = c(0, 1),
-#             oob = scales::squish,
-#             name = "Proportion",
-#             na.value = "grey90",
-#             breaks = c(0, 0.25, 0.5, 0.75, 1)
-#         ) +
-#         coord_sf(xlim = bbox[1:2], ylim = bbox[3:4], expand = FALSE) +
-#         labs(title = paste0(pretty_names[[col_name]], " — ", target_year)) +
-#         theme_minimal() +
-#         theme(
-#             plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
-#             legend.position = "bottom",
-#             legend.title = element_text(size = 9),
-#             legend.text = element_text(size = 8)
-#         )
-# }
-#
-# p1 <- map_one(vars[1])
-# p2 <- map_one(vars[2])
-# p3 <- map_one(vars[3])
-# panel <- cowplot::plot_grid(p1, p2, p3, ncol = 3)
-#
-# # --- Save PNG ---
-# outfile <- ds("figures/tract_annual_koppen.png")
-# ggsave(
-#     outfile,
-#     panel,
-#     device = ragg::agg_png,
-#     width = 15,
-#     height = 6,
-#     units = "in",
-#     dpi = 150
-# )
-# message("Saved: ", normalizePath(outfile))
-#
 
-# ---- Generic static map function (Arrow-safe, standardized filenames) ----
-plot_static_map <- function(
-    var, # string or character vector
+plot_proportion_panel <- function(
+    vars,
+    pretty_names,
+    high_colors,
+    target_year,
+    outfile = NULL,
+    dataset = county_annual,
     level = c("county", "tract"),
-    include_alaska = TRUE,
+    geoms_gpkg = ds("clean_data/county_census/canonical_2024.gpkg"),
+    layer_name = NULL,
+    include_alaska = FALSE,
     include_hawaii = FALSE,
-    legend_title = if (length(var) == 1) var else "Value",
-    palette = "viridis",
-    direction = 1,
-    bbox = c(-170, -60, 18, 72), # AK + CONUS by default
-    out_file = NULL,
-    title = NULL
+    bbox = NULL
 ) {
+    stopifnot(length(vars) == 3L)
     level <- match.arg(level)
-    geom_layer <- if (level == "county") "counties_500k" else "tracts_500k"
 
-    # --- Read zones ---
-    geom <- sf::st_read(
-        ds("clean_data/county_census/canonical_2024.gpkg"),
-        layer = geom_layer,
-        quiet = TRUE
-    ) |>
-        sf::st_make_valid() |>
-        sf::st_zm(drop = TRUE)
-
-    # Drop states if requested
-    drop_states <- c(
-        if (!include_alaska) "02" else NULL,
-        if (!include_hawaii) "15" else NULL
-    )
-    if (length(drop_states)) {
-        geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
+    if (is.null(layer_name)) {
+        layer_name <- if (level == "county") "counties_500k" else "tracts_500k"
     }
 
-    # --- Arrow-safe: collect before filtering on var ---
-    df <- tract_annual |>
-        dplyr::select(geoid, year, variable, value) |>
-        dplyr::filter(year == "static") |>
+    # --- Geometry ---
+    geom <- sf::st_read(geoms_gpkg, layer = layer_name, quiet = TRUE) |>
+        sf::st_make_valid()
+
+    # FIPS: AK=02, HI=15  (apply filters conditionally)
+    if (!include_alaska) {
+        geom <- dplyr::filter(geom, substr(geoid, 1, 2) != "02")
+    }
+    if (!include_hawaii) {
+        geom <- dplyr::filter(geom, substr(geoid, 1, 2) != "15")
+    }
+
+    # Default bbox if not provided
+    if (is.null(bbox)) {
+        if (include_alaska && !include_hawaii) {
+            bbox <- c(-170, -60, 18, 72) # AK + CONUS
+        } else if (!include_alaska && !include_hawaii) {
+            bbox <- c(-125, -66, 24, 50) # CONUS
+        } else if (include_alaska && include_hawaii) {
+            bbox <- c(-170, -60, 18, 72) # simple wide view
+        } else {
+            bbox <- c(-160, -60, 18, 72) # catch-all
+        }
+    }
+
+    # --- Data ---
+    wide_df <- dataset |>
+        dplyr::filter(.data$variable %in% vars, .data$year == target_year) |>
+        dplyr::select(geoid, variable, value) |>
         dplyr::collect() |>
-        dplyr::filter(variable %in% var) |>
-        dplyr::select(geoid, variable, value)
+        tidyr::pivot_wider(names_from = variable, values_from = value)
 
-    if (nrow(df) == 0) {
-        stop(sprintf(
-            "No rows found for variable(s): %s",
-            paste(var, collapse = ", ")
-        ))
-    }
+    plot_df <- dplyr::left_join(geom, wide_df, by = "geoid")
 
-    # --- Join and filter empties ---
-    plot_df <- dplyr::left_join(geom, df, by = "geoid")
-    keep <- !sf::st_is_empty(sf::st_geometry(plot_df))
-    if (!all(keep)) {
-        plot_df <- plot_df[keep, , drop = FALSE]
-    }
-    plot_df <- sf::st_make_valid(plot_df)
-
-    if (is.null(title)) {
-        title <- if (length(var) == 1) {
-            sprintf("%s (%s)", var, level)
-        } else {
-            sprintf("Static variables (%s)", level)
-        }
-    }
-
-    p <- ggplot(plot_df) +
-        geom_sf(aes(fill = value), color = NA) +
-        scale_fill_viridis_c(
-            option = palette,
-            direction = direction,
-            name = legend_title,
-            na.value = "grey90"
-        ) +
-        coord_sf(xlim = bbox[1:2], ylim = bbox[3:4], expand = FALSE) +
-        labs(title = title) +
-        theme_minimal() +
-        theme(
-            plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
-            legend.position = "bottom",
-            legend.title = element_text(size = 9),
-            legend.text = element_text(size = 8)
+    missing_names <- setdiff(vars, names(pretty_names))
+    missing_colors <- setdiff(vars, names(high_colors))
+    if (length(missing_names)) {
+        stop(
+            "Missing pretty_names for: ",
+            paste(missing_names, collapse = ", ")
         )
-
-    if (length(var) > 1) {
-        p <- p + facet_wrap(~variable, ncol = min(length(var), 3))
+    }
+    if (length(missing_colors)) {
+        stop(
+            "Missing high_colors for: ",
+            paste(missing_colors, collapse = ", ")
+        )
     }
 
-    # --- Standardized file naming ---
-    if (is.null(out_file)) {
-        if (length(var) == 1) {
-            out_file <- ds(sprintf("figures/%s_static_%s.png", level, var))
-        } else {
-            out_file <- ds(sprintf("figures/%s_static_panel.png", level))
-        }
+    map_one <- function(col_name) {
+        ggplot2::ggplot(plot_df) +
+            ggplot2::geom_sf(
+                ggplot2::aes(fill = .data[[col_name]]),
+                color = NA
+            ) +
+            ggplot2::scale_fill_gradient(
+                low = "white",
+                high = high_colors[[col_name]],
+                limits = c(0, 1),
+                oob = scales::squish,
+                name = "Proportion",
+                na.value = "grey90",
+                breaks = c(0, 0.25, 0.5, 0.75, 1)
+            ) +
+            ggplot2::coord_sf(
+                xlim = bbox[1:2],
+                ylim = bbox[3:4],
+                expand = FALSE
+            ) +
+            ggplot2::labs(
+                title = paste0(pretty_names[[col_name]], " - ", target_year)
+            ) +
+            ggplot2::theme_minimal() +
+            ggplot2::theme(
+                plot.title = ggplot2::element_text(
+                    hjust = 0.5,
+                    size = 12,
+                    face = "bold"
+                ),
+                legend.position = "bottom",
+                legend.title = ggplot2::element_text(size = 9),
+                legend.text = ggplot2::element_text(size = 8)
+            )
     }
 
-    ggsave(
-        out_file,
-        p,
-        device = ragg::agg_png,
-        width = 12,
-        height = 6,
-        units = "in",
-        dpi = 150
-    )
-    message("Saved: ", normalizePath(out_file))
-    invisible(out_file)
+    panel <- cowplot::plot_grid(plotlist = lapply(vars, map_one), ncol = 3)
+
+    if (!is.null(outfile)) {
+        dir.create(dirname(outfile), showWarnings = FALSE, recursive = TRUE)
+        ggplot2::ggsave(
+            filename = outfile,
+            plot = panel,
+            device = ragg::agg_png,
+            width = 15,
+            height = 6,
+            units = "in",
+            dpi = 150
+        )
+        message("Saved: ", normalizePath(outfile))
+    }
+
+    panel
 }
 
+
+target_year <- 2021
+vars <- c("land_cover_24", "land_cover_42", "land_cover_82")
+pretty_names <- c(
+    land_cover_24 = "Developed, High Intensity",
+    land_cover_42 = "Evergreen Forest",
+    land_cover_82 = "Cultivated Crops"
+)
+high_colors <- c(
+    land_cover_24 = "#5e503f",
+    land_cover_42 = "#606c38",
+    land_cover_82 = "#dda15e"
+)
+
+panel_tract_nlcd <- plot_proportion_panel(
+    vars = vars,
+    pretty_names = pretty_names,
+    high_colors = high_colors,
+    target_year = target_year,
+    outfile = ds("figures/tract_annual_nlcd.png"),
+    dataset = tract_annual,
+    level = "tract",
+    include_alaska = FALSE,
+    include_hawaii = FALSE,
+    bbox = c(-125, -66, 24, 50) # same view as county CONUS
+)
+
+
+target_year <- "static"
+vars <- c("koppen_14", "koppen_7", "koppen_26")
+pretty_names <- c(
+    koppen_14 = "Cfa — Temperate, no dry season, hot summer",
+    koppen_7 = "BSk — Arid, steppe, cold",
+    koppen_26 = "Dfb — Cold, no dry season, warm summer"
+)
+high_colors <- c(
+    koppen_14 = "#254e2c",
+    koppen_7 = "#8da4ac",
+    koppen_26 = "#edcc6f"
+)
+
+panel_tract_koppen <- plot_proportion_panel(
+    vars = vars,
+    pretty_names = pretty_names,
+    high_colors = high_colors,
+    target_year = target_year,
+    outfile = ds("figures/tract_static_koppen.png"),
+    dataset = tract_annual,
+    level = "tract",
+    include_alaska = TRUE,
+    include_hawaii = FALSE,
+    bbox = c(-170, -60, 18, 72) # AK + CONUS wide view
+)
+
+# --- Tract HUC2 coverage panel (AK + CONUS, no HI) ---
+vars <- c("prop_cover_huc2_03", "prop_cover_huc2_16", "prop_cover_huc2_01")
+
+pretty_names <- c(
+    prop_cover_huc2_03 = "HUC2 03 Proportion",
+    prop_cover_huc2_16 = "HUC2 16 Proportion",
+    prop_cover_huc2_01 = "HUC2 01 Proportion"
+)
+
+# Keep same hues you used for county
+high_colors <- c(
+    prop_cover_huc2_03 = "#99a98f",
+    prop_cover_huc2_16 = "#84754e",
+    prop_cover_huc2_01 = "#f0d8a8"
+)
+
+panel_tract_huc2 <- plot_proportion_panel(
+    vars = vars,
+    pretty_names = pretty_names,
+    high_colors = high_colors,
+    target_year = "static",
+    outfile = ds("figures/tract_static_huc2_panel.png"),
+    dataset = tract_annual,
+    level = "tract",
+    include_alaska = TRUE,
+    include_hawaii = FALSE,
+    bbox = c(-170, -60, 18, 72) # AK + CONUS view
+)
+
+#
+#
+#
+#
+#
+#
+# # ---- Generic static map function (Arrow-safe, standardized filenames) ----
+# plot_static_map <- function(
+#     var, # string or character vector
+#     level = c("county", "tract"),
+#     include_alaska = TRUE,
+#     include_hawaii = FALSE,
+#     legend_title = if (length(var) == 1) var else "Value",
+#     palette = "viridis",
+#     direction = 1,
+#     bbox = c(-170, -60, 18, 72), # AK + CONUS by default
+#     out_file = NULL,
+#     title = NULL
+# ) {
+#     level <- match.arg(level)
+#     geom_layer <- if (level == "county") "counties_500k" else "tracts_500k"
+#
+#     # --- Read zones ---
+#     geom <- sf::st_read(
+#         ds("clean_data/county_census/canonical_2024.gpkg"),
+#         layer = geom_layer,
+#         quiet = TRUE
+#     ) |>
+#         sf::st_make_valid() |>
+#         sf::st_zm(drop = TRUE)
+#
+#     # Drop states if requested
+#     drop_states <- c(
+#         if (!include_alaska) "02" else NULL,
+#         if (!include_hawaii) "15" else NULL
+#     )
+#     if (length(drop_states)) {
+#         geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
+#     }
+#
+#     # --- Arrow-safe: collect before filtering on var ---
+#     df <- tract_annual |>
+#         dplyr::select(geoid, year, variable, value) |>
+#         dplyr::filter(year == "static") |>
+#         dplyr::collect() |>
+#         dplyr::filter(variable %in% var) |>
+#         dplyr::select(geoid, variable, value)
+#
+#     if (nrow(df) == 0) {
+#         stop(sprintf(
+#             "No rows found for variable(s): %s",
+#             paste(var, collapse = ", ")
+#         ))
+#     }
+#
+#     # --- Join and filter empties ---
+#     plot_df <- dplyr::left_join(geom, df, by = "geoid")
+#     keep <- !sf::st_is_empty(sf::st_geometry(plot_df))
+#     if (!all(keep)) {
+#         plot_df <- plot_df[keep, , drop = FALSE]
+#     }
+#     plot_df <- sf::st_make_valid(plot_df)
+#
+#     if (is.null(title)) {
+#         title <- if (length(var) == 1) {
+#             sprintf("%s (%s)", var, level)
+#         } else {
+#             sprintf("Static variables (%s)", level)
+#         }
+#     }
+#
+#     p <- ggplot(plot_df) +
+#         geom_sf(aes(fill = value), color = NA) +
+#         scale_fill_viridis_c(
+#             option = palette,
+#             direction = direction,
+#             name = legend_title,
+#             na.value = "grey90"
+#         ) +
+#         coord_sf(xlim = bbox[1:2], ylim = bbox[3:4], expand = FALSE) +
+#         labs(title = title) +
+#         theme_minimal() +
+#         theme(
+#             plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+#             legend.position = "bottom",
+#             legend.title = element_text(size = 9),
+#             legend.text = element_text(size = 8)
+#         )
+#
+#     if (length(var) > 1) {
+#         p <- p + facet_wrap(~variable, ncol = min(length(var), 3))
+#     }
+#
+#     # --- Standardized file naming ---
+#     if (is.null(out_file)) {
+#         if (length(var) == 1) {
+#             out_file <- ds(sprintf("figures/%s_static_%s.png", level, var))
+#         } else {
+#             out_file <- ds(sprintf("figures/%s_static_panel.png", level))
+#         }
+#     }
+#
+#     ggsave(
+#         out_file,
+#         p,
+#         device = ragg::agg_png,
+#         width = 12,
+#         height = 6,
+#         units = "in",
+#         dpi = 150
+#     )
+#     message("Saved: ", normalizePath(out_file))
+#     invisible(out_file)
+# }
+#
 #
 # # GMTED mean elevation
 # plot_static_map(
@@ -730,115 +774,105 @@ plot_static_map <- function(
 #     title = "Tract static Road Density"
 # )
 #
-
-plot_static_map(
-    var = "prop_cover_nhdarea",
-    level = "tract",
-    include_alaska = TRUE,
-    include_hawaii = FALSE,
-    legend_title = "Proportion NHD Area",
-    palette = "cividis",
-    title = "Tract static NHD Area Proportion"
-)
-
-
+#
 # ---- Generic normal map function ----
-plot_normal_map <- function(
-    var,
-    level = c("county", "tract"),
-    include_alaska = TRUE,
-    include_hawaii = FALSE,
-    legend_title = var,
-    palette = "viridis",
-    direction = 1,
-    bbox = c(-140, -60, 18, 72),
-    out_file = NULL,
-    title = NULL
-) {
-    level <- match.arg(level)
-    geom_layer <- if (level == "county") "counties_500k" else "tracts_500k"
-
-    geom <- sf::st_read(
-        ds("clean_data/county_census/canonical_2024.gpkg"),
-        layer = geom_layer,
-        quiet = TRUE
-    ) |>
-        sf::st_make_valid() |>
-        sf::st_zm(drop = TRUE)
-
-    drop_states <- c(
-        if (!include_alaska) "02" else NULL,
-        if (!include_hawaii) "15" else NULL
-    )
-    if (length(drop_states)) {
-        geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
-    }
-
-    df <- tract_annual |>
-        dplyr::select(geoid, year, variable, value) |>
-        dplyr::filter(year == "normal") |>
-        dplyr::collect() |>
-        dplyr::filter(variable == var) |>
-        dplyr::select(geoid, value)
-
-    if (nrow(df) == 0) {
-        stop(sprintf("No rows found for normal variable: %s", var))
-    }
-
-    plot_df <- dplyr::left_join(geom, df, by = "geoid")
-    keep <- !sf::st_is_empty(sf::st_geometry(plot_df))
-    if (!all(keep)) {
-        plot_df <- plot_df[keep, , drop = FALSE]
-    }
-    plot_df <- sf::st_make_valid(plot_df)
-
-    if (is.null(title)) {
-        title <- sprintf("%s normal (%s)", var, level)
-    }
-
-    p <- ggplot(plot_df) +
-        geom_sf(aes(fill = value), color = NA) +
-        scale_fill_viridis_c(
-            option = palette,
-            direction = direction,
-            name = legend_title,
-            na.value = "grey90"
-        ) +
-        coord_sf(xlim = bbox[1:2], ylim = bbox[3:4], expand = FALSE) +
-        labs(title = title) +
-        theme_minimal() +
-        theme(
-            plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
-            legend.position = "bottom",
-            legend.title = element_text(size = 9),
-            legend.text = element_text(size = 8)
-        )
-
-    if (is.null(out_file)) {
-        out_file <- ds(sprintf("figures/%s_normal_%s.png", level, var))
-    }
-
-    ggsave(
-        out_file,
-        p,
-        device = ragg::agg_png,
-        width = 12,
-        height = 6,
-        units = "in",
-        dpi = 150
-    )
-    message("Saved: ", normalizePath(out_file))
-    invisible(out_file)
-}
-
-
-# PRISM normal solar radiation
-plot_normal_map(
-    var = "soltotal",
-    level = "tract",
-    include_alaska = FALSE,
-    include_hawaii = FALSE,
-    legend_title = "Solar Radiation (MJ/m²/day)",
-    palette = "inferno",
-    title = "Tract normal PRISM SolTotal"
-)
+# plot_normal_map <- function(
+#     var,
+#     level = c("county", "tract"),
+#     include_alaska = TRUE,
+#     include_hawaii = FALSE,
+#     legend_title = var,
+#     palette = "viridis",
+#     direction = 1,
+#     bbox = c(-140, -60, 18, 72),
+#     out_file = NULL,
+#     title = NULL
+# ) {
+#     level <- match.arg(level)
+#     geom_layer <- if (level == "county") "counties_500k" else "tracts_500k"
+#
+#     geom <- sf::st_read(
+#         ds("clean_data/county_census/canonical_2024.gpkg"),
+#         layer = geom_layer,
+#         quiet = TRUE
+#     ) |>
+#         sf::st_make_valid() |>
+#         sf::st_zm(drop = TRUE)
+#
+#     drop_states <- c(
+#         if (!include_alaska) "02" else NULL,
+#         if (!include_hawaii) "15" else NULL
+#     )
+#     if (length(drop_states)) {
+#         geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
+#     }
+#
+#     df <- tract_annual |>
+#         dplyr::select(geoid, year, variable, value) |>
+#         dplyr::filter(year == "normal") |>
+#         dplyr::collect() |>
+#         dplyr::filter(variable == var) |>
+#         dplyr::select(geoid, value)
+#
+#     if (nrow(df) == 0) {
+#         stop(sprintf("No rows found for normal variable: %s", var))
+#     }
+#
+#     plot_df <- dplyr::left_join(geom, df, by = "geoid")
+#     keep <- !sf::st_is_empty(sf::st_geometry(plot_df))
+#     if (!all(keep)) {
+#         plot_df <- plot_df[keep, , drop = FALSE]
+#     }
+#     plot_df <- sf::st_make_valid(plot_df)
+#
+#     if (is.null(title)) {
+#         title <- sprintf("%s normal (%s)", var, level)
+#     }
+#
+#     p <- ggplot(plot_df) +
+#         geom_sf(aes(fill = value), color = NA) +
+#         scale_fill_viridis_c(
+#             option = palette,
+#             direction = direction,
+#             name = legend_title,
+#             na.value = "grey90"
+#         ) +
+#         coord_sf(xlim = bbox[1:2], ylim = bbox[3:4], expand = FALSE) +
+#         labs(title = title) +
+#         theme_minimal() +
+#         theme(
+#             plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+#             legend.position = "bottom",
+#             legend.title = element_text(size = 9),
+#             legend.text = element_text(size = 8)
+#         )
+#
+#     if (is.null(out_file)) {
+#         out_file <- ds(sprintf("figures/%s_normal_%s.png", level, var))
+#     }
+#
+#     ggsave(
+#         out_file,
+#         p,
+#         device = ragg::agg_png,
+#         width = 12,
+#         height = 6,
+#         units = "in",
+#         dpi = 150
+#     )
+#     message("Saved: ", normalizePath(out_file))
+#     invisible(out_file)
+# }
+#
+#
+# # PRISM normal solar radiation
+# plot_normal_map(
+#     var = "soltotal",
+#     level = "tract",
+#     include_alaska = FALSE,
+#     include_hawaii = FALSE,
+#     legend_title = "Solar Radiation (MJ/m²/day)",
+#     palette = "inferno",
+#     title = "Tract normal PRISM SolTotal"
+# )
+#

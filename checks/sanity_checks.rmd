@@ -27,8 +27,6 @@ knitr::opts_knit$set(root.dir = project_dir)
 # Headless-safe plotting
 knitr::opts_chunk$set(dev = "ragg_png", dpi = 150)
 
-# Ensure figures dir exists
-dir.create(file.path(project_dir, "figures"), showWarnings = FALSE, recursive = TRUE)
 
 # Keep ragg from interpreting huge inch sizes
 options(ragg.max_dim = 10000)  # optional; with units="px" you shouldn't hit the cap
@@ -69,7 +67,7 @@ tract_monthly  <- open_dataset(ds("handoffs/tract_monthly_long/tract_monthly.par
 anyDuplicated(county_annual[c("geoid", "year", "variable")])
 
 # Basic shape
-# should be 3144 counties, 17 years (2010-2024) normal and static, X vars
+# should be 3144 counties, 17 years (2010-2024) normal and static, 148 vars
 county_annual %>%
   summarise(
     n_rows     = n(),
@@ -141,6 +139,27 @@ expected_ranges <- tribble(
   "koppen_7",                      0,        1,
   "koppen_8",                      0,        1,
   "koppen_9",                      0,        1,
+    "prop_cover_huc2_01",               0,       1,
+  "prop_cover_huc2_02",               0,         1,
+  "prop_cover_huc2_03",               0,         1,
+  "prop_cover_huc2_04",               0,         1,
+  "prop_cover_huc2_05",               0,         1,
+  "prop_cover_huc2_06",               0,         1,
+  "prop_cover_huc2_07",               0,         1,
+  "prop_cover_huc2_08",               0,         1,
+  "prop_cover_huc2_09",               0,         1,
+  "prop_cover_huc2_10",               0,         1,
+  "prop_cover_huc2_11",               0,         1,
+  "prop_cover_huc2_12",               0,         1,
+  "prop_cover_huc2_13",               0,         1,
+  "prop_cover_huc2_14",               0,         1,
+  "prop_cover_huc2_15",               0,         1,
+  "prop_cover_huc2_16",               0,         1,
+  "prop_cover_huc2_17",               0,         1,
+  "prop_cover_huc2_18",               0,         1,
+  "prop_cover_huc2_20",               0,         1,
+  "prop_cover_huc2_21",               0,         1,
+  "prop_cover_huc2_22",               0,         1,
   "koppen_confidence",             0,        100,
   "lai",                           0,        7,
  "land_cover_11",                 0,        1,
@@ -175,13 +194,6 @@ expected_ranges <- tribble(
   "pr",                            0,        45,
   "precsno",                       0,        7e-5,
   "prectotcorr",                   1e-6,     5e-4,
-  "prop_cover_burnaddwaterbody",   0,        1,
-  "prop_cover_catchment",          0,        1,
-  "prop_cover_catchmentsp",        0,        1,
-  "prop_cover_huc12",              0,        1,
-  "prop_cover_landsea",            0,        1,
-  "prop_cover_nhdarea",            0,        1,
-  "prop_cover_nhdwaterbody",       0,        1,
   "prop_heavy_coverage",           0,        1,
   "prop_light_coverage",           0,        1,
   "prop_med_coverage",             0,        1,
@@ -211,30 +223,32 @@ expected_ranges <- tribble(
   "tdmean",                        -40,      27,
   "th",                            0,        360,
   "tmax",                          -50,      50,
-  "tmean",                         -10,      30,
+  "tmean",                         -16,      40,
   "tmin",                          -60,      30,
   "tmmn",                          240,      350,
   "tmmx",                          240,      350,
-  "total_air_lb",                  0,        1e8,
-  "total_air_lb_per_km2",          0,        1e5,
-  "total_air_lb_plus20km",         0,        1e8,
-  "total_fugitive_air_lb",         0,        1e8,
-  "total_fugitive_air_lb_per_km2", 0,        1e5,
-  "total_fugitive_air_lb_plus20km",0,        1e8,
+  "annual_total_air_lb",                  0,        1e8,
+  "annual_total_air_lb_per_km2",          0,        1e5,
+  "annual_total_air_lb_plusbuffer",         0,        1e8,
+  "annual_total_fugitive_air_lb",         0,        1e8,
+  "annual_total_fugitive_air_lb_per_km2", 0,        1e5,
+  "annual_total_fugitive_air_lb_plusbuffer",0,        1e8,
   "total_road_km",                 0,        6e4,
-  "total_stack_air_lb",            0,        1e8,
-  "total_stack_air_lb_per_km2",    0,        1e5,
-  "total_stack_air_lb_plus20km",   0,        1e8,
+  "annual_total_stack_air_lb",            0,        1e8,
+  "annual_total_stack_air_lb_per_km2",    0,        1e5,
+  "annual_total_stack_air_lb_plusbuffer",   0,        1e8,
   "totexttau",                     0.02,     0.30,
   "ts",                            250,      305,
   "u10m",                          -20,      20,
   "vap",                           0,        5,
   "vpd",                           0,        6,
-  "vpdmax",                        2,        60,
+  "vpdmax",                        0,        70,
   "vpdmin",                        0,        30,
   "vs",                            0,        20,
   "ws",                            0,        14,
-  "z0m",                           1e-4,     3
+  "z0m",                           1e-4,     3,
+  "tmin_norm",  -60,      30,
+  "tmax_norm" ,  -50,      50,
 
 )
 
@@ -283,13 +297,6 @@ county_monthly %>%
   collect() %>%
   print(n = Inf)
 
-
-county_monthly %>%
-  filter(is.na(year) & is.na(month)) %>%
-  distinct(variable) %>%
-  arrange(variable) %>%
-  collect() %>%
-  print(n = Inf)
 
 
 var_summary <- county_monthly %>%

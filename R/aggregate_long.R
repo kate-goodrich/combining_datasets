@@ -14,10 +14,6 @@ build_exposure_long_streamed <- function(
     dir.create(wide_dir, recursive = TRUE, showWarnings = FALSE)
 
     # --- File matching (always include normal + static) ---
-    # Matches:
-    #   <agg>_<level>*.csv
-    #   normal_*_<level>*.csv   (e.g., normal_annual_county_prism.csv)
-    #   static_<level>*.csv
     pattern <- sprintf(
         "^(%1$s_%2$s|normal_.*_%2$s|static_%2$s).*\\.csv$",
         agg,
@@ -106,7 +102,7 @@ build_exposure_long_streamed <- function(
             mutate(
                 variable = variable %>%
                     tolower() %>%
-                    str_remove("_\\d{4}$") %>% # drop trailing year in names if present
+                    str_remove("_\\d{4}$") %>% # drop trailing year in var name if present
                     str_remove("_clean$"),
                 value = if_else(
                     str_starts(variable, "land_cover_") & is.na(value),
@@ -126,16 +122,29 @@ build_exposure_long_streamed <- function(
         is_monthly = is_monthly
     )
 
-    # --- Write long outputs ---
+    # Drop annual-normals from monthly builds (year=="normal" & month is NA)
+    if (is_monthly) {
+        all_data <- all_data %>% filter(!(year == "normal" & is.na(month)))
+    }
+
+    # --- Write long outputs (unchanged) ---
     long_csv <- file.path(long_dir, paste0(level, "_", agg, ".csv"))
     long_parq <- file.path(long_dir, paste0(level, "_", agg, ".parquet"))
-
     readr::write_csv(all_data, long_csv)
     arrow::write_parquet(all_data, long_parq)
 
-    # --- Write wide outputs ---
+    # Helper: pivot a chunk to wide (one row per geoid, columns = variables)
+    to_wide <- function(df) {
+        df %>%
+            group_by(geoid, variable) %>% # dedupe safety
+            summarise(value = dplyr::first(value), .groups = "drop") %>%
+            tidyr::pivot_wider(names_from = variable, values_from = value) %>%
+            arrange(geoid)
+    }
+
+    # --- Write wide outputs (now truly wide) ---
     if (is_monthly) {
-        # One file per year-month, plus normal & static
+        # One file per (year, month); also handle normal/static if present
         all_data %>%
             mutate(year = as.character(year)) %>%
             group_split(year, month) %>%
@@ -146,20 +155,34 @@ build_exposure_long_streamed <- function(
                     stop("Unexpected grouping")
                 }
 
+                # choose filename; include month for "normal" to avoid overwrite
                 if (y == "normal") {
-                    fn <- file.path(wide_dir, paste0(level, "_normal.csv"))
+                    fn <- file.path(
+                        wide_dir,
+                        sprintf("%s_normal_%02d.csv", level, m)
+                    )
                 } else if (y == "static") {
-                    fn <- file.path(wide_dir, paste0(level, "_static.csv"))
+                    # static is typically monthless; if month present, suffix it
+                    if (is.na(m)) {
+                        fn <- file.path(wide_dir, paste0(level, "_static.csv"))
+                    } else {
+                        fn <- file.path(
+                            wide_dir,
+                            sprintf("%s_static_%02d.csv", level, m)
+                        )
+                    }
                 } else {
                     fn <- file.path(
                         wide_dir,
                         sprintf("%s_%s_%02d.csv", level, y, m)
                     )
                 }
-                readr::write_csv(chunk, fn)
+
+                chunk_wide <- to_wide(chunk)
+                readr::write_csv(chunk_wide, fn)
             })
     } else {
-        # Annual: one file per year, plus normal & static
+        # Annual: one file per year; also handle normal & static
         all_data %>%
             mutate(year = as.character(year)) %>%
             group_split(year) %>%
@@ -176,7 +199,9 @@ build_exposure_long_streamed <- function(
                 } else {
                     fn <- file.path(wide_dir, sprintf("%s_%s.csv", level, y))
                 }
-                readr::write_csv(chunk, fn)
+
+                chunk_wide <- to_wide(chunk)
+                readr::write_csv(chunk_wide, fn)
             })
     }
 

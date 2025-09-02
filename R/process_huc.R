@@ -1,11 +1,6 @@
 clean_huc_layers <- function(
     gdb_path = "./raw_data/huc/NHDPlusNationalData/NHDPlusV21_National_Seamless_Flattened_Lower48.gdb",
     layers = c(
-        "BurnAddWaterbody",
-        "LandSea",
-        "Catchment",
-        "CatchmentSP",
-        "NHDArea",
         "HUC12"
     ),
     huc_level = "huc12",

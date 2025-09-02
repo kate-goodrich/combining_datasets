@@ -174,184 +174,184 @@ county_annual <- open_dataset(ds(
 # # --- Save animation ---
 # gganimate::anim_save(ds("figures/county_annual_hms_smoke.gif"), anim)
 #
-
-# ---- Generic GIF animator for county/tract × annual/monthly ----
-animate_geo_gif <- function(
-    var,
-    level = c("county", "tract"),
-    agg = c("annual", "monthly"),
-    include_alaska = TRUE,
-    include_hawaii = FALSE,
-    bbox = NULL, # c(xmin, xmax, ymin, ymax)
-    legend_title = var,
-    title = NULL,
-    palette = "mako",
-    direction = -1,
-    trans = "identity", # e.g., "log10"
-    labels = scales::label_number(accuracy = 0.1),
-    na_fill = "grey80",
-    width = 1000,
-    height = 600,
-    fps = 2,
-    out_path = NULL, # default: figures/<var>_<level>_<agg>.gif
-    value_fun = NULL, # e.g., function(x) x * 1e9
-    drop_na_time = TRUE,
-    tween_shapes = FALSE # <- NEW: avoid polygon morphing by default
-) {
-    level <- match.arg(level)
-    agg <- match.arg(agg)
-
-    geom_layer <- if (level == "county") "counties_500k" else "tracts_500k"
-    geom <- sf::st_read(
-        ds("clean_data/county_census/canonical_2024.gpkg"),
-        layer = geom_layer,
-        quiet = TRUE
-    ) %>%
-        sf::st_make_valid() %>%
-        sf::st_zm(drop = TRUE)
-
-    drop_states <- c(
-        if (!include_alaska) "02" else NULL,
-        if (!include_hawaii) "15" else NULL
-    )
-    if (length(drop_states)) {
-        geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
-    }
-
-    ds_obj <- get(sprintf("%s_%s", level, agg), inherits = TRUE)
-
-    df <- tryCatch(
-        ds_obj %>%
-            dplyr::filter(variable %in% !!var) %>%
-            {
-                if (agg == "annual") {
-                    dplyr::select(., geoid, year, value)
-                } else {
-                    dplyr::select(., geoid, year, month, value)
-                }
-            } %>%
-            dplyr::collect(),
-        error = function(e) {
-            ds_obj %>%
-                dplyr::select(
-                    geoid,
-                    year,
-                    dplyr::all_of(
-                        if (agg == "monthly") c("month") else character(0)
-                    ),
-                    variable,
-                    value
-                ) %>%
-                dplyr::collect() %>%
-                dplyr::filter(variable == var) %>%
-                dplyr::select(-variable)
-        }
-    )
-
-    if (!is.null(value_fun)) {
-        df <- dplyr::mutate(df, value = value_fun(value))
-    }
-
-    if (agg == "annual") {
-        if (drop_na_time) {
-            df <- dplyr::filter(df, !is.na(year))
-        }
-        levs <- df %>%
-            dplyr::arrange(year) %>%
-            dplyr::distinct(year) %>%
-            dplyr::pull(year)
-        df <- df %>%
-            dplyr::mutate(
-                time_state = factor(
-                    as.character(year),
-                    levels = as.character(levs)
-                )
-            )
-    } else {
-        if (drop_na_time) {
-            df <- dplyr::filter(df, !is.na(year), !is.na(month))
-        }
-        df <- df %>% dplyr::mutate(ym = sprintf("%04d-%02d", year, month))
-        levs <- df %>%
-            dplyr::arrange(year, month) %>%
-            dplyr::distinct(ym) %>%
-            dplyr::pull(ym)
-        df <- df %>% dplyr::mutate(time_state = factor(ym, levels = levs))
-    }
-
-    plot_df <- dplyr::left_join(geom, df, by = "geoid") %>%
-        dplyr::filter(!is.na(time_state)) %>%
-        dplyr::filter(!sf::st_is_empty(sf::st_geometry(.))) %>%
-        sf::st_make_valid()
-
-    if (is.null(bbox)) {
-        bbox <- c(-125, -66, 24, 50)
-    }
-
-    if (is.null(title)) {
-        title <- sprintf(
-            "%s-%s %s — {closest_state}",
-            tools::toTitleCase(level),
-            agg,
-            var
-        )
-    }
-
-    nframes <- plot_df %>% dplyr::distinct(time_state) %>% nrow()
-    if (is.na(nframes) || nframes < 1) {
-        nframes <- 1L
-    }
-
-    p <- ggplot(plot_df) +
-        geom_sf(aes(fill = value), color = NA) +
-        scale_fill_viridis_c(
-            option = palette,
-            direction = direction,
-            trans = trans,
-            labels = labels,
-            na.value = na_fill,
-            name = legend_title
-        ) +
-        coord_sf(
-            xlim = c(bbox[1], bbox[2]),
-            ylim = c(bbox[3], bbox[4]),
-            expand = FALSE
-        ) +
-        theme_minimal() +
-        labs(title = title)
-
-    # Use manual transition by default (no polygon morphing)
-    if (tween_shapes) {
-        p <- p +
-            gganimate::transition_states(
-                time_state,
-                transition_length = 1,
-                state_length = 1
-            ) +
-            gganimate::ease_aes("linear")
-    } else {
-        p <- p + gganimate::transition_manual(time_state)
-    }
-
-    anim <- gganimate::animate(
-        p,
-        nframes = nframes,
-        fps = fps,
-        width = width,
-        height = height,
-        units = "px",
-        renderer = gifski_renderer(),
-        device = "ragg_png"
-    )
-
-    if (is.null(out_path)) {
-        out_path <- ds(sprintf("figures/%s_%s_%s.gif", var, level, agg))
-    }
-    gganimate::anim_save(out_path, anim)
-    invisible(out_path)
-}
-
 #
+# # ---- Generic GIF animator for county/tract × annual/monthly ----
+# animate_geo_gif <- function(
+#     var,
+#     level = c("county", "tract"),
+#     agg = c("annual", "monthly"),
+#     include_alaska = TRUE,
+#     include_hawaii = FALSE,
+#     bbox = NULL, # c(xmin, xmax, ymin, ymax)
+#     legend_title = var,
+#     title = NULL,
+#     palette = "mako",
+#     direction = -1,
+#     trans = "identity", # e.g., "log10"
+#     labels = scales::label_number(accuracy = 0.1),
+#     na_fill = "grey80",
+#     width = 1000,
+#     height = 600,
+#     fps = 2,
+#     out_path = NULL, # default: figures/<var>_<level>_<agg>.gif
+#     value_fun = NULL, # e.g., function(x) x * 1e9
+#     drop_na_time = TRUE,
+#     tween_shapes = FALSE # <- NEW: avoid polygon morphing by default
+# ) {
+#     level <- match.arg(level)
+#     agg <- match.arg(agg)
+#
+#     geom_layer <- if (level == "county") "counties_500k" else "tracts_500k"
+#     geom <- sf::st_read(
+#         ds("clean_data/county_census/canonical_2024.gpkg"),
+#         layer = geom_layer,
+#         quiet = TRUE
+#     ) %>%
+#         sf::st_make_valid() %>%
+#         sf::st_zm(drop = TRUE)
+#
+#     drop_states <- c(
+#         if (!include_alaska) "02" else NULL,
+#         if (!include_hawaii) "15" else NULL
+#     )
+#     if (length(drop_states)) {
+#         geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
+#     }
+#
+#     ds_obj <- get(sprintf("%s_%s", level, agg), inherits = TRUE)
+#
+#     df <- tryCatch(
+#         ds_obj %>%
+#             dplyr::filter(variable %in% !!var) %>%
+#             {
+#                 if (agg == "annual") {
+#                     dplyr::select(., geoid, year, value)
+#                 } else {
+#                     dplyr::select(., geoid, year, month, value)
+#                 }
+#             } %>%
+#             dplyr::collect(),
+#         error = function(e) {
+#             ds_obj %>%
+#                 dplyr::select(
+#                     geoid,
+#                     year,
+#                     dplyr::all_of(
+#                         if (agg == "monthly") c("month") else character(0)
+#                     ),
+#                     variable,
+#                     value
+#                 ) %>%
+#                 dplyr::collect() %>%
+#                 dplyr::filter(variable == var) %>%
+#                 dplyr::select(-variable)
+#         }
+#     )
+#
+#     if (!is.null(value_fun)) {
+#         df <- dplyr::mutate(df, value = value_fun(value))
+#     }
+#
+#     if (agg == "annual") {
+#         if (drop_na_time) {
+#             df <- dplyr::filter(df, !is.na(year))
+#         }
+#         levs <- df %>%
+#             dplyr::arrange(year) %>%
+#             dplyr::distinct(year) %>%
+#             dplyr::pull(year)
+#         df <- df %>%
+#             dplyr::mutate(
+#                 time_state = factor(
+#                     as.character(year),
+#                     levels = as.character(levs)
+#                 )
+#             )
+#     } else {
+#         if (drop_na_time) {
+#             df <- dplyr::filter(df, !is.na(year), !is.na(month))
+#         }
+#         df <- df %>% dplyr::mutate(ym = sprintf("%04d-%02d", year, month))
+#         levs <- df %>%
+#             dplyr::arrange(year, month) %>%
+#             dplyr::distinct(ym) %>%
+#             dplyr::pull(ym)
+#         df <- df %>% dplyr::mutate(time_state = factor(ym, levels = levs))
+#     }
+#
+#     plot_df <- dplyr::left_join(geom, df, by = "geoid") %>%
+#         dplyr::filter(!is.na(time_state)) %>%
+#         dplyr::filter(!sf::st_is_empty(sf::st_geometry(.))) %>%
+#         sf::st_make_valid()
+#
+#     if (is.null(bbox)) {
+#         bbox <- c(-125, -66, 24, 50)
+#     }
+#
+#     if (is.null(title)) {
+#         title <- sprintf(
+#             "%s-%s %s — {closest_state}",
+#             tools::toTitleCase(level),
+#             agg,
+#             var
+#         )
+#     }
+#
+#     nframes <- plot_df %>% dplyr::distinct(time_state) %>% nrow()
+#     if (is.na(nframes) || nframes < 1) {
+#         nframes <- 1L
+#     }
+#
+#     p <- ggplot(plot_df) +
+#         geom_sf(aes(fill = value), color = NA) +
+#         scale_fill_viridis_c(
+#             option = palette,
+#             direction = direction,
+#             trans = trans,
+#             labels = labels,
+#             na.value = na_fill,
+#             name = legend_title
+#         ) +
+#         coord_sf(
+#             xlim = c(bbox[1], bbox[2]),
+#             ylim = c(bbox[3], bbox[4]),
+#             expand = FALSE
+#         ) +
+#         theme_minimal() +
+#         labs(title = title)
+#
+#     # Use manual transition by default (no polygon morphing)
+#     if (tween_shapes) {
+#         p <- p +
+#             gganimate::transition_states(
+#                 time_state,
+#                 transition_length = 1,
+#                 state_length = 1
+#             ) +
+#             gganimate::ease_aes("linear")
+#     } else {
+#         p <- p + gganimate::transition_manual(time_state)
+#     }
+#
+#     anim <- gganimate::animate(
+#         p,
+#         nframes = nframes,
+#         fps = fps,
+#         width = width,
+#         height = height,
+#         units = "px",
+#         renderer = gifski_renderer(),
+#         device = "ragg_png"
+#     )
+#
+#     if (is.null(out_path)) {
+#         out_path <- ds(sprintf("figures/%s_%s_%s.gif", var, level, agg))
+#     }
+#     gganimate::anim_save(out_path, anim)
+#     invisible(out_path)
+# }
+#
+# #
 # # merra dusmass25 county annual animated map (with AK)
 #
 # animate_geo_gif(
@@ -388,39 +388,39 @@ animate_geo_gif <- function(
 #     title = "County annual gridmet rmax — Year: {current_frame}"
 # )
 #
-
-# terra tmin
-
-animate_geo_gif(
-    var = "tmin",
-    level = "county",
-    agg = "annual",
-    include_alaska = TRUE,
-    include_hawaii = FALSE,
-    bbox = c(-170, -60, 18, 72),
-    legend_title = expression(T[min] * " (°C)"),
-    palette = "turbo",
-    direction = 1,
-    out_path = ds("figures/county_annual_tmin.gif"),
-    title = "County annual terraclimate tmin — Year: {current_frame}"
-)
-
-# tri
-
-animate_geo_gif(
-    var = "annual_total_air_lb_per_km2",
-    level = "county",
-    agg = "annual",
-    include_alaska = TRUE,
-    include_hawaii = FALSE,
-    bbox = c(-170, -60, 18, 72),
-    legend_title = expression("TRI air emissions per area (lb·km"^-2 * ")"),
-    palette = "rocket",
-    direction = -1,
-    out_path = ds("figures/county_annual_total_air_lb_per_km2.gif"),
-    title = "County annual tri total_air_lb_per_km2 — Year: {current_frame}"
-)
-
+#
+# # terra tmin
+#
+# animate_geo_gif(
+#     var = "tmin",
+#     level = "county",
+#     agg = "annual",
+#     include_alaska = TRUE,
+#     include_hawaii = FALSE,
+#     bbox = c(-170, -60, 18, 72),
+#     legend_title = expression(T[min] * " (°C)"),
+#     palette = "turbo",
+#     direction = 1,
+#     out_path = ds("figures/county_annual_tmin.gif"),
+#     title = "County annual terraclimate tmin — Year: {current_frame}"
+# )
+#
+# # tri
+#
+# animate_geo_gif(
+#     var = "annual_total_air_lb_per_km2",
+#     level = "county",
+#     agg = "annual",
+#     include_alaska = TRUE,
+#     include_hawaii = FALSE,
+#     bbox = c(-170, -60, 18, 72),
+#     legend_title = expression("TRI air emissions per area (lb·km"^-2 * ")"),
+#     palette = "rocket",
+#     direction = -1,
+#     out_path = ds("figures/county_annual_total_air_lb_per_km2.gif"),
+#     title = "County annual tri total_air_lb_per_km2 — Year: {current_frame}"
+# )
+#
 #
 # # MODIS EVI — county/annual, CONUS only (values already scaled to [-1, 1], so no conversion)
 # animate_geo_gif(
@@ -438,177 +438,214 @@ animate_geo_gif(
 # )
 #
 #
-# # nlcd plot
-#
-# # --- Pick year and 3 NLCD categories ---
-# target_year <- 2021
-# vars <- c(
-#     "land_cover_24", # Developed, High Intensity
-#     "land_cover_42", # Evergreen Forest
-#     "land_cover_82"
-# ) # Cultivated Crops
-#
-# pretty_names <- c(
-#     land_cover_24 = "Developed, High Intensity",
-#     land_cover_42 = "Evergreen Forest",
-#     land_cover_82 = "Cultivated Crops"
-# )
-#
-# # One distinct high color per category (0→white, 1→color)
-# high_colors <- c(
-#     land_cover_24 = "#5e503f", # red
-#     land_cover_42 = "#606c38", # green
-#     land_cover_82 = "#dda15e" # orange
-# )
-#
-# # --- Load CONUS counties (drop AK + HI) ---
-# counties_conus <- sf::st_read(
-#     ds("clean_data/county_census/canonical_2024.gpkg"),
-#     layer = "counties_500k",
-#     quiet = TRUE
-# ) |>
-#     sf::st_make_valid() |>
-#     dplyr::filter(!substr(geoid, 1, 2) %in% c("02", "15"))
-#
-# # --- Pull NLCD proportions for the chosen year ---
-# nlcd_df <- county_annual |>
-#     dplyr::filter(variable %in% vars, year == target_year) |>
-#     dplyr::select(geoid, variable, value) |>
-#     dplyr::collect() |>
-#     tidyr::pivot_wider(names_from = variable, values_from = value)
-#
-# plot_df <- dplyr::left_join(counties_conus, nlcd_df, by = "geoid")
-#
-# # --- Helper to build one map for a column ---
-# map_one <- function(col_name) {
-#     ggplot(plot_df) +
-#         geom_sf(aes(fill = .data[[col_name]]), color = NA) +
-#         scale_fill_gradient(
-#             low = "white",
-#             high = high_colors[[col_name]],
-#             limits = c(0, 1),
-#             oob = scales::squish,
-#             name = "Proportion",
-#             na.value = "grey90",
-#             breaks = c(0, 0.25, 0.5, 0.75, 1)
-#         ) +
-#         coord_sf(xlim = c(-125, -66), ylim = c(24, 50), expand = FALSE) +
-#         labs(
-#             title = paste0(pretty_names[[col_name]], " — ", target_year)
-#         ) +
-#         theme_minimal() +
-#         theme(
-#             plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
-#             legend.position = "bottom",
-#             legend.title = element_text(size = 9),
-#             legend.text = element_text(size = 8)
-#         )
-# }
-#
-# p1 <- map_one(vars[1])
-# p2 <- map_one(vars[2])
-# p3 <- map_one(vars[3])
-#
-# panel <- cowplot::plot_grid(p1, p2, p3, ncol = 3)
-#
-# # --- Save the panel PNG (headless-safe via ragg) ---
-# outfile <- ds("figures/county_annual_nlcd.png")
-# ggsave(
-#     outfile,
-#     panel,
-#     device = ragg::agg_png,
-#     width = 15,
-#     height = 6,
-#     units = "in",
-#     dpi = 150
-# )
-# message("Saved: ", normalizePath(outfile))
-#
-# #Koppen
-#
-# # --- Pick year and 3 Köppen categories ---
-# target_year <- "static"
-# vars <- c(
-#     "koppen_14", # Cfa, Temperate, no dry season, hot summer
-#     "koppen_7", # BSk, Arid, steppe, cold
-#     "koppen_26" # Dfb, Cold, no dry season, warm summer
-# )
-#
-# pretty_names <- c(
-#     koppen_14 = "Cfa — Temperate, no dry season, hot summer",
-#     koppen_7 = "BSk — Arid, steppe, cold",
-#     koppen_26 = "Dfb — Cold, no dry season, warm summer"
-# )
-#
-# high_colors <- c(
-#     koppen_14 = "#254e2c",
-#     koppen_7 = "#8da4ac",
-#     koppen_26 = "#edcc6f"
-# )
-#
-# # --- Load counties (include AK, drop HI only) ---
-# counties_ak_conus <- sf::st_read(
-#     ds("clean_data/county_census/canonical_2024.gpkg"),
-#     layer = "counties_500k",
-#     quiet = TRUE
-# ) |>
-#     sf::st_make_valid() |>
-#     dplyr::filter(substr(geoid, 1, 2) != "15") # keep AK ('02'), drop HI ('15')
-#
-# # --- Wider bbox to show AK + CONUS ---
-# bbox <- c(-170, -60, 18, 72) # xmin, xmax, ymin, ymax
-#
-# # --- Pull Köppen proportions for the chosen year ---
-# koppen_df <- county_annual |>
-#     dplyr::filter(variable %in% vars, year == target_year) |>
-#     dplyr::select(geoid, variable, value) |>
-#     dplyr::collect() |>
-#     tidyr::pivot_wider(names_from = variable, values_from = value)
-#
-# plot_df <- dplyr::left_join(counties_ak_conus, koppen_df, by = "geoid")
-#
-# # --- Helper to build one map for a column ---
-# map_one <- function(col_name) {
-#     ggplot(plot_df) +
-#         geom_sf(aes(fill = .data[[col_name]]), color = NA) +
-#         scale_fill_gradient(
-#             low = "white",
-#             high = high_colors[[col_name]],
-#             limits = c(0, 1),
-#             oob = scales::squish,
-#             name = "Proportion",
-#             na.value = "grey90",
-#             breaks = c(0, 0.25, 0.5, 0.75, 1)
-#         ) +
-#         coord_sf(xlim = bbox[1:2], ylim = bbox[3:4], expand = FALSE) +
-#         labs(title = paste0(pretty_names[[col_name]], " — ", target_year)) +
-#         theme_minimal() +
-#         theme(
-#             plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
-#             legend.position = "bottom",
-#             legend.title = element_text(size = 9),
-#             legend.text = element_text(size = 8)
-#         )
-# }
-#
-# p1 <- map_one(vars[1])
-# p2 <- map_one(vars[2])
-# p3 <- map_one(vars[3])
-# panel <- cowplot::plot_grid(p1, p2, p3, ncol = 3)
-#
-# # --- Save PNG ---
-# outfile <- ds("figures/county_annual_koppen.png")
-# ggsave(
-#     outfile,
-#     panel,
-#     device = ragg::agg_png,
-#     width = 15,
-#     height = 6,
-#     units = "in",
-#     dpi = 150
-# )
-# message("Saved: ", normalizePath(outfile))
-#
+# ---- Consolidated 3-map proportion panel ----
+# ---- Consolidated 3-map proportion panel ----
+plot_proportion_panel <- function(
+    vars, # c("var_a","var_b","var_c")
+    pretty_names, # named chr: c(var_a="Name A", ...)
+    high_colors, # named chr: c(var_a="#hex", ...)
+    target_year, # e.g., 2021 or "static"
+    outfile = NULL, # path to save; if NULL, don't save
+    dataset = county_annual, # arrow/tibble with geoid, year, variable, value
+    level = c("county", "tract"),
+    geoms_gpkg = ds("clean_data/county_census/canonical_2024.gpkg"),
+    layer_counties = "counties_500k",
+    include_alaska = FALSE,
+    include_hawaii = FALSE,
+    bbox = NULL # c(xmin, xmax, ymin, ymax); if NULL, auto by flags
+) {
+    stopifnot(length(vars) == 3L)
+
+    level <- match.arg(level)
+
+    # --- Geometry ---
+    counties <- sf::st_read(geoms_gpkg, layer = layer_counties, quiet = TRUE) |>
+        sf::st_make_valid()
+
+    # FIPS: AK=02, HI=15  (apply filters conditionally)
+    if (!include_alaska) {
+        counties <- dplyr::filter(counties, substr(geoid, 1, 2) != "02")
+    }
+    if (!include_hawaii) {
+        counties <- dplyr::filter(counties, substr(geoid, 1, 2) != "15")
+    }
+
+    # Default bbox if not provided
+    if (is.null(bbox)) {
+        if (include_alaska && !include_hawaii) {
+            bbox <- c(-170, -60, 18, 72) # AK + CONUS
+        } else if (!include_alaska && !include_hawaii) {
+            bbox <- c(-125, -66, 24, 50) # CONUS
+        } else if (include_alaska && include_hawaii) {
+            bbox <- c(-170, -60, 18, 72) # simple wide view (HI may be off-screen)
+        } else {
+            bbox <- c(-160, -60, 18, 72) # catch-all
+        }
+    }
+
+    # --- Data ---
+    wide_df <- dataset |>
+        dplyr::filter(.data$variable %in% vars, .data$year == target_year) |>
+        dplyr::select(geoid, variable, value) |>
+        dplyr::collect() |>
+        tidyr::pivot_wider(names_from = variable, values_from = value)
+
+    plot_df <- dplyr::left_join(counties, wide_df, by = "geoid")
+
+    # --- Guard: ensure names are present in color/name vectors ---
+    missing_names <- setdiff(vars, names(pretty_names))
+    if (length(missing_names)) {
+        stop(
+            "Missing pretty_names for: ",
+            paste(missing_names, collapse = ", ")
+        )
+    }
+    missing_colors <- setdiff(vars, names(high_colors))
+    if (length(missing_colors)) {
+        stop(
+            "Missing high_colors for: ",
+            paste(missing_colors, collapse = ", ")
+        )
+    }
+
+    # --- Single map builder ---
+    map_one <- function(col_name) {
+        ggplot2::ggplot(plot_df) +
+            ggplot2::geom_sf(
+                ggplot2::aes(fill = .data[[col_name]]),
+                color = NA
+            ) +
+            ggplot2::scale_fill_gradient(
+                low = "white",
+                high = high_colors[[col_name]],
+                limits = c(0, 1),
+                oob = scales::squish,
+                name = "Proportion",
+                na.value = "grey90",
+                breaks = c(0, 0.25, 0.5, 0.75, 1)
+            ) +
+            ggplot2::coord_sf(
+                xlim = bbox[1:2],
+                ylim = bbox[3:4],
+                expand = FALSE
+            ) +
+            ggplot2::labs(
+                title = paste0(pretty_names[[col_name]], " - ", target_year)
+            ) +
+            ggplot2::theme_minimal() +
+            ggplot2::theme(
+                plot.title = ggplot2::element_text(
+                    hjust = 0.5,
+                    size = 12,
+                    face = "bold"
+                ),
+                legend.position = "bottom",
+                legend.title = ggplot2::element_text(size = 9),
+                legend.text = ggplot2::element_text(size = 8)
+            )
+    }
+
+    p_list <- lapply(vars, map_one)
+    panel <- cowplot::plot_grid(plotlist = p_list, ncol = 3)
+
+    if (!is.null(outfile)) {
+        dir.create(dirname(outfile), showWarnings = FALSE, recursive = TRUE)
+        ggplot2::ggsave(
+            filename = outfile,
+            plot = panel,
+            device = ragg::agg_png,
+            width = 15,
+            height = 6,
+            units = "in",
+            dpi = 150
+        )
+        message("Saved: ", normalizePath(outfile))
+    }
+
+    return(panel)
+}
+
+
+target_year <- 2021
+vars <- c("land_cover_24", "land_cover_42", "land_cover_82")
+pretty_names <- c(
+    land_cover_24 = "Developed, High Intensity",
+    land_cover_42 = "Evergreen Forest",
+    land_cover_82 = "Cultivated Crops"
+)
+high_colors <- c(
+    land_cover_24 = "#5e503f",
+    land_cover_42 = "#606c38",
+    land_cover_82 = "#dda15e"
+)
+
+panel_nlcd <- plot_proportion_panel(
+    vars = vars,
+    pretty_names = pretty_names,
+    high_colors = high_colors,
+    target_year = target_year,
+    outfile = ds("figures/county_annual_nlcd.png"),
+    dataset = county_annual,
+    include_alaska = FALSE,
+    include_hawaii = FALSE,
+    bbox = c(-125, -66, 24, 50) # same as your script
+)
+
+
+target_year <- "static"
+vars <- c("koppen_14", "koppen_7", "koppen_26")
+pretty_names <- c(
+    koppen_14 = "Cfa — Temperate, no dry season, hot summer",
+    koppen_7 = "BSk — Arid, steppe, cold",
+    koppen_26 = "Dfb — Cold, no dry season, warm summer"
+)
+high_colors <- c(
+    koppen_14 = "#254e2c",
+    koppen_7 = "#8da4ac",
+    koppen_26 = "#edcc6f"
+)
+
+panel_koppen <- plot_proportion_panel(
+    vars = vars,
+    pretty_names = pretty_names,
+    high_colors = high_colors,
+    target_year = target_year,
+    outfile = ds("figures/county_static_koppen.png"),
+    dataset = county_annual,
+    include_alaska = TRUE,
+    include_hawaii = FALSE,
+    bbox = c(-170, -60, 18, 72) # same as your script
+)
+
+
+# --- HUC2 coverage panel (AK + CONUS, no HI) ---
+vars <- c("prop_cover_huc2_03", "prop_cover_huc2_16", "prop_cover_huc2_01")
+
+pretty_names <- c(
+    prop_cover_huc2_03 = "HUC2 03 Proportion",
+    prop_cover_huc2_16 = "HUC2 16 Proportion",
+    prop_cover_huc2_01 = "HUC2 01 Proportion"
+)
+
+# Distinct high-end colors for the 0→1 gradient (keep white at low end)
+high_colors <- c(
+    prop_cover_huc2_03 = "#99a98f",
+    prop_cover_huc2_16 = "#84754e",
+    prop_cover_huc2_01 = "#f0d8a8"
+)
+
+panel_huc2 <- plot_proportion_panel(
+    vars = vars,
+    pretty_names = pretty_names,
+    high_colors = high_colors,
+    target_year = "static",
+    outfile = ds("figures/county_static_huc2_panel.png"),
+    dataset = county_annual,
+    include_alaska = TRUE,
+    include_hawaii = FALSE,
+    bbox = c(-170, -60, 18, 72) # AK + CONUS view
+)
+
 #
 # # ---- Generic static map function (Arrow-safe, standardized filenames) ----
 # plot_static_map <- function(
@@ -744,16 +781,6 @@ animate_geo_gif(
 #     title = "County static Road Density"
 # )
 #
-#
-# plot_static_map(
-#     var = "prop_cover_nhdarea",
-#     level = "county",
-#     include_alaska = TRUE,
-#     include_hawaii = FALSE,
-#     legend_title = "Proportion NHD Area",
-#     palette = "cividis",
-#     title = "County static NHD Area"
-# )
 #
 #
 # # ---- Generic normal map function ----
