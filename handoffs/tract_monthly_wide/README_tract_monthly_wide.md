@@ -10,6 +10,9 @@
 …  
 `tract_2024_01.csv` | `tract_2024_02.csv` | … | `tract_2024_12.csv`  
 
+**Normal Variable Files:** 
+`tract_normal_01.csv`| `tract_normal_02.csv` | … | `tract_normal_12.csv`
+
 **Static Variable File:**  
 `tract_static.csv`
 

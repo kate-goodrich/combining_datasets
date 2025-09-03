@@ -11,6 +11,9 @@
 **Static Variable File:**  
 `tract_static.csv`
 
+**Normal Variable File:**  
+`tract_normal.csv`
+
 **Last Updated:** 2025-08-29 
 
 **Format:** Comma-Separated Values (CSV)

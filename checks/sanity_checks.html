@@ -11,7 +11,7 @@
 
 
 
-<title>Sanity Checks and Visualizations for Aggregated Amadeus Datasets</title>
+<title>sanity_checks.knit</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -348,14 +348,14 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">Sanity Checks and Visualizations for
-Aggregated Amadeus Datasets</h1>
 
 </div>
 
 
-<div id="set-container-library" class="section level1">
-<h1>set container library</h1>
+<hr />
+<p>title: “Sanity Checks and Visualizations for Aggregated Amadeus
+Datasets” output: github_document: toc: true toc_depth: 3— # set
+container library</p>
 <pre class="r"><code># oppten apptainer in bash first
 # apptainer shell /ddn/gs1/group/set/chords/combining_datasets/container_combining_datasets.sif
 
@@ -383,7 +383,6 @@ knitr::opts_chunk$set(dev = &quot;ragg_png&quot;, dpi = 150)
 # Keep ragg from interpreting huge inch sizes
 options(ragg.max_dim = 10000)  # optional; with units=&quot;px&quot; you shouldn&#39;t hit the cap</code></pre>
 <p># Load packages</p>
-</div>
 <div id="load-data" class="section level1">
 <h1>Load data</h1>
 <pre class="r"><code>#for interactive

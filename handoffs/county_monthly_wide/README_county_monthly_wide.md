@@ -3,11 +3,13 @@
 **File Names:** 
 
 **Dynamic Variable Files:**  
-`county_2010_01.csv` | `county_2010_02.csv` | … | `county_2010_12.csv`  
-`county_2011_01.csv` | `county_2011_02.csv` | … | `county_2011_12.csv`  
-`county_2012_01.csv` | `county_2012_02.csv` | … | `county_2012_12.csv`  
-…  
-`county_2024_01.csv` | `county_2024_02.csv` | … | `county_2024_12.csv`  
+`county_2010_01.csv`  | `county_2010_02.csv` | … | `county_2010_12.csv`  
+`county_2011_01.csv`  | `county_2011_02.csv` | … | `county_2011_12.csv`  
+…   
+`county_2024_01.csv`  | `county_2024_02.csv` | … | `county_2024_12.csv`
+
+**Normal Variable Files:** 
+`county_normal_01.csv`| `county_normal_02.csv` | … | `county_normal_12.csv`
 
 **Static Variable File:**  
 `county_static.csv`

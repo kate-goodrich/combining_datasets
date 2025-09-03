@@ -1,7 +1,9 @@
 ---
 title: "Sanity Checks and Visualizations for Aggregated Amadeus Datasets"
-output: html_document
----
+output:
+  github_document:
+    toc: true
+    toc_depth: 3---
 # set container library
 ```{r}
 # oppten apptainer in bash first
