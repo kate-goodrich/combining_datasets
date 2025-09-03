@@ -3,7 +3,12 @@ title: "Sanity Checks and Visualizations for Aggregated Amadeus Datasets"
 output:
   github_document:
     toc: true
-    toc_depth: 3---
+    toc_depth: 3
+    html_preview: false   
+---
+
+
+
 # set container library
 ```{r}
 # oppten apptainer in bash first
