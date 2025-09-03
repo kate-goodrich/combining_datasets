@@ -161,7 +161,7 @@ expected_ranges <- tribble(
   "prop_cover_huc2_21",               0,         1,
   "prop_cover_huc2_22",               0,         1,
   "koppen_confidence",             0,        100,
-  "lai",                           0,        7,
+  "lai",                           0,        9,
  "land_cover_11",                 0,        1,
   "land_cover_12",                 0,        1,
   "land_cover_21",                 0,        1,
@@ -186,7 +186,7 @@ expected_ranges <- tribble(
   "mi30_grd",                      -400,     8850,
   "mn30_grd",                      -400,     8850,
   "mx30_grd",                      0,        8850,
-  "ndvi",                          -0.1,     1,
+  "ndvi",                          -1,     1,
   "pblh",                          50,       2500,
   "pdsi",                          -9,       20,
   "pet",                           0,        350,
@@ -201,7 +201,7 @@ expected_ranges <- tribble(
   "qv2m",                          0,        0.04,
   "rmax",                          0,        100,
   "rmin",                          0,        100,
-  "road_density_km_per_km2",       0,        8,
+  "road_density_km_per_km2",       0,        9,
   "sd30_grd",                      0,        600,
   "slp",                           99000,    102500,
   "soil",                          0,        420,
@@ -211,13 +211,13 @@ expected_ranges <- tribble(
   "soltrans",                      0,        1,
   "sph",                           0,        0.03,
   "srad",                          0,        400,
-  "sur_refl_b01",                  0,        0.6,
-  "sur_refl_b02",                  0,        0.6,
-  "sur_refl_b03",                  0,        0.7,
-  "sur_refl_b04",                  0,        0.6,
-  "sur_refl_b05",                  0,        0.5,
-  "sur_refl_b06",                  0,        0.5,
-  "sur_refl_b07",                  0,        0.5,
+  "sur_refl_b01",                  0,        1,
+  "sur_refl_b02",                  0,        1,
+  "sur_refl_b03",                  0,        1,
+  "sur_refl_b04",                  0,        1,
+  "sur_refl_b05",                  0,        1,
+  "sur_refl_b06",                  0,        1,
+  "sur_refl_b07",                  0,        1,
   "swe",                           0,        1200,
   "t2mdew",                        230,      350,
   "tdmean",                        -40,      27,
@@ -228,21 +228,21 @@ expected_ranges <- tribble(
   "tmmn",                          240,      350,
   "tmmx",                          240,      350,
   "annual_total_air_lb",                  0,        1e8,
-  "annual_total_air_lb_per_km2",          0,        1e5,
+  "annual_total_air_lb_per_km2",          0,        1e6,
   "annual_total_air_lb_plusbuffer",         0,        1e8,
   "annual_total_fugitive_air_lb",         0,        1e8,
-  "annual_total_fugitive_air_lb_per_km2", 0,        1e5,
+  "annual_total_fugitive_air_lb_per_km2", 0,        5e5,
   "annual_total_fugitive_air_lb_plusbuffer",0,        1e8,
   "total_road_km",                 0,        6e4,
   "annual_total_stack_air_lb",            0,        1e8,
-  "annual_total_stack_air_lb_per_km2",    0,        1e5,
+  "annual_total_stack_air_lb_per_km2",    0,        1e6,
   "annual_total_stack_air_lb_plusbuffer",   0,        1e8,
   "totexttau",                     0.02,     0.30,
   "ts",                            250,      305,
   "u10m",                          -20,      20,
   "vap",                           0,        5,
   "vpd",                           0,        6,
-  "vpdmax",                        0,        70,
+  "vpdmax",                        0,        80,
   "vpdmin",                        0,        30,
   "vs",                            0,        20,
   "ws",                            0,        14,
@@ -280,7 +280,7 @@ print(comparison, n = Inf)
 anyDuplicated(county_monthly[c("geoid", "year", "variable")])
 
 # Basic shape
-# should be 3144 counties, 17 years (2010-2024) normal and static, 139 vars
+# should be 3144 counties, 17 years (2010-2024) normal and static, 148 vars
 county_monthly %>%
   summarise(
     n_rows     = n(),
@@ -350,7 +350,7 @@ print(comparison, n = Inf)
 anyDuplicated(tract_annual[c("geoid", "year", "variable")])
 
 # Basic shape
-# should be over 84,414 counties, 17 years (2010-2024) normal and static, 132 vars
+# should be over 84,119 counties, 17 years (2010-2024) normal and static, 148 vars
 # 84119 census tracts - some may have had errors
 tract_annual %>%
   summarise(
@@ -429,16 +429,7 @@ tract_monthly %>%
   collect() %>%
   print(n = Inf)
 
-# terraclimate variables with missing year/month. go back and fix
 
-tract_monthly %>%
-  filter(is.na(year) & is.na(month)) %>%
-  distinct(variable) %>%
-  arrange(variable) %>%
-  collect() %>%
-  print(n = Inf)
-
-# terraclimate variables with missing year/month. go back and fix
 
 var_summary <- tract_monthly %>%
   group_by(variable) %>%

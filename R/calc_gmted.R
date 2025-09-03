@@ -38,6 +38,10 @@ static_zonal_summary <- function(
     # --- Core extractor function ---
     county_means_static <- function(tif, zones_sf, id_col) {
         r <- terra::rast(tif)
+
+        # Convert negative values to NA
+        r <- terra::ifel(r < 0, NA, r)
+
         zones_r <- sf::st_transform(zones_sf, terra::crs(r))
         vals <- exactextractr::exact_extract(r, zones_r, "mean")
         tibble::tibble(
