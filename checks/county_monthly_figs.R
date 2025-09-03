@@ -48,137 +48,137 @@ county_monthly <- open_dataset(ds(
     "handoffs/county_monthly_long/county_monthly.parquet"
 ))
 
-# ###########################################################################################
-# ############## HMS smoke county monthly animated map ##############
-#
-# # --- Load county geometries (includes Alaska + Hawaii) ---
-# counties_all <- sf::st_read(
-#     ds("clean_data/county_census/canonical_2024.gpkg"),
-#     layer = "counties_500k",
-#     quiet = TRUE
-# ) %>%
-#     sf::st_make_valid()
-#
-# # --- Extract HMS smoke proportion variables (monthly) ---
-# smoke_df <- county_monthly %>%
-#     filter(
-#         variable %in%
-#             c(
-#                 "prop_light_coverage",
-#                 "prop_med_coverage",
-#                 "prop_heavy_coverage"
-#             )
-#     ) %>%
-#     select(geoid, year, month, variable, value) %>%
-#     collect() %>%
-#     mutate(
-#         year = suppressWarnings(as.integer(year)),
-#         month = suppressWarnings(as.integer(month))
-#     )
-#
-# # --- Pivot to wide format for category + final_value ---
-# smoke_wide <- smoke_df %>%
-#     tidyr::pivot_wider(
-#         names_from = variable,
-#         values_from = value,
-#         values_fill = 0
-#     ) %>%
-#     mutate(
-#         category = case_when(
-#             prop_heavy_coverage > 0 ~ "Heavy",
-#             prop_med_coverage > 0 ~ "Medium",
-#             prop_light_coverage > 0 ~ "Light",
-#             TRUE ~ "None"
-#         ),
-#         final_value = case_when(
-#             category == "Heavy" ~ prop_heavy_coverage,
-#             category == "Medium" ~ prop_med_coverage,
-#             category == "Light" ~ prop_light_coverage,
-#             TRUE ~ 0
-#         ),
-#         year = as.integer(year),
-#         month = as.integer(month),
-#         ym = ifelse(
-#             is.na(year) | is.na(month),
-#             NA_character_,
-#             sprintf("%04d-%02d", year, month)
-#         )
-#     )
-#
-# # --- Join geometries ---
-# plot_df <- counties_all %>%
-#     left_join(smoke_wide, by = "geoid") %>%
-#     sf::st_as_sf() %>%
-#     filter(!sf::st_is_empty(sf::st_geometry(.))) %>%
-#     filter(substr(geoid, 1, 2) != "15") # Keep Alaska, drop Hawaii
-#
-# # --- Custom smoke colors ---
-# smoke_colors <- c(
-#     "Light" = "#eccc7c",
-#     "Medium" = "#dc8b30",
-#     "Heavy" = "#d96527",
-#     "None" = "#dfdac4"
-# )
-#
-# # --- Set category factor levels in desired order ---
-# plot_df <- plot_df %>%
-#     mutate(
-#         category = factor(
-#             category,
-#             levels = c("None", "Light", "Medium", "Heavy")
-#         )
-#     )
-#
-# # --- Build animated plot (monthly) ---
-# p_main <- ggplot(plot_df) +
-#     geom_sf(aes(fill = category, alpha = final_value), color = NA) +
-#     scale_fill_manual(
-#         values = smoke_colors,
-#         breaks = c("None", "Light", "Medium", "Heavy"),
-#         na.value = "grey80"
-#     ) +
-#     scale_alpha(range = c(0.2, 1), guide = "none") +
-#     coord_sf(
-#         xlim = c(-170, -67),
-#         ylim = c(20, 72),
-#         expand = FALSE
-#     ) +
-#     theme_void() +
-#     theme(
-#         legend.position = "bottom",
-#         legend.title = element_text(size = 10),
-#         legend.text = element_text(size = 8),
-#         plot.title = element_text(hjust = 0.5, size = 14, face = "bold")
-#     ) +
-#     labs(
-#         title = "County-Monthly HMS Smoke Coverage — {current_frame}",
-#         fill = "Smoke Category"
-#     ) +
-#     gganimate::transition_manual(ym)
-#
-# # --- Count frames safely ---
-# nframes <- plot_df$ym %>%
-#     unique() %>%
-#     sort(na.last = NA) %>%
-#     length()
-#
-# # --- Animate using ragg ---
-# anim <- gganimate::animate(
-#     p_main,
-#     nframes = max(1L, nframes),
-#     fps = 4,
-#     width = 1000,
-#     height = 600,
-#     units = "px",
-#     renderer = gifski_renderer(),
-#     device = "ragg_png"
-# )
-#
-# # --- Save animation ---
-# gganimate::anim_save(ds("figures/county_monthly_hms_smoke.gif"), anim)
-#
-
 ###########################################################################################
+############## HMS smoke county monthly animated map ##############
+
+# --- Load county geometries (includes Alaska + Hawaii) ---
+counties_all <- sf::st_read(
+    ds("clean_data/county_census/canonical_2024.gpkg"),
+    layer = "counties_500k",
+    quiet = TRUE
+) %>%
+    sf::st_make_valid()
+
+# --- Extract HMS smoke proportion variables (monthly) ---
+smoke_df <- county_monthly %>%
+    filter(
+        variable %in%
+            c(
+                "prop_light_coverage",
+                "prop_med_coverage",
+                "prop_heavy_coverage"
+            )
+    ) %>%
+    select(geoid, year, month, variable, value) %>%
+    collect() %>%
+    mutate(
+        year = suppressWarnings(as.integer(year)),
+        month = suppressWarnings(as.integer(month))
+    )
+
+# --- Pivot to wide format for category + final_value ---
+smoke_wide <- smoke_df %>%
+    tidyr::pivot_wider(
+        names_from = variable,
+        values_from = value,
+        values_fill = 0
+    ) %>%
+    mutate(
+        category = case_when(
+            prop_heavy_coverage > 0 ~ "Heavy",
+            prop_med_coverage > 0 ~ "Medium",
+            prop_light_coverage > 0 ~ "Light",
+            TRUE ~ "None"
+        ),
+        final_value = case_when(
+            category == "Heavy" ~ prop_heavy_coverage,
+            category == "Medium" ~ prop_med_coverage,
+            category == "Light" ~ prop_light_coverage,
+            TRUE ~ 0
+        ),
+        year = as.integer(year),
+        month = as.integer(month),
+        ym = ifelse(
+            is.na(year) | is.na(month),
+            NA_character_,
+            sprintf("%04d-%02d", year, month)
+        )
+    )
+
+# --- Join geometries ---
+plot_df <- counties_all %>%
+    left_join(smoke_wide, by = "geoid") %>%
+    sf::st_as_sf() %>%
+    filter(!sf::st_is_empty(sf::st_geometry(.))) %>%
+    filter(substr(geoid, 1, 2) != "15") # Keep Alaska, drop Hawaii
+
+# --- Custom smoke colors ---
+smoke_colors <- c(
+    "Light" = "#eccc7c",
+    "Medium" = "#dc8b30",
+    "Heavy" = "#d96527",
+    "None" = "#dfdac4"
+)
+
+# --- Set category factor levels in desired order ---
+plot_df <- plot_df %>%
+    mutate(
+        category = factor(
+            category,
+            levels = c("None", "Light", "Medium", "Heavy")
+        )
+    )
+
+# --- Build animated plot (monthly) ---
+p_main <- ggplot(plot_df) +
+    geom_sf(aes(fill = category, alpha = final_value), color = NA) +
+    scale_fill_manual(
+        values = smoke_colors,
+        breaks = c("None", "Light", "Medium", "Heavy"),
+        na.value = "grey80"
+    ) +
+    scale_alpha(range = c(0.2, 1), guide = "none") +
+    coord_sf(
+        xlim = c(-170, -67),
+        ylim = c(20, 72),
+        expand = FALSE
+    ) +
+    theme_void() +
+    theme(
+        legend.position = "bottom",
+        legend.title = element_text(size = 10),
+        legend.text = element_text(size = 8),
+        plot.title = element_text(hjust = 0.5, size = 14, face = "bold")
+    ) +
+    labs(
+        title = "County-Monthly HMS Smoke Coverage — {current_frame}",
+        fill = "Smoke Category"
+    ) +
+    gganimate::transition_manual(ym)
+
+# --- Count frames safely ---
+nframes <- plot_df$ym %>%
+    unique() %>%
+    sort(na.last = NA) %>%
+    length()
+
+# --- Animate using ragg ---
+anim <- gganimate::animate(
+    p_main,
+    nframes = max(1L, nframes),
+    fps = 4,
+    width = 1000,
+    height = 600,
+    units = "px",
+    renderer = gifski_renderer(),
+    device = "ragg_png"
+)
+
+# --- Save animation ---
+gganimate::anim_save(ds("figures/county_monthly_hms_smoke.gif"), anim)
+
+
+##########################################################################################
 # ---- Generic GIF animator for county × monthly ----
 
 animate_geo_gif <- function(
@@ -357,45 +357,44 @@ animate_geo_gif <- function(
 
 
 ###########################################################################################
-# Examples — county/monthly
 
-# # merra dusmass25 (kg/m^3 -> µg/m^3)
-# # merra2 dusmass25 (kg/m^3 -> µg/m^3)
-# animate_geo_gif(
-#     var = "dusmass25",
-#     level = "county",
-#     agg = "monthly",
-#     include_alaska = TRUE,
-#     include_hawaii = FALSE,
-#     bbox = c(-170, -60, 18, 72),
-#     legend_title = expression("Dust (µg·m"^-3 * ")"),
-#     palette = "magma",
-#     direction = 1,
-#     trans = "log10",
-#     labels = scales::label_number(accuracy = 0.1),
-#     value_fun = function(x) x * 1e9,
-#     fps = 4,
-#     out_path = ds("figures/county_monthly_dusmass.gif"),
-#     title = "County monthly merra2 dusmass25 — {current_frame}"
-# )
-#
-#
-# # gridmet rmax
-# animate_geo_gif(
-#     var = "rmax",
-#     level = "county",
-#     agg = "monthly",
-#     include_alaska = FALSE,
-#     include_hawaii = FALSE,
-#     bbox = c(-125, -66, 24, 50),
-#     legend_title = "Rmax",
-#     palette = "plasma",
-#     direction = 1,
-#     out_path = ds("figures/county_monthly_rmax.gif"),
-#     title = "County monthly gridmet rmax — {current_frame}"
-# )
+# merra dusmass25 (kg/m^3 -> µg/m^3)
+# merra2 dusmass25 (kg/m^3 -> µg/m^3)
+animate_geo_gif(
+    var = "dusmass25",
+    level = "county",
+    agg = "monthly",
+    include_alaska = TRUE,
+    include_hawaii = FALSE,
+    bbox = c(-170, -60, 18, 72),
+    legend_title = expression("Dust (µg·m"^-3 * ")"),
+    palette = "magma",
+    direction = 1,
+    trans = "log10",
+    labels = scales::label_number(accuracy = 0.1),
+    value_fun = function(x) x * 1e9,
+    fps = 4,
+    out_path = ds("figures/county_monthly_dusmass.gif"),
+    title = "County monthly merra2 dusmass25 — {current_frame}"
+)
 
-# just remove bbox entirely
+
+# gridmet rmax
+animate_geo_gif(
+    var = "rmax",
+    level = "county",
+    agg = "monthly",
+    include_alaska = FALSE,
+    include_hawaii = FALSE,
+    bbox = c(-125, -66, 24, 50),
+    legend_title = "Rmax",
+    palette = "plasma",
+    direction = 1,
+    out_path = ds("figures/county_monthly_rmax.gif"),
+    title = "County monthly gridmet rmax — {current_frame}"
+)
+
+
 animate_geo_gif(
     var = "tmin",
     level = "county",
@@ -422,19 +421,18 @@ animate_geo_gif(
     title = "County monthly TRI air emissions — {current_frame}"
 )
 
-#
-# # MODIS EVI (already scaled)
-# animate_geo_gif(
-#     var = "evi",
-#     level = "county",
-#     agg = "monthly",
-#     include_alaska = FALSE,
-#     include_hawaii = FALSE,
-#     bbox = c(-125, -66, 24, 50),
-#     legend_title = "EVI",
-#     palette = "viridis",
-#     direction = 1,
-#     out_path = ds("figures/county_monthly_evi.gif"),
-#     title = "County monthly MODIS EVI — {current_frame}"
-# )
-#
+
+# MODIS EVI (already scaled)
+animate_geo_gif(
+    var = "evi",
+    level = "county",
+    agg = "monthly",
+    include_alaska = FALSE,
+    include_hawaii = FALSE,
+    bbox = c(-125, -66, 24, 50),
+    legend_title = "EVI",
+    palette = "viridis",
+    direction = 1,
+    out_path = ds("figures/county_monthly_evi.gif"),
+    title = "County monthly MODIS EVI — {current_frame}"
+)

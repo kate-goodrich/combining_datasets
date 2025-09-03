@@ -56,6 +56,9 @@ summarize_terraclimate <- function(
             "annual" = annualize(r)
         )
 
+        # Clamp negatives to zero
+        r_use <- terra::ifel(r_use < 0, 0, r_use)
+
         mat <- exactextractr::exact_extract(
             r_use,
             zones_proj,
