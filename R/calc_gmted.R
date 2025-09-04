@@ -33,7 +33,11 @@ static_zonal_summary <- function(
     }
 
     # --- Helper: variable name from filename ---
-    var_from_path <- function(p) tools::file_path_sans_ext(basename(p))
+    var_from_path <- function(p) {
+        nm <- tools::file_path_sans_ext(basename(p))
+        nm <- sub("_clean$", "", nm) # remove trailing "_clean" if present
+        nm
+    }
 
     # --- Core extractor function ---
     county_means_static <- function(tif, zones_sf, id_col) {

@@ -12,3 +12,4 @@ test_data/
 *.zip
 *.csv
 *.parquet
+ziJ*

@@ -11,7 +11,7 @@ output:
 
 # set container library
 ```{r}
-# oppten apptainer in bash first
+# oppten apptainer in bash when running interactively
 # apptainer shell /ddn/gs1/group/set/chords/combining_datasets/container_combining_datasets.sif
 
 .libPaths("/usr/local/lib/R/site-library")
@@ -319,7 +319,6 @@ var_summary <- county_monthly %>%
   arrange(variable) %>%
   collect()
 
-print(var_summary, n = Inf)
 
 # Compare observed vs expected
 comparison <- var_summary %>%
@@ -389,7 +388,7 @@ var_summary <- tract_annual %>%
   collect()
 
 
-print(var_summary, n = Inf)
+
 
 # Compare observed vs expected
 comparison <- var_summary %>%
