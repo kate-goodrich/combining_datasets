@@ -388,7 +388,7 @@ var_summary <- tract_annual %>%
   collect()
 
 
-
+~
 
 # Compare observed vs expected
 comparison <- var_summary %>%
