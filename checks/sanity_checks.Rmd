@@ -36,7 +36,7 @@ knitr::opts_chunk$set(dev = "ragg_png", dpi = 150)
 
 
 # Keep ragg from interpreting huge inch sizes
-options(ragg.max_dim = 10000)  # optional; with units="px" you shouldn't hit the cap
+options(ragg.max_dim = 10000)  
 
 ```
 
@@ -54,7 +54,6 @@ library(gifski)
 
 # Load data
 ```{r}
-#for interactive
 
 # Resolve paths relative to root.dir set above
 ds <- function(...) file.path(project_dir, ...)
@@ -342,15 +341,6 @@ print(comparison, n = Inf)
 
 
 
-
-
-
-
-
-
-
-
-
 # Tract-Annual Sanity checks
 ```{r}
 # check for duplicated geoid-year-variable combinations
@@ -358,7 +348,6 @@ anyDuplicated(tract_annual[c("geoid", "year", "variable")])
 
 # Basic shape
 # should be over 84,119 counties, 17 years (2010-2024) normal and static, 148 vars
-# 84119 census tracts - some may have had errors
 tract_annual %>%
   summarise(
     n_rows     = n(),
@@ -417,7 +406,6 @@ anyDuplicated(tract_monthly[c("geoid", "year", "variable")])
 
 # Basic shape
 # should be over 84,414 counties, 17 years (2010-2024) normal and static, 140 vars
-# 84119 census tracts - some may have had errors
 
 tract_monthly %>%
   summarise(
