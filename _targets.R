@@ -786,5 +786,467 @@ list(
             )
         },
         format = "file" # so targets tracks the zip
+    ),
+
+    # FIGURES
+    # huc
+
+    tar_target(
+        county_annual_ds,
+        arrow::open_dataset("handoffs/county_annual_long/county_annual.parquet")
+    ),
+    tar_target(
+        county_monthly_ds,
+        arrow::open_dataset(
+            "handoffs/county_monthly_long/county_monthly.parquet"
+        )
+    ),
+    tar_target(
+        tract_annual_ds,
+        arrow::open_dataset("handoffs/tract_annual_long/tract_annual.parquet")
+    ),
+    tar_target(
+        tract_monthly_ds,
+        arrow::open_dataset("handoffs/tract_monthly_long/tract_monthly.parquet")
+    ),
+
+    # GIF outputs (tracked as files)
+    tar_target(
+        gif_county_annual,
+        animate_hms_smoke(
+            data = county_annual_ds,
+            level = "county",
+            agg = "annual",
+            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            out_gif = "figures/county_annual_hms_smoke.gif",
+            include_alaska = TRUE,
+            include_hawaii = FALSE
+        ),
+        format = "file"
+    ),
+    tar_target(
+        gif_county_monthly,
+        animate_hms_smoke(
+            data = county_monthly_ds,
+            level = "county",
+            agg = "monthly",
+            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            out_gif = "figures/county_monthly_hms_smoke.gif",
+            include_alaska = TRUE,
+            include_hawaii = FALSE
+        ),
+        format = "file"
+    ),
+    tar_target(
+        gif_tract_annual,
+        animate_hms_smoke(
+            data = tract_annual_ds,
+            level = "tract",
+            agg = "annual",
+            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            out_gif = "figures/tract_annual_hms_smoke.gif",
+            include_alaska = TRUE,
+            include_hawaii = FALSE
+        ),
+        format = "file"
+    ),
+    tar_target(
+        gif_tract_monthly,
+        animate_hms_smoke(
+            data = tract_monthly_ds,
+            level = "tract",
+            agg = "monthly",
+            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            out_gif = "figures/tract_monthly_hms_smoke.gif",
+            include_alaska = TRUE,
+            include_hawaii = FALSE
+        ),
+        format = "file"
+    ),
+
+    tar_target(
+        gif_params,
+        {
+            # per-variable settings (keep AK flags/bboxes as shown)
+            var_cfg <- tibble::tibble(
+                var = c(
+                    "dusmass25",
+                    "rmax",
+                    "tmin",
+                    "annual_total_air_lb_per_km2",
+                    "evi"
+                ),
+                include_alaska = c(TRUE, FALSE, TRUE, TRUE, FALSE),
+                include_hawaii = c(FALSE, FALSE, FALSE, FALSE, FALSE),
+                bbox_xmin = c(-170, -125, -170, -170, -125),
+                bbox_xmax = c(-60, -66, -60, -60, -66),
+                bbox_ymin = c(18, 24, 18, 18, 24),
+                bbox_ymax = c(72, 50, 72, 72, 50),
+                legend_title = list(
+                    expression("Dust (µg·m"^-3 * ")"),
+                    "Rmax",
+                    expression(T[min] * " (°C)"),
+                    expression("TRI air emissions per area (lb·km"^-2 * ")"),
+                    "EVI"
+                ),
+                trans = c(
+                    "log10",
+                    "identity",
+                    "identity",
+                    "identity",
+                    "identity"
+                ),
+                value_fun = list(
+                    function(x) x * 1e9, # dusmass25
+                    NULL, # rmax
+                    NULL, # tmin
+                    NULL, # tri
+                    NULL # evi
+                )
+            )
+
+            combos <- tidyr::crossing(
+                var_cfg,
+                tibble::tibble(level = c("county", "tract")),
+                tibble::tibble(agg = c("annual", "monthly"))
+            )
+
+            combos |>
+                dplyr::mutate(
+                    bbox = Map(c, bbox_xmin, bbox_xmax, bbox_ymin, bbox_ymax),
+                    out_path = sprintf("figures/%s_%s_%s.gif", var, level, agg),
+                    title = sprintf(
+                        "%s %s %s — {current_frame}",
+                        tools::toTitleCase(level),
+                        agg,
+                        var
+                    ),
+                    palette = "viridis",
+                    direction = dplyr::if_else(
+                        var == "annual_total_air_lb_per_km2",
+                        -1L,
+                        1L
+                    )
+                )
+        }
+    ),
+
+    # Build all GIFs (each as its own file target)
+    tarchetypes::tar_pmap(
+        name = gif,
+        command = animate_geo_gif(
+            var = ..1$var,
+            level = ..1$level,
+            agg = ..1$agg,
+            include_alaska = ..1$include_alaska,
+            include_hawaii = ..1$include_hawaii,
+            bbox = unlist(..1$bbox),
+            legend_title = ..1$legend_title[[1]],
+            palette = ..1$palette,
+            direction = ..1$direction,
+            trans = ..1$trans,
+            value_fun = ..1$value_fun[[1]],
+            out_path = ds(..1$out_path),
+            title = ..1$title
+        ),
+        values = gif_params,
+        format = "file"
+    ), # ---- County NLCD ----
+    tar_target(
+        panel_nlcd_county,
+        plot_proportion_panel(
+            vars = c("land_cover_24", "land_cover_42", "land_cover_82"),
+            pretty_names = c(
+                land_cover_24 = "Developed, High Intensity",
+                land_cover_42 = "Evergreen Forest",
+                land_cover_82 = "Cultivated Crops"
+            ),
+            high_colors = setNames(
+                rep(NA_character_, 3),
+                c("land_cover_24", "land_cover_42", "land_cover_82")
+            ),
+            target_year = 2021,
+            outfile = "figures/county_annual_nlcd.png",
+            dataset = county_annual,
+            level = "county",
+            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            layer_counties = "counties_500k",
+            include_alaska = FALSE,
+            include_hawaii = FALSE,
+            bbox = c(-125, -66, 24, 50)
+        ),
+        format = "file"
+    ),
+
+    # ---- County Köppen ----
+    tar_target(
+        panel_koppen_county,
+        plot_proportion_panel(
+            vars = c("koppen_14", "koppen_7", "koppen_26"),
+            pretty_names = c(
+                koppen_14 = "Cfa — Temperate, no dry season, hot summer",
+                koppen_7 = "BSk — Arid, steppe, cold",
+                koppen_26 = "Dfb — Cold, no dry season, warm summer"
+            ),
+            high_colors = setNames(
+                rep(NA_character_, 3),
+                c("koppen_14", "koppen_7", "koppen_26")
+            ),
+            target_year = "static",
+            outfile = "figures/county_static_koppen.png",
+            dataset = county_annual,
+            level = "county",
+            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            layer_counties = "counties_500k",
+            include_alaska = TRUE,
+            include_hawaii = FALSE,
+            bbox = c(-170, -60, 18, 72)
+        ),
+        format = "file"
+    ),
+
+    # ---- County HUC2 ----
+    tar_target(
+        panel_huc2_county,
+        plot_proportion_panel(
+            vars = c(
+                "prop_cover_huc2_03",
+                "prop_cover_huc2_16",
+                "prop_cover_huc2_01"
+            ),
+            pretty_names = c(
+                prop_cover_huc2_03 = "HUC2 03 Proportion",
+                prop_cover_huc2_16 = "HUC2 16 Proportion",
+                prop_cover_huc2_01 = "HUC2 01 Proportion"
+            ),
+            high_colors = setNames(
+                rep(NA_character_, 3),
+                c(
+                    "prop_cover_huc2_03",
+                    "prop_cover_huc2_16",
+                    "prop_cover_huc2_01"
+                )
+            ),
+            target_year = "static",
+            outfile = "figures/county_static_huc2_panel.png",
+            dataset = county_annual,
+            level = "county",
+            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            layer_counties = "counties_500k",
+            include_alaska = TRUE,
+            include_hawaii = FALSE,
+            bbox = c(-170, -60, 18, 72)
+        ),
+        format = "file"
+    ),
+
+    # ---- Tract NLCD ----
+    tar_target(
+        panel_nlcd_tract,
+        plot_proportion_panel(
+            vars = c("land_cover_24", "land_cover_42", "land_cover_82"),
+            pretty_names = c(
+                land_cover_24 = "Developed, High Intensity",
+                land_cover_42 = "Evergreen Forest",
+                land_cover_82 = "Cultivated Crops"
+            ),
+            high_colors = setNames(
+                rep(NA_character_, 3),
+                c("land_cover_24", "land_cover_42", "land_cover_82")
+            ),
+            target_year = 2021,
+            outfile = "figures/tract_annual_nlcd.png",
+            dataset = tract_annual,
+            level = "tract",
+            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            layer_counties = "tracts_500k",
+            include_alaska = FALSE,
+            include_hawaii = FALSE,
+            bbox = c(-125, -66, 24, 50)
+        ),
+        format = "file"
+    ),
+
+    # ---- Tract Köppen ----
+    tar_target(
+        panel_koppen_tract,
+        plot_proportion_panel(
+            vars = c("koppen_14", "koppen_7", "koppen_26"),
+            pretty_names = c(
+                koppen_14 = "Cfa — Temperate, no dry season, hot summer",
+                koppen_7 = "BSk — Arid, steppe, cold",
+                koppen_26 = "Dfb — Cold, no dry season, warm summer"
+            ),
+            high_colors = setNames(
+                rep(NA_character_, 3),
+                c("koppen_14", "koppen_7", "koppen_26")
+            ),
+            target_year = "static",
+            outfile = "figures/tract_static_koppen.png",
+            dataset = tract_annual,
+            level = "tract",
+            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            layer_counties = "tracts_500k",
+            include_alaska = TRUE,
+            include_hawaii = FALSE,
+            bbox = c(-170, -60, 18, 72)
+        ),
+        format = "file"
+    ),
+
+    # ---- Tract HUC2 ----
+    tar_target(
+        panel_huc2_tract,
+        plot_proportion_panel(
+            vars = c(
+                "prop_cover_huc2_03",
+                "prop_cover_huc2_16",
+                "prop_cover_huc2_01"
+            ),
+            pretty_names = c(
+                prop_cover_huc2_03 = "HUC2 03 Proportion",
+                prop_cover_huc2_16 = "HUC2 16 Proportion",
+                prop_cover_huc2_01 = "HUC2 01 Proportion"
+            ),
+            high_colors = setNames(
+                rep(NA_character_, 3),
+                c(
+                    "prop_cover_huc2_03",
+                    "prop_cover_huc2_16",
+                    "prop_cover_huc2_01"
+                )
+            ),
+            target_year = "static",
+            outfile = "figures/tract_static_huc2_panel.png",
+            dataset = tract_annual,
+            level = "tract",
+            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            layer_counties = "tracts_500k",
+            include_alaska = TRUE,
+            include_hawaii = FALSE,
+            bbox = c(-170, -60, 18, 72)
+        ),
+        format = "file"
+    ),
+    tar_target(
+        county_static_mn30_grd_png,
+        plot_static_map(
+            var = "mn30_grd",
+            level = "county",
+            include_alaska = TRUE,
+            include_hawaii = FALSE,
+            legend_title = "Elevation (m)",
+            palette = "viridis",
+            direction = -1,
+            bbox = c(-170, -60, 18, 72),
+            title = "County static GMTED Mean Elevation",
+            out_file = "figures/county_static_mn30_grd.png",
+            dataset = county_annual_ds,
+            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            trans = "identity"
+        ),
+        format = "file"
+    ),
+
+    # County: Road density (viridis, log10)
+    tar_target(
+        county_static_roads_png,
+        plot_static_map(
+            var = "road_density_km_per_km2",
+            level = "county",
+            include_alaska = TRUE,
+            include_hawaii = FALSE,
+            legend_title = "Road Density (km/km²)",
+            palette = "viridis",
+            direction = -1,
+            bbox = c(-170, -60, 18, 72),
+            title = "County static Road Density (log10)",
+            out_file = "figures/county_static_road_density_km_per_km2.png",
+            dataset = county_annual_ds,
+            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            trans = "log10"
+        ),
+        format = "file"
+    ),
+
+    # Tract: GMTED mean elevation (viridis, identity)
+    tar_target(
+        tract_static_mn30_grd_png,
+        plot_static_map(
+            var = "mn30_grd",
+            level = "tract",
+            include_alaska = TRUE,
+            include_hawaii = FALSE,
+            legend_title = "Elevation (m)",
+            palette = "viridis",
+            direction = -1,
+            bbox = c(-170, -60, 18, 72),
+            title = "Tract static GMTED Mean Elevation",
+            out_file = "figures/tract_static_mn30_grd.png",
+            dataset = tract_annual_ds,
+            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            trans = "identity"
+        ),
+        format = "file"
+    ),
+
+    # Tract: Road density (viridis, log10)
+    tar_target(
+        tract_static_roads_png,
+        plot_static_map(
+            var = "road_density_km_per_km2",
+            level = "tract",
+            include_alaska = TRUE,
+            include_hawaii = FALSE,
+            legend_title = "Road Density (km/km²)",
+            palette = "viridis",
+            direction = -1,
+            bbox = c(-170, -60, 18, 72),
+            title = "Tract static Road Density (log10)",
+            out_file = "figures/tract_static_road_density_km_per_km2.png",
+            dataset = tract_annual_ds,
+            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            trans = "log10"
+        ),
+        format = "file"
+    ),
+
+    # County: PRISM SolTotal normals (log10)
+    tar_target(
+        county_normal_soltotal_png,
+        plot_normal_map(
+            var = "soltotal",
+            level = "county",
+            include_alaska = FALSE,
+            include_hawaii = FALSE,
+            legend_title = "Solar Radiation (MJ/m²/day)",
+            palette = "viridis",
+            limits = c(0.001, 20),
+            title = "County normal PRISM SolTotal",
+            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            dataset = county_annual,
+            trans = "identity" # linear scale
+        ),
+        format = "file"
+    ),
+
+    # Tract: PRISM SolTotal normals (log10)
+    tar_target(
+        tract_normal_soltotal_png,
+        plot_normal_map(
+            var = "soltotal",
+            level = "tract",
+            include_alaska = FALSE,
+            include_hawaii = FALSE,
+            legend_title = "Solar Radiation (MJ/m²/day)",
+            palette = "viridis",
+            bbox = c(-140, -60, 18, 72),
+            limits = c(0.001, 20),
+            title = "Tract normal PRISM SolTotal",
+            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            dataset = tract_annual,
+            trans = "identity" # linear scale
+        ),
+        format = "file"
     )
 )

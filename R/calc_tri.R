@@ -1,16 +1,21 @@
 summarise_tri_air_totals <- function(
     tri_dir = "clean_data/tri_clean",
     county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
-    level = c("county", "tract"),
-    agg = c("annual", "monthly")
+    level = c("county", "tract", "zip"),
+    agg = c("annual", "monthly", "overall")
 ) {
     level <- match.arg(level)
     agg <- match.arg(agg)
     crs_m <- 5070
 
     # Determine layers and buffer distance
-    layer <- if (level == "county") "counties_500k" else "tracts_500k"
-    buffer_km <- if (level == "county") 20 else 4
+    layer <- switch(
+        level,
+        county = "counties_500k",
+        tract = "tracts_500k",
+        zip = "zctas_500k"
+    )
+    buffer_km <- if (level == "county") 20 else 4 # use 4 km for tract & zip
 
     # Read and prepare geometries
     zones_ll <- sf::st_read(county_gpkg, layer = layer, quiet = TRUE) |>
@@ -20,7 +25,7 @@ summarise_tri_air_totals <- function(
     zones_m <- sf::st_transform(zones_ll, crs_m)
 
     # Calculate area in km²
-    area_vec <- as.numeric(units::set_units(st_area(zones_m), "km^2"))
+    area_vec <- as.numeric(units::set_units(sf::st_area(zones_m), "km^2"))
     zone_area <- zones_m |>
         sf::st_drop_geometry() |>
         dplyr::mutate(area_km2 = area_vec) |>
@@ -51,20 +56,24 @@ summarise_tri_air_totals <- function(
         fug_cols <- grep("^FUGITIVE_AIR_", names(tri_sf), value = TRUE)
         stack_cols <- grep("^STACK_AIR_", names(tri_sf), value = TRUE)
         if (length(fug_cols) + length(stack_cols) == 0L) {
-            return(tibble())
+            return(tibble::tibble())
         }
 
         tri_sf <- tri_sf |>
             dplyr::mutate(across(all_of(fug_cols), ~ ifelse(is.na(.), 0, .))) |>
             dplyr::mutate(across(all_of(stack_cols), ~ ifelse(is.na(.), 0, .)))
 
-        # Inner county emissions
+        # Inner zone emissions
         tri_inner <- sf::st_join(tri_sf, zones_ll, join = sf::st_within) |>
             sf::st_drop_geometry() |>
             dplyr::filter(!is.na(geoid))
 
         inner_long <- tri_inner |>
-            dplyr::select(geoid, all_of(fug_cols), all_of(stack_cols)) |>
+            dplyr::select(
+                geoid,
+                dplyr::all_of(fug_cols),
+                dplyr::all_of(stack_cols)
+            ) |>
             tidyr::pivot_longer(
                 cols = -geoid,
                 names_to = "pollutant_id",
@@ -119,7 +128,11 @@ summarise_tri_air_totals <- function(
                 )
         } else {
             tri_plus |>
-                dplyr::select(geoid, all_of(fug_cols), all_of(stack_cols)) |>
+                dplyr::select(
+                    geoid,
+                    dplyr::all_of(fug_cols),
+                    dplyr::all_of(stack_cols)
+                ) |>
                 tidyr::pivot_longer(
                     cols = -geoid,
                     names_to = "pollutant_id",
@@ -152,7 +165,10 @@ summarise_tri_air_totals <- function(
         # Combine
         dplyr::left_join(inner_summary, plus_summary, by = "geoid") |>
             dplyr::mutate(
-                across(contains("_plusbuffer"), ~ tidyr::replace_na(.x, 0))
+                dplyr::across(
+                    dplyr::contains("_plusbuffer"),
+                    ~ tidyr::replace_na(.x, 0)
+                )
             ) |>
             tidyr::pivot_longer(
                 cols = -c(geoid, year),
@@ -162,11 +178,19 @@ summarise_tri_air_totals <- function(
             dplyr::arrange(geoid, year, var)
     })
 
-    # If monthly, replicate 12x
     if (agg == "monthly") {
         df_all <- df_all |>
             dplyr::mutate(month = list(1:12)) |>
             tidyr::unnest(month)
+    } else if (agg == "overall") {
+        df_all <- df_all |>
+            dplyr::filter(year >= 2010, year <= 2024) |>
+            dplyr::group_by(geoid, var) |>
+            dplyr::summarise(
+                value = mean(value, na.rm = TRUE),
+                .groups = "drop"
+            ) |>
+            dplyr::arrange(geoid, var)
     }
 
     df_all

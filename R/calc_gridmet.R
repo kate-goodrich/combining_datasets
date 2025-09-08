@@ -1,18 +1,23 @@
 gridmet_zonal <- function(
     tif_dir,
-    level = c("county", "tract"),
+    level = c("county", "tract", "zip"),
     zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
     zone_layer = NULL,
     id_col = "geoid",
     files_pattern = "\\.tif$",
-    aggregate_to = c("annual", "monthly"),
+    aggregate_to = c("annual", "monthly", "overall"),
     chunk_size = 365, # retained but rarely needed now
     write_csv = NULL
 ) {
     level <- match.arg(level)
     aggregate_to <- match.arg(aggregate_to)
     if (is.null(zone_layer)) {
-        zone_layer <- if (level == "county") "counties_500k" else "tracts_500k"
+        zone_layer <- switch(
+            level,
+            county = "counties_500k",
+            tract = "tracts_500k",
+            zip = "zctas_500k"
+        )
     }
 
     # ---- helpers ----
@@ -30,9 +35,12 @@ gridmet_zonal <- function(
     layer_dates <- function(r) {
         tt <- tryCatch(terra::time(r), error = function(e) NULL)
         if (!is.null(tt) && length(tt) == terra::nlyr(r)) {
-            return(tibble(layer = names(r), date = as.Date(tt, tz = "UTC")))
+            return(tibble::tibble(
+                layer = names(r),
+                date = as.Date(tt, tz = "UTC")
+            ))
         }
-        tibble(layer = names(r), date = dates_from_names(names(r)))
+        tibble::tibble(layer = names(r), date = dates_from_names(names(r)))
     }
     var_from_r <- function(r) sub("_\\d{8}$", "", names(r)[1])
 
@@ -80,55 +88,84 @@ gridmet_zonal <- function(
             )
         }
 
+        # area weights (true cell areas; CRS-agnostic)
+        w <- terra::cellSize(r, unit = "m")
+
+        # limit to 2010-2024 for "overall" (and keep behavior unchanged for annual/monthly)
+        yrs_all <- as.integer(format(key$date, "%Y"))
+        keep_overall <- yrs_all >= 2010 & yrs_all <= 2024
+
         if (terra::nlyr(r) == 1L) {
-            # single-layer: treat as one "month" (or annual) datapoint
-            vals <- exactextractr::exact_extract(r, zones_r, "mean")
-            dt <- key$date[1]
-            out <- tibble(
-                !!id_col := zones_sf[[id_col]],
-                var = vname,
-                date = dt,
-                value = as.numeric(vals)
+            # single-layer: just extract that date
+            vals <- exactextractr::exact_extract(
+                r,
+                zones_r,
+                fun = "weighted_mean",
+                weights = w
             )
+            dt <- key$date[1]
             if (aggregate_to == "annual") {
-                out <- out |>
-                    mutate(year = as.integer(format(date, "%Y"))) |>
-                    select(all_of(id_col), var, year, value)
+                return(tibble::tibble(
+                    !!id_col := zones_sf[[id_col]],
+                    var = vname,
+                    year = as.integer(format(dt, "%Y")),
+                    value = as.numeric(vals)
+                ))
+            } else if (aggregate_to == "monthly") {
+                return(tibble::tibble(
+                    !!id_col := zones_sf[[id_col]],
+                    var = vname,
+                    year = as.integer(format(dt, "%Y")),
+                    month = as.integer(format(dt, "%m")),
+                    value = as.numeric(vals)
+                ))
             } else {
-                out <- out |>
-                    mutate(
-                        year = as.integer(format(date, "%Y")),
-                        month = as.integer(format(date, "%m"))
-                    ) |>
-                    select(all_of(id_col), var, year, month, value)
+                # overall
+                if (dt < as.Date("2010-01-01") || dt > as.Date("2024-12-31")) {
+                    return(tibble::tibble(
+                        !!id_col := zones_sf[[id_col]],
+                        var = vname,
+                        value = NA_real_
+                    ))
+                }
+                return(tibble::tibble(
+                    !!id_col := zones_sf[[id_col]],
+                    var = vname,
+                    value = as.numeric(vals)
+                ))
             }
-            return(out)
         }
 
-        # Build index for tapp
-        yrs <- as.integer(format(key$date, "%Y"))
+        # multi-layer stacks
         if (aggregate_to == "annual") {
-            idx <- yrs
+            idx <- as.integer(format(key$date, "%Y"))
             r_agg <- terra::tapp(r, index = idx, fun = mean, na.rm = TRUE)
-            # name layers as YYYYY
-            uyrs <- sort(unique(yrs))
+            uyrs <- sort(unique(idx))
             names(r_agg) <- paste0("y", uyrs)
-            # exact extract on the small stack
-            vals <- exactextractr::exact_extract(r_agg, zones_r, "mean")
-            df <- as_tibble(vals)
+
+            vals <- exactextractr::exact_extract(
+                r_agg,
+                zones_r,
+                fun = "weighted_mean",
+                weights = terra::cellSize(r_agg, unit = "m")
+            )
+            df <- tibble::as_tibble(vals)
             names(df) <- names(r_agg)
             df[[id_col]] <- zones_sf[[id_col]]
-            long <- pivot_longer(
+
+            long <- tidyr::pivot_longer(
                 df,
-                -all_of(id_col),
+                -tidyr::all_of(id_col),
                 names_to = "layer",
                 values_to = "value"
             ) |>
-                mutate(year = as.integer(sub("^y", "", layer)), var = vname) |>
-                select(all_of(id_col), var, year, value)
+                dplyr::mutate(
+                    year = as.integer(sub("^y", "", layer)),
+                    var = vname
+                ) |>
+                dplyr::select(dplyr::all_of(id_col), var, year, value)
             return(long)
-        } else {
-            # monthly: index by year*100 + month to keep months separate
+        } else if (aggregate_to == "monthly") {
             ym <- as.integer(format(key$date, "%Y")) *
                 100L +
                 as.integer(format(key$date, "%m"))
@@ -136,24 +173,54 @@ gridmet_zonal <- function(
             uym <- sort(unique(ym))
             names(r_agg) <- paste0("m", uym) # e.g., m201601
 
-            vals <- exactextractr::exact_extract(r_agg, zones_r, "mean")
-            df <- as_tibble(vals)
+            vals <- exactextractr::exact_extract(
+                r_agg,
+                zones_r,
+                fun = "weighted_mean",
+                weights = terra::cellSize(r_agg, unit = "m")
+            )
+            df <- tibble::as_tibble(vals)
             names(df) <- names(r_agg)
             df[[id_col]] <- zones_sf[[id_col]]
-            long <- pivot_longer(
+
+            long <- tidyr::pivot_longer(
                 df,
-                -all_of(id_col),
+                -tidyr::all_of(id_col),
                 names_to = "layer",
                 values_to = "value"
             ) |>
-                mutate(
+                dplyr::mutate(
                     key = as.integer(sub("^m", "", layer)),
                     year = key %/% 100L,
                     month = key %% 100L,
                     var = vname
                 ) |>
-                select(all_of(id_col), var, year, month, value)
+                dplyr::select(dplyr::all_of(id_col), var, year, month, value)
             return(long)
+        } else {
+            # overall
+            if (!any(keep_overall)) {
+                return(tibble::tibble(
+                    !!id_col := zones_sf[[id_col]],
+                    var = vname,
+                    value = NA_real_
+                ))
+            }
+            # keep only layers in 2010-2024
+            r_keep <- r[[which(keep_overall)]]
+            # mean across all kept layers first (in raster space)
+            r_mean <- terra::app(r_keep, fun = mean, na.rm = TRUE)
+            vals <- exactextractr::exact_extract(
+                r_mean,
+                zones_r,
+                fun = "weighted_mean",
+                weights = terra::cellSize(r_mean, unit = "m")
+            )
+            return(tibble::tibble(
+                !!id_col := zones_sf[[id_col]],
+                var = vname,
+                value = as.numeric(vals)
+            ))
         }
     }
 
@@ -168,7 +235,6 @@ gridmet_zonal <- function(
 
     # ---- write / return ----
     if (!is.null(write_csv)) {
-        # write once at the end (now much smaller)
         readr::write_csv(out, write_csv)
     }
     out

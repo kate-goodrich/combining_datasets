@@ -1,18 +1,23 @@
 prism_normals_from_tifs <- function(
     input_dir = "clean_data/prism_clean",
     zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
-    level = c("county", "tract"),
+    level = c("county", "tract", "zip"),
     zone_layer = NULL,
     agg = c("annual", "monthly"),
     id_col = "geoid",
     file_pattern = "\\.tif$",
-    write_csv = NULL # NULL = no write; TRUE = auto-name; character = that path
+    write_csv = NULL # NULL = no write; TRUE = auto-name; character = custom path
 ) {
     level <- match.arg(level)
     agg <- match.arg(agg)
 
     if (is.null(zone_layer)) {
-        zone_layer <- if (level == "county") "counties_500k" else "tracts_500k"
+        zone_layer <- switch(
+            level,
+            county = "counties_500k",
+            tract = "tracts_500k",
+            zip = "zctas_500k"
+        )
     }
 
     # --- Load zones ---
@@ -56,11 +61,18 @@ prism_normals_from_tifs <- function(
     }
     meta <- purrr::map_dfr(tif_paths, parse_meta)
 
-    # --- Extract county/tract means for one file ---
+    # --- Extract means for one file (area-weighted) ---
     extract_one <- function(path) {
         r <- terra::rast(path)
         zp <- sf::st_transform(zones, terra::crs(r))
-        vals <- exactextractr::exact_extract(r, zp, "mean")
+        w <- terra::cellSize(r, unit = "m")
+        vals <- exactextractr::exact_extract(
+            r,
+            zp,
+            fun = "weighted_mean",
+            weights = w,
+            progress = FALSE
+        )
         tibble::tibble(
             !!id_col := zp[[id_col]],
             value = as.numeric(vals)
@@ -82,11 +94,7 @@ prism_normals_from_tifs <- function(
     # --- Aggregate/shape ---
     out <- if (agg == "monthly") {
         normals_long |>
-            dplyr::arrange(
-                !!rlang::sym(id_col),
-                .data$variable,
-                .data$month
-            ) |>
+            dplyr::arrange(!!rlang::sym(id_col), .data$variable, .data$month) |>
             dplyr::mutate(year = "normal") |>
             dplyr::select(
                 !!rlang::sym(id_col),
@@ -117,7 +125,7 @@ prism_normals_from_tifs <- function(
             )
     }
 
-    # --- Rename tmin/tmax variables to *_norm ---
+    # --- Rename tmin/tmax to *_norm ---
     out <- out |>
         dplyr::mutate(
             variable = dplyr::case_when(
@@ -127,11 +135,11 @@ prism_normals_from_tifs <- function(
             )
         )
 
-    # --- Optional write with requested naming convention ---
+    # --- Handle writing ---
     write_path <- NULL
     if (isTRUE(write_csv)) {
-        # auto-name: normal_<agg>_<level>_prism.csv
-        fname <- sprintf("normal_%s_%s_prism.csv", agg, level)
+        # auto-name: normal_<agg>_<level>_prism_normals.csv
+        fname <- sprintf("normal_%s_%s_prism_normals.csv", agg, level)
         write_path <- file.path("summary_sets", fname)
     } else if (is.character(write_csv) && nzchar(write_csv[1])) {
         write_path <- write_csv

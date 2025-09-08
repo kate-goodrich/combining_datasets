@@ -3,7 +3,7 @@ huc2_from_huc12_gpkg <- function(
     huc12_layer = NULL,
     huc12_id_col = NULL,
     zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
-    level = c("county", "tract"),
+    level = c("county", "tract", "zip"),
     zone_layer = NULL,
     id_col = "geoid",
     write_csv = NULL,
@@ -11,7 +11,23 @@ huc2_from_huc12_gpkg <- function(
 ) {
     level <- match.arg(level)
     if (is.null(zone_layer)) {
-        zone_layer <- if (level == "county") "counties_500k" else "tracts_500k"
+        zone_layer <- switch(
+            level,
+            county = "counties_500k",
+            tract = "tracts_500k",
+            zip = "zctas_500k"
+        )
+    }
+
+    # deps
+    reqs <- c("sf", "dplyr", "tidyr", "readr", "units", "lwgeom", "rlang")
+    ok <- vapply(reqs, requireNamespace, quietly = TRUE, FUN.VALUE = logical(1))
+    if (!all(ok)) {
+        stop(
+            "Missing packages: ",
+            paste(reqs[!ok], collapse = ", "),
+            call. = FALSE
+        )
     }
 
     zones <- sf::st_read(zones_gpkg, layer = zone_layer, quiet = TRUE) |>
@@ -72,7 +88,7 @@ huc2_from_huc12_gpkg <- function(
             ),
             .huc2 = substr(.huc12, 1, 2)
         ) |>
-        dplyr::select(.huc2) # <-- keep geometry implicitly
+        dplyr::select(.huc2)
 
     h2 <- h12 |>
         dplyr::group_by(.huc2) |>
@@ -107,8 +123,12 @@ huc2_from_huc12_gpkg <- function(
             !!rlang::sym(id_col) := sf::st_drop_geometry(zones)[[id_col]],
             .huc2 = all_codes
         ) |>
-            dplyr::mutate(var = paste0("prop_cover_huc2_", .huc2), value = 0) |>
-            dplyr::select(dplyr::all_of(id_col), var, value)
+            dplyr::mutate(
+                var = paste0("prop_cover_huc2_", .huc2),
+                value = 0,
+                agg = "overall"
+            ) |>
+            dplyr::select(dplyr::all_of(id_col), var, value, agg)
         if (!is.null(write_csv)) {
             readr::write_csv(out_zero, write_csv)
         }
@@ -140,9 +160,10 @@ huc2_from_huc12_gpkg <- function(
                 pmin(pmax(overlap_km2 / zone_area_km2, 0), 1),
                 NA_real_
             ),
-            var = paste0("prop_cover_huc2_", .huc2)
+            var = paste0("prop_cover_huc2_", .huc2),
+            agg = "overall"
         ) |>
-        dplyr::select(dplyr::all_of(id_col), var, value) |>
+        dplyr::select(dplyr::all_of(id_col), var, value, agg) |>
         dplyr::arrange(.data[[id_col]], var)
 
     if (!is.null(write_csv)) {

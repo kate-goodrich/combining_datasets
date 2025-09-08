@@ -1,16 +1,22 @@
 static_zonal_summary <- function(
     tif_dir,
-    level = c("county", "tract"),
+    level = c("county", "tract", "zip"),
     zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
     zone_layer = NULL,
     id_col = "geoid",
     files_pattern = "\\.tif$",
-    write_csv = NULL
+    write_csv = NULL,
+    add_overall_label = TRUE
 ) {
     # --- Argument validation ---
     level <- match.arg(level)
     if (is.null(zone_layer)) {
-        zone_layer <- if (level == "county") "counties_500k" else "tracts_500k"
+        zone_layer <- switch(
+            level,
+            county = "counties_500k",
+            tract = "tracts_500k",
+            zip = "zctas_500k"
+        )
     }
 
     # --- Check required packages ---
@@ -21,7 +27,8 @@ static_zonal_summary <- function(
         "dplyr",
         "purrr",
         "readr",
-        "stringr"
+        "stringr",
+        "tibble"
     )
     ok <- vapply(reqs, requireNamespace, quietly = TRUE, FUN.VALUE = logical(1))
     if (!all(ok)) {
@@ -35,19 +42,29 @@ static_zonal_summary <- function(
     # --- Helper: variable name from filename ---
     var_from_path <- function(p) {
         nm <- tools::file_path_sans_ext(basename(p))
-        nm <- sub("_clean$", "", nm) # remove trailing "_clean" if present
-        nm
+        sub("_clean$", "", nm) # remove trailing "_clean" if present
     }
 
-    # --- Core extractor function ---
-    county_means_static <- function(tif, zones_sf, id_col) {
+    # --- Core extractor function (area-weighted, CRS-agnostic) ---
+    zonal_mean_static <- function(tif, zones_sf, id_col) {
         r <- terra::rast(tif)
 
-        # Convert negative values to NA
+        # Turn negatives to NA (per your prior convention)
         r <- terra::ifel(r < 0, NA, r)
 
+        # True cell-area weights (m^2) -> correct in lon/lat or projected
+        w <- terra::cellSize(r, unit = "m")
+
+        # Reproject zones to raster CRS for extraction
         zones_r <- sf::st_transform(zones_sf, terra::crs(r))
-        vals <- exactextractr::exact_extract(r, zones_r, "mean")
+
+        vals <- exactextractr::exact_extract(
+            r,
+            zones_r,
+            fun = "weighted_mean",
+            weights = w
+        )
+
         tibble::tibble(
             !!id_col := zones_sf[[id_col]],
             var = var_from_path(tif),
@@ -86,15 +103,20 @@ static_zonal_summary <- function(
     # --- Extract all static rasters and bind results ---
     res <- purrr::map_dfr(
         tifs,
-        county_means_static,
+        zonal_mean_static,
         zones_sf = zones,
         id_col = id_col
     )
+
+    # Optional label to align with annual/monthly/overall pipelines
+    if (isTRUE(add_overall_label)) {
+        res$agg <- "overall"
+    }
 
     # --- Optional write ---
     if (!is.null(write_csv)) {
         readr::write_csv(res, write_csv)
     }
 
-    return(res)
+    res
 }

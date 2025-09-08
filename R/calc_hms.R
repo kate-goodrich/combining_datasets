@@ -1,16 +1,21 @@
 hms_fire_exposure <- function(
     hms_dir = "clean_data/hms_clean",
     zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
-    level = c("county", "tract"),
+    level = c("county", "tract", "zip"),
     zone_layer = NULL,
-    agg = c("annual", "monthly"),
+    agg = c("annual", "monthly", "overall"),
     id_col = "geoid",
     write_csv = NULL
 ) {
     level <- match.arg(level)
     agg <- match.arg(agg)
     if (is.null(zone_layer)) {
-        zone_layer <- if (level == "county") "counties_500k" else "tracts_500k"
+        zone_layer <- switch(
+            level,
+            county = "counties_500k",
+            tract = "tracts_500k",
+            zip = "zctas_500k"
+        )
     }
 
     # --- Dependencies check ---
@@ -23,7 +28,8 @@ hms_fire_exposure <- function(
         "tidyr",
         "lubridate",
         "units",
-        "lwgeom"
+        "lwgeom",
+        "tibble"
     )
     ok <- vapply(reqs, requireNamespace, quietly = TRUE, FUN.VALUE = logical(1))
     if (!all(ok)) {
@@ -40,7 +46,7 @@ hms_fire_exposure <- function(
 
     zones_aea <- zones_raw |>
         sf::st_transform(5070) |>
-        dplyr::select(!!id_col := all_of(id_col), geom)
+        dplyr::select(!!id_col := dplyr::all_of(id_col), geom)
 
     zone_area <- tibble::tibble(
         !!id_col := zones_aea[[id_col]],
@@ -72,19 +78,16 @@ hms_fire_exposure <- function(
         if (!inherits(out, "try-error")) {
             return(out)
         }
-
         b2 <- clean_polys(b)
         out <- try(suppressWarnings(sf::st_intersection(a, b2)), silent = TRUE)
         if (!inherits(out, "try-error")) {
             return(out)
         }
-
         a2 <- clean_polys(a)
         out <- try(suppressWarnings(sf::st_intersection(a2, b2)), silent = TRUE)
         if (!inherits(out, "try-error")) {
             return(out)
         }
-
         suppressWarnings(sf::st_intersection(
             clean_polys(a, 50),
             clean_polys(b, 50)
@@ -156,12 +159,18 @@ hms_fire_exposure <- function(
         )
     }
 
-    # --- Aggregate to month or year ---
+    # --- Aggregate to month, year, or overall (2010–2024) ---
     daily_props <- daily_props |>
         dplyr::mutate(
             year = lubridate::year(Date),
             month = lubridate::month(Date)
         )
+
+    dens_labels <- c(
+        Light = "prop_light_coverage",
+        Medium = "prop_med_coverage",
+        Heavy = "prop_heavy_coverage"
+    )
 
     if (agg == "annual") {
         days_per_year <- tibble::tibble(
@@ -181,7 +190,17 @@ hms_fire_exposure <- function(
             dplyr::left_join(days_per_year, by = "year") |>
             dplyr::mutate(value = sum_prop / days_in_year) |>
             dplyr::select(!!id_col, year, Density, value)
-    } else {
+
+        filled <- tidyr::complete(
+            agg_props,
+            !!id_col := zones_aea[[id_col]],
+            year = unique(daily_props$year),
+            Density = factor(dens_levels, levels = dens_levels),
+            fill = list(value = 0)
+        ) |>
+            dplyr::mutate(var = dplyr::recode(Density, !!!dens_labels)) |>
+            dplyr::select(!!id_col, year, var, value)
+    } else if (agg == "monthly") {
         days_per_month <- daily_props |>
             dplyr::group_by(year, month) |>
             dplyr::summarise(
@@ -198,26 +217,7 @@ hms_fire_exposure <- function(
             dplyr::left_join(days_per_month, by = c("year", "month")) |>
             dplyr::mutate(value = sum_prop / days_in_month) |>
             dplyr::select(!!id_col, year, month, Density, value)
-    }
 
-    # --- Fill missing combinations ---
-    dens_labels <- c(
-        Light = "prop_light_coverage",
-        Medium = "prop_med_coverage",
-        Heavy = "prop_heavy_coverage"
-    )
-
-    if (agg == "annual") {
-        filled <- tidyr::complete(
-            agg_props,
-            !!id_col := zones_aea[[id_col]],
-            year = unique(daily_props$year),
-            Density = factor(dens_levels, levels = dens_levels),
-            fill = list(value = 0)
-        ) |>
-            dplyr::mutate(var = dplyr::recode(Density, !!!dens_labels)) |>
-            dplyr::select(!!id_col, year, var, value)
-    } else {
         filled <- tidyr::complete(
             agg_props,
             !!id_col := zones_aea[[id_col]],
@@ -228,6 +228,62 @@ hms_fire_exposure <- function(
         ) |>
             dplyr::mutate(var = dplyr::recode(Density, !!!dens_labels)) |>
             dplyr::select(!!id_col, year, month, var, value)
+    } else {
+        # overall: mean over 2010–2024 across all days
+        daily_props <- daily_props |>
+            dplyr::filter(year >= 2010, year <= 2024)
+
+        if (nrow(daily_props) == 0) {
+            filled <- tibble::tibble(
+                !!id_col := zones_aea[[id_col]],
+                var = rep(
+                    unname(dens_labels),
+                    each = length(zones_aea[[id_col]])
+                ),
+                value = 0
+            ) |>
+                dplyr::distinct(.data[[id_col]], var, .keep_all = TRUE)
+        } else {
+            # compute calendar days per year to weight annual means properly
+            yrs_keep <- sort(unique(daily_props$year))
+            days_per_year <- tibble::tibble(
+                year = yrs_keep,
+                days_in_year = lubridate::yday(as.Date(paste0(
+                    yrs_keep,
+                    "-12-31"
+                )))
+            )
+
+            # annual-style intermediate (sum per year / days in that year)
+            annual_tmp <- daily_props |>
+                dplyr::group_by(.data[[id_col]], year, Density) |>
+                dplyr::summarise(
+                    sum_prop = sum(prop, na.rm = TRUE),
+                    .groups = "drop"
+                ) |>
+                dplyr::left_join(days_per_year, by = "year")
+
+            # overall = (sum of sums) / (sum of days) per id x density
+            overall_vals <- annual_tmp |>
+                dplyr::group_by(.data[[id_col]], Density) |>
+                dplyr::summarise(
+                    value = sum(sum_prop, na.rm = TRUE) /
+                        sum(days_in_year, na.rm = TRUE),
+                    .groups = "drop"
+                )
+
+            # fill missing densities with 0
+            overall_vals <- tidyr::complete(
+                overall_vals,
+                !!id_col := zones_aea[[id_col]],
+                Density = factor(dens_levels, levels = dens_levels),
+                fill = list(value = 0)
+            )
+
+            filled <- overall_vals |>
+                dplyr::mutate(var = dplyr::recode(Density, !!!dens_labels)) |>
+                dplyr::select(!!id_col, var, value)
+        }
     }
 
     # --- Save if requested ---

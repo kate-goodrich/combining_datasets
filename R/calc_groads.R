@@ -1,14 +1,19 @@
 road_density_zonal <- function(
     roads_gpkg = "clean_data/groads_clean/groads_clean.gpkg",
     zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
-    level = c("county", "tract"),
+    level = c("county", "tract", "zip"),
     zone_layer = NULL,
     id_col = "geoid",
     write_csv = NULL
 ) {
     level <- match.arg(level)
     if (is.null(zone_layer)) {
-        zone_layer <- if (level == "county") "counties_500k" else "tracts_500k"
+        zone_layer <- switch(
+            level,
+            county = "counties_500k",
+            tract = "tracts_500k",
+            zip = "zctas_500k"
+        )
     }
 
     # --- Dependency checks ---
@@ -25,7 +30,7 @@ road_density_zonal <- function(
     # --- Read geometries ---
     zones <- sf::st_read(zones_gpkg, layer = zone_layer, quiet = TRUE) |>
         sf::st_make_valid() |>
-        dplyr::select(!!id_col)
+        dplyr::select(dplyr::all_of(id_col))
 
     roads <- sf::st_read(roads_gpkg, quiet = TRUE) |>
         sf::st_make_valid()
@@ -40,12 +45,12 @@ road_density_zonal <- function(
     area_tbl <- zones_m |>
         dplyr::mutate(area_km2 = as.numeric(units::set_units(areas, km^2))) |>
         sf::st_drop_geometry() |>
-        dplyr::select(!!id_col, area_km2)
+        dplyr::select(dplyr::all_of(id_col), area_km2)
 
     # --- Clip roads to zones and calculate lengths ---
     roads_split <- sf::st_intersection(
         roads_m,
-        zones_m |> dplyr::select(!!id_col)
+        zones_m |> dplyr::select(dplyr::all_of(id_col))
     )
 
     roads_split <- roads_split |>
@@ -62,13 +67,14 @@ road_density_zonal <- function(
         dplyr::left_join(area_tbl, by = id_col) |>
         dplyr::mutate(road_density_km_per_km2 = total_road_km / area_km2)
 
-    # --- Long format for consistency ---
+    # --- Long format (+ tag as overall for consistency) ---
     summary_long <- summary_wide |>
         tidyr::pivot_longer(
             cols = c(total_road_km, area_km2, road_density_km_per_km2),
             names_to = "var",
             values_to = "value"
         ) |>
+        dplyr::mutate(agg = "overall") |>
         dplyr::arrange(.data[[id_col]], var)
 
     if (!is.null(write_csv)) {

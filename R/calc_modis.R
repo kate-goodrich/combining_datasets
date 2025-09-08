@@ -1,15 +1,21 @@
 summarize_modis <- function(
-    level = c("county", "tract"),
-    agg = c("annual", "monthly"),
+    level = c("county", "tract", "zip"),
+    agg = c("annual", "monthly", "overall"),
     zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
     zone_layer = NULL,
+    id_col = "geoid",
     write_csv = NULL
 ) {
     level <- match.arg(level)
     agg <- match.arg(agg)
 
     if (is.null(zone_layer)) {
-        zone_layer <- if (level == "county") "counties_500k" else "tracts_500k"
+        zone_layer <- switch(
+            level,
+            county = "counties_500k",
+            tract = "tracts_500k",
+            zip = "zctas_500k"
+        )
     }
 
     # Read zones
@@ -42,26 +48,26 @@ summarize_modis <- function(
     }
 
     index_modis_files <- function(var_dir) {
-        tibble(
+        tibble::tibble(
             path = list.files(var_dir, pattern = "\\.tif$", full.names = TRUE)
         ) |>
-            mutate(
-                date = as.Date(str_extract(
+            dplyr::mutate(
+                date = as.Date(stringr::str_extract(
                     basename(path),
                     "\\d{4}-\\d{2}-\\d{2}"
                 )),
                 year = as.integer(format(date, "%Y"))
             ) |>
-            arrange(date) |>
-            mutate(read_ok = purrr::map_lgl(path, is_readable_raster)) |>
+            dplyr::arrange(date) |>
+            dplyr::mutate(read_ok = purrr::map_lgl(path, is_readable_raster)) |>
             (\(df) {
-                bad <- filter(df, !read_ok)
+                bad <- dplyr::filter(df, !read_ok)
                 if (nrow(bad) > 0) {
                     log_bad(bad$path, "readStart failure or not a raster")
                 }
-                filter(df, read_ok)
+                dplyr::filter(df, read_ok)
             })() |>
-            select(-read_ok)
+            dplyr::select(-read_ok)
     }
 
     extract_means_factory <- function(zones_proj) {
@@ -73,7 +79,10 @@ summarize_modis <- function(
                 "mean",
                 progress = FALSE
             )
-            tibble(geoid = zones_proj$geoid, mean_raw = as.numeric(vals))
+            tibble::tibble(
+                !!id_col := zones_proj[[id_col]],
+                mean_raw = as.numeric(vals)
+            )
         }
     }
 
@@ -86,13 +95,16 @@ summarize_modis <- function(
             Sys.sleep(sleep0 * i)
         }
         log_bad(fp, sprintf("retry_exhausted_%dx", tries))
-        tibble(geoid = character(), mean_raw = double())
+        tibble::tibble(
+            !!id_col := vector(mode = "character"),
+            mean_raw = double()
+        )
     }
 
     summarize_modis_dir <- function(var_dir, variable_label, scale_factor) {
         files <- index_modis_files(var_dir)
         if (nrow(files) == 0) {
-            return(tibble())
+            return(tibble::tibble())
         }
 
         r0 <- terra::rast(files$path[1])
@@ -100,30 +112,49 @@ summarize_modis <- function(
         extract_means <- extract_means_factory(zones_proj)
 
         daily <- files |>
-            mutate(res = map(path, ~ safe_extract_means(extract_means, .x))) |>
-            unnest(res) |>
-            mutate(value = mean_raw * scale_factor) |>
-            select(geoid, date, year, value)
+            dplyr::mutate(
+                res = purrr::map(path, ~ safe_extract_means(extract_means, .x))
+            ) |>
+            tidyr::unnest(res) |>
+            dplyr::mutate(value = mean_raw * scale_factor) |>
+            dplyr::select(dplyr::all_of(id_col), date, year, value)
 
         if (agg == "annual") {
             daily |>
-                group_by(geoid, year) |>
-                summarize(
+                dplyr::group_by(.data[[id_col]], year) |>
+                dplyr::summarise(
                     value = mean(value, na.rm = TRUE),
                     .groups = "drop"
                 ) |>
-                mutate(variable = variable_label) |>
-                relocate(variable, geoid, year, value)
-        } else {
+                dplyr::mutate(variable = variable_label) |>
+                dplyr::relocate(variable, !!rlang::sym(id_col), year, value)
+        } else if (agg == "monthly") {
             daily |>
-                mutate(month = lubridate::month(date)) |>
-                group_by(geoid, year, month) |>
-                summarize(
+                dplyr::mutate(month = lubridate::month(date)) |>
+                dplyr::group_by(.data[[id_col]], year, month) |>
+                dplyr::summarise(
                     value = mean(value, na.rm = TRUE),
                     .groups = "drop"
                 ) |>
-                mutate(variable = variable_label) |>
-                relocate(variable, geoid, year, month, value)
+                dplyr::mutate(variable = variable_label) |>
+                dplyr::relocate(
+                    variable,
+                    !!rlang::sym(id_col),
+                    year,
+                    month,
+                    value
+                )
+        } else {
+            # overall: mean over all dates in 2010–2024
+            daily |>
+                dplyr::filter(year >= 2010, year <= 2024) |>
+                dplyr::group_by(.data[[id_col]]) |>
+                dplyr::summarise(
+                    value = mean(value, na.rm = TRUE),
+                    .groups = "drop"
+                ) |>
+                dplyr::mutate(variable = variable_label) |>
+                dplyr::relocate(variable, !!rlang::sym(id_col), value)
         }
     }
 
@@ -168,9 +199,11 @@ summarize_modis <- function(
     )
 
     out <- vars |>
-        mutate(tbl = pmap(list(dir, label, scale), summarize_modis_dir)) |>
-        pull(tbl) |>
-        list_rbind()
+        dplyr::mutate(
+            tbl = purrr::pmap(list(dir, label, scale), summarize_modis_dir)
+        ) |>
+        dplyr::pull(tbl) |>
+        dplyr::bind_rows()
 
     if (!is.null(write_csv)) {
         readr::write_csv(out, write_csv)
