@@ -7,7 +7,7 @@ plot_normal_map <- function(
     palette = "viridis",
     direction = 1,
     bbox = c(-140, -60, 18, 72),
-    limits = NULL, # use data-driven if NULL; auto-fixed to >0 for log scales
+    limits = NULL,
     out_file = NULL,
     title = NULL,
     dataset = county_annual, # Arrow/tibble with geoid, year, variable, value
@@ -95,7 +95,7 @@ plot_normal_map <- function(
         ggplot2::geom_sf(
             ggplot2::aes(fill = value),
             color = border_col,
-            size = border_size
+            linewidth = border_size
         ) +
         ggplot2::scale_fill_viridis_c(
             option = palette,
@@ -137,7 +137,7 @@ plot_normal_map <- function(
         width = 12,
         height = 6,
         units = "in",
-        dpi = 150
+        dpi = 600
     )
     message("Saved: ", normalizePath(out_file))
     invisible(out_file)
