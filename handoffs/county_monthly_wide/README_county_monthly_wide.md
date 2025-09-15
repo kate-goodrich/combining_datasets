@@ -3,20 +3,23 @@
 **File Names:** 
 
 **Dynamic Variable Files:**  
-`county_2010_01.csv`  | `county_2010_02.csv` | … | `county_2010_12.csv`  
-`county_2011_01.csv`  | `county_2011_02.csv` | … | `county_2011_12.csv`  
-…   
-`county_2024_01.csv`  | `county_2024_02.csv` | … | `county_2024_12.csv`
+`county_2010_01.csv` … `county_2010_12.csv`  
+`county_2011_01.csv` … `county_2011_12.csv`  
+…  
+`county_2024_01.csv` … `county_2024_12.csv`  
+(Each file also available as `.parquet`)  
 
-**Normal Variable Files:** 
-`county_normal_01.csv`| `county_normal_02.csv` | … | `county_normal_12.csv`
+**Normal Variable Files:**  
+`county_normal_01.csv` … `county_normal_12.csv`  
+(Also available as `.parquet`)  
 
 **Static Variable File:**  
-`county_static.csv`
+`county_static.csv`  
+(Also available as `.parquet`)  
 
-**Last Updated:** 2025-08-29 
+**Last Updated:** 2025-09-12  
 
-**Format:** Comma-Separated Values (CSV)
+**Format:** Apache Parquet; Comma-Separated Values (CSV)  
 
 ## Description
 

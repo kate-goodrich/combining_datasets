@@ -3,20 +3,21 @@
 **File Names:**  
 
 **Dynamic Variable Files:**  
-`tract_2010.csv` | `tract_2011.csv` | `tract_2012.csv` | `tract_2013.csv` |  
-`tract_2014.csv` | `tract_2015.csv` | `tract_2016.csv` | `tract_2017.csv` |  
-`tract_2018.csv` | `tract_2019.csv` | `tract_2020.csv` | `tract_2021.csv` |  
-`tract_2022.csv` | `tract_2023.csv` | `tract_2024.csv` 
+`tract_2010.csv` … `tract_2024.csv`  
+(Each file also available as `.parquet`)  
 
 **Static Variable File:**  
-`tract_static.csv`
+`tract_static.csv`  
+(Also available as `.parquet`)  
 
 **Normal Variable File:**  
-`tract_normal.csv`
+`tract_normal.csv`  
+(Also available as `.parquet`)  
 
-**Last Updated:** 2025-08-29 
+**Last Updated:** 2025-09-12  
 
-**Format:** Comma-Separated Values (CSV)
+**Format:** Apache Parquet; Comma-Separated Values (CSV)  
+
 
 ## Description
 

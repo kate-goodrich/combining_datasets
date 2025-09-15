@@ -1,10 +1,11 @@
 # Dataset: Long-Form Census Tract Monthly Environmental Health Dataset
 
-**File Name:** `tract_monthly.parquet` 
+**File Name:** `tract_monthly.parquet`; `tract_monthly.csv`  
 
-**Last Updated:** 2025-08-29 
+**Last Updated:** 2025-09-12  
 
-**Format:** Apache Parquet
+**Format:** Apache Parquet; Comma-Separated Values (CSV)  
+
 
 ## Description
 

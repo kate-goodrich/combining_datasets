@@ -1,31 +1,47 @@
-# Dataset: Long-Form Census Tract Annual Environmental Health Dataset
+# Dataset: Wide-Form Zip Code Monthly Environmental Health Dataset  
 
-**File Name:** `tract_annual.parquet`; `tract_annual.csv`  
+**File Names:**  
+
+**Dynamic Variable Files:**  
+`zip_2010_01.csv` … `zip_2010_12.csv`  
+`zip_2011_01.csv` … `zip_2011_12.csv`  
+…  
+`zip_2024_01.csv` … `zip_2024_12.csv`  
+(Each file also available as `.parquet`)  
+
+**Normal Variable Files:**  
+`zip_normal_01.csv` … `zip_normal_12.csv`  
+(Also available as `.parquet`)  
+
+**Static Variable File:**  
+`zip_static.csv`  
+(Also available as `.parquet`)  
 
 **Last Updated:** 2025-09-12  
 
 **Format:** Apache Parquet; Comma-Separated Values (CSV)  
 
 
-## Description
+## Description  
 
-This dataset includes annual summaries of environmental and climate health variables for all U.S. census tracts from 2010 to 2024.
+This dataset includes monthly summaries of environmental and climate health variables for all U.S. zip codes from 2010 to 2024.  
+It is stored in a wide format, where each row corresponds to a zip code, month, and year, and each environmental variable is represented as a separate column.  
 
-## Usage
+## Usage  
 
-This dataset is designed to support geospatial epidemiological analyses and environmental exposure mapping by providing relevant covariates at the tract-year level.
+This dataset is designed to support regression modeling, machine learning, and statistical analyses that require multiple covariates to be aligned in a single row.  
+It is especially useful for workflows that need environmental exposures as model-ready features at the zip code–month–year level.  
+
+## Structure 
+
+Each file (`zip_<year_month>.csv`) is a wide-form dataset where:
+
+- Each row represents a single zip code (identified by `geoid`).
+- Each column represents an environmental or climate variable for that year and month.
+- The `zip_static.csv` file contains variables that do not vary by year or month.
+- See Covariate Descriptions below for a comprehensive list of variables included.
 
 
-## Structure
-
-Each row represents a single environmental or climate variable for a given census tract and year.
-
-| Column Name      | Type     | Description                                           |
-|------------------|----------|-------------------------------------------------------|
-| `geoid`          | string   | GEOID for census tract                                |
-| `variable`       | string   | Name of the environmental variable                    |
-| `value`          | numeric  | Area-weighted mean value                              |
-| `year`           | integer  | Year                                                  | 
 
 ## Source
 
@@ -43,17 +59,17 @@ This file was generated using data from:
 - US EPA Toxic Release Inventory (TRI) Program (abbreviated to "tri")
 - USGS6 Global Multi-resolution Terrain Elevation Data (GMTED2010) (abbreviated to "gmted")
 - USGS National Hydrography Dataset (NHD) (abbreviated to "huc")
-- Cartographic Boundary GeoPackage (abbreviated to "boundaries")
+- U.S. Census Bureau TIGER/Line Shapefiles for ZIP Code Tabulation Areas (ZCTA5) (abbreviated to "boundaries")
 
 
 ## Processing Notes
 
 - All datasets were downloaded and processed using `amadeus` in R. 
-- Tract and county geometries are from the Cartographic Boundary GeoPackage.
-- Area-weighted means were calculated using `exactextractr` in R, applied to county and tract geometries.
+- Zip code boundaries were downloaded from U.S. Census Bureau TIGER/Line Shapefiles for ZIP Code Tabulation Areas (ZCTA5).
+- Area-weighted means were calculated using `exactextractr` in R, applied to zip code geometries.
 - Coverage: 2010–2024 for all dynamic datasets, except merra2 (2010 excluded due to metadata inconsistencies), and nlcd (2024 not yet available).
 - MODIS scale factors (e.g., reflectance ×0.0001, EVI ×0.0001) were applied prior to aggregation.
-- TRI point source emissions were summed by tract; additional per-area and +4 km buffer summaries included.
+- TRI point source emissions were summed by zip code; additional per-area and +4 km buffer summaries included.
 - PRISM normals represent 1991–2020 climatological averages (static).
 - Geographic coverage spans the 48 contiguous U.S. states. Alaska and Hawaii are excluded from gridMET, NLCD, PRISM, and MODIS here.
 
@@ -110,13 +126,13 @@ This file was generated using data from:
 | pet                                     | terraclimate  | dynamic | Monthly potential evapotranspiration                       | mm/month       |
 | annual_total_air_lb                     | tri           | dynamic | Total air emissions (fugitive and stack)                   | lb             |
 | annual_total_air_lb_per_km2             | tri           | dynamic | Total air emissions per area                               | lb/km²         |
-| annual_total_air_lb_plusbuffer          | tri           | dynamic | Total air emissions w/ 20 km county / 4 km tract buffer    | lb             |
+| annual_total_air_lb_plusbuffer          | tri           | dynamic | Total air emissions w/ 4km zip code buffer                 | lb             |
 | annual_total_fugitive_air_lb            | tri           | dynamic | Fugitive air emissions                                     | lb             |
 | annual_total_fugitive_air_lb_per_km2    | tri           | dynamic | Fugitive air emissions per area                            | lb/km²         |
-| annual_total_fugitive_air_lb_plusbuffer | tri           | dynamic | Fugitive air emissions w/ 20 km county / 4 km tract buffer | lb             |
+| annual_total_fugitive_air_lb_plusbuffer | tri           | dynamic | Fugitive air emissions w/ 4km zip code buffer              | lb             |
 | annual_total_stack_air_lb               | tri           | dynamic | Stack (point-source) air emissions                         | lb             |
 | annual_total_stack_air_lb_per_km2       | tri           | dynamic | Stack emissions per area                                   | lb/km²         |
-| annual_total_stack_air_lb_plusbuffer    | tri           | dynamic | Stack emissions w/ 20 km county / 4 km tract buffer        | lb             |
+| annual_total_stack_air_lb_plusbuffer    | tri           | dynamic | Stack emissions w/ 4km zip code buffer                     | lb             |
 | solclear                                | prism         | normal  | Solar radiation under clear sky                            | MJ/m²/day      |
 | solslope                                | prism         | normal  | Solar shortwave radiation sloped surface                   | MJ/m²/day      |
 | soltotal                                | prism         | normal  | Solar shortwave radiation horizontal surface               | MJ/m²/day      |
@@ -134,7 +150,7 @@ This file was generated using data from:
 | mn30_grd                                | gmted         | static  | Mean statistic (30-arc seconds)                            | m              |
 | mx30_grd                                | gmted         | static  | Maximum statistic (30-arc seconds)                         | m              |
 | sd30_grd                                | gmted         | static  | Standard deviation (30-arc seconds)                        | m              |
-| area_km2                                | boundaries    | static  | Area of county or census tract                             | km²            |
+| area_km2                                | boundaries    | static  | Area of zip code                                           | km²            |
 | road_density_km_per_km2                 | groads        | static  | Road density                                               | km/km²         |
 | total_road_km                           | groads        | static  | Total length of roads                                      | km             |
 | prop_cover_huc2_01                      | huc           | static  | Proportion of zone covered by HUC2 1 — New England         | proportion     |

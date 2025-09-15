@@ -7,6 +7,8 @@ Sanity Checks and Visualizations for Aggregated Amadeus Datasets
 - [County-Monthly Sanity checks](#county-monthly-sanity-checks)
 - [Tract-Annual Sanity checks](#tract-annual-sanity-checks)
 - [Tract-Monthly Sanity checks](#tract-monthly-sanity-checks)
+- [Zip-Annual Sanity checks](#zip-annual-sanity-checks)
+- [Zip-Monthly Sanity checks](#zip-monthly-sanity-checks)
 
 # set container library
 
@@ -36,7 +38,7 @@ knitr::opts_chunk$set(dev = "ragg_png", dpi = 150)
 
 
 # Keep ragg from interpreting huge inch sizes
-options(ragg.max_dim = 10000)  # optional; with units="px" you shouldn't hit the cap
+options(ragg.max_dim = 10000)  
 ```
 
 \# Load packages
@@ -44,8 +46,6 @@ options(ragg.max_dim = 10000)  # optional; with units="px" you shouldn't hit the
 # Load data
 
 ``` r
-#for interactive
-
 # Resolve paths relative to root.dir set above
 ds <- function(...) file.path(project_dir, ...)
 
@@ -53,6 +53,9 @@ county_annual  <- open_dataset(ds("handoffs/county_annual_long/county_annual.par
 county_monthly <- open_dataset(ds("handoffs/county_monthly_long/county_monthly.parquet"))
 tract_annual   <- open_dataset(ds("handoffs/tract_annual_long/tract_annual.parquet"))
 tract_monthly  <- open_dataset(ds("handoffs/tract_monthly_long/tract_monthly.parquet"))
+zip_annual <- open_dataset(ds("handoffs/zip_annual_long/zip_annual.parquet"))
+zip_monthly <- open_dataset(ds("handoffs/zip_monthly_long/zip_monthly.parquet"))
+zip_overall <- open_dataset(ds("handoffs/zip_overall_long/zip_overall.parquet"))
 ```
 
 # County-Annual Sanity checks
@@ -874,7 +877,6 @@ anyDuplicated(tract_annual[c("geoid", "year", "variable")])
 ``` r
 # Basic shape
 # should be over 84,119 counties, 17 years (2010-2024) normal and static, 148 vars
-# 84119 census tracts - some may have had errors
 tract_annual %>%
   summarise(
     n_rows     = n(),
@@ -931,7 +933,6 @@ var_summary <- tract_annual %>%
   ) %>%
   arrange(variable) %>%
   collect()
-
 
 
 
@@ -1112,7 +1113,6 @@ anyDuplicated(tract_monthly[c("geoid", "year", "variable")])
 ``` r
 # Basic shape
 # should be over 84,414 counties, 17 years (2010-2024) normal and static, 140 vars
-# 84119 census tracts - some may have had errors
 
 tract_monthly %>%
   summarise(
@@ -1512,3 +1512,623 @@ print(comparison, n = Inf)
     ## 146 vs                                  7.26e- 1 1.01e+1  0       2   e+1 Y     
     ## 147 ws                                  8.00e- 1 1.35e+1  0       1.4 e+1 Y     
     ## 148 z0m                                 1.67e- 4 2.26e+0  1  e- 4 3   e+0 Y
+
+# Zip-Annual Sanity checks
+
+``` r
+# Duplicates: geoid-year-variable
+dup_zip_annual <- zip_annual %>%
+  group_by(geoid, year, variable) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  filter(n > 1) %>%
+  collect()
+
+any_dups_zip_annual <- nrow(dup_zip_annual) > 0
+any_dups_zip_annual
+```
+
+    ## [1] TRUE
+
+``` r
+dup_zip_annual  # inspect if TRUE
+```
+
+    ## # A tibble: 1,385,431 × 4
+    ##    geoid year  variable     n
+    ##    <chr> <chr> <chr>    <int>
+    ##  1 47236 2010  pet          2
+    ##  2 47236 2011  pet          2
+    ##  3 47236 2012  pet          2
+    ##  4 47236 2013  pet          2
+    ##  5 47236 2014  pet          2
+    ##  6 47236 2015  pet          2
+    ##  7 47236 2016  pet          2
+    ##  8 47236 2017  pet          2
+    ##  9 47236 2018  pet          2
+    ## 10 47236 2019  pet          2
+    ## # ℹ 1,385,421 more rows
+
+``` r
+# Basic shape (exact distincts without n_distinct)
+zip_annual_shape <- list(
+  n_rows  = zip_annual %>% summarise(n = n()) %>% collect() %>% pull(),
+  n_zips  = zip_annual %>% distinct(geoid)   %>% summarise(n = n()) %>% collect() %>% pull(),
+  n_years = zip_annual %>% distinct(year)    %>% summarise(n = n()) %>% collect() %>% pull(),
+  n_vars  = zip_annual %>% distinct(variable)%>% summarise(n = n()) %>% collect() %>% pull()
+) %>% tibble::as_tibble()
+zip_annual_shape
+```
+
+    ## # A tibble: 1 × 4
+    ##     n_rows n_zips n_years n_vars
+    ##      <int>  <int>   <int>  <int>
+    ## 1 28663045  33791      17    116
+
+``` r
+# (If you’re fine with approximate counts instead)
+# zip_annual %>%
+#   summarise(
+#     n_rows  = n(),
+#     n_zips  = approx_n_distinct(geoid),
+#     n_years = approx_n_distinct(year),
+#     n_vars  = approx_n_distinct(variable)
+#   ) %>% collect()
+
+# Distinct years present
+zip_annual %>%
+  distinct(year) %>%
+  arrange(year) %>%
+  collect()
+```
+
+    ## # A tibble: 17 × 1
+    ##    year  
+    ##    <chr> 
+    ##  1 2010  
+    ##  2 2011  
+    ##  3 2012  
+    ##  4 2013  
+    ##  5 2014  
+    ##  6 2015  
+    ##  7 2016  
+    ##  8 2017  
+    ##  9 2018  
+    ## 10 2019  
+    ## 11 2020  
+    ## 12 2021  
+    ## 13 2022  
+    ## 14 2023  
+    ## 15 2024  
+    ## 16 normal
+    ## 17 static
+
+``` r
+# Variable distribution summary (then compare to expected)
+var_summary_zip_annual <- zip_annual %>%
+  group_by(variable) %>%
+  summarise(
+    min_val    = min(value, na.rm = TRUE),
+    max_val    = max(value, na.rm = TRUE),
+    mean_val   = mean(value, na.rm = TRUE),
+    median_val = median(value, na.rm = TRUE),
+    sd_val     = sd(value, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  arrange(variable) %>%
+  collect()
+
+comparison_zip_annual <- var_summary_zip_annual %>%
+  dplyr::left_join(expected_ranges, by = "variable") %>%
+  mutate(
+    min_ok = min_val >= min_exp,
+    max_ok = max_val <= max_exp,
+    passes = ifelse(min_ok & max_ok, "Y", "N")
+  ) %>%
+  select(variable, min_val, max_val, min_exp, max_exp, passes)
+
+print(comparison_zip_annual, n = Inf)
+```
+
+    ## # A tibble: 116 × 6
+    ##     variable                             min_val max_val  min_exp max_exp passes
+    ##     <chr>                                  <dbl>   <dbl>    <dbl>   <dbl> <chr> 
+    ##   1 aet                                 1.71e+ 0 1.34e+2  0       2.5 e+2 Y     
+    ##   2 albedo                              7.42e- 2 6.30e-1  0       9   e-1 Y     
+    ##   3 annual_total_air_lb                 0        8.66e+6  0       1   e+8 Y     
+    ##   4 annual_total_air_lb_per_km2         0        3.20e+6  0       1   e+6 N     
+    ##   5 annual_total_air_lb_plusbuffer      0        8.66e+6  0       1   e+8 Y     
+    ##   6 annual_total_fugitive_air_lb        0        8.48e+6  0       1   e+8 Y     
+    ##   7 annual_total_fugitive_air_lb_per_…  0        5.37e+4  0       5   e+5 Y     
+    ##   8 annual_total_fugitive_air_lb_plus…  0        8.48e+6  0       1   e+8 Y     
+    ##   9 annual_total_stack_air_lb           0        4.50e+6  0       1   e+8 Y     
+    ##  10 annual_total_stack_air_lb_per_km2   0        3.20e+6  0       1   e+6 N     
+    ##  11 annual_total_stack_air_lb_plusbuf…  0        6.25e+6  0       1   e+8 Y     
+    ##  12 area_km2                            8.25e- 3 3.57e+4  5  e+ 0 3.83e+5 N     
+    ##  13 bcsmass                             4.57e-12 3.65e-9  1  e-11 1   e-8 N     
+    ##  14 be30_grd                            0        3.59e+3  0       6   e+3 Y     
+    ##  15 cldtot                              1.94e- 1 8.33e-1  0       1   e+0 Y     
+    ##  16 def                                 0        2.02e+2  0       3.4 e+2 Y     
+    ##  17 ds30_grd                            0        3.61e+3  0       6   e+3 Y     
+    ##  18 dusmass25                           3.21e-11 1.78e-8  1  e-11 3   e-8 Y     
+    ##  19 etr                                 1.66e+ 0 1.00e+1  0       1.8 e+1 Y     
+    ##  20 evap                                1.48e- 6 7.63e-5  1  e- 8 1   e-4 Y     
+    ##  21 grn                                 0        9.83e-1  0       1   e+0 Y     
+    ##  22 gwetroot                            1.69e- 1 9.87e-1  0       1   e+0 Y     
+    ##  23 koppen_1                            1.47e- 4 1   e+0  0       1   e+0 Y     
+    ##  24 koppen_14                           7.89e- 6 1   e+0  0       1   e+0 Y     
+    ##  25 koppen_15                           9.95e- 5 1   e+0  0       1   e+0 Y     
+    ##  26 koppen_16                           2.76e- 5 8.17e-2  0       1   e+0 Y     
+    ##  27 koppen_17                           1.90e- 3 1   e+0  0       1   e+0 Y     
+    ##  28 koppen_18                           1.11e- 7 1   e+0  0       1   e+0 Y     
+    ##  29 koppen_19                           1.24e- 4 1   e+0  0       1   e+0 Y     
+    ##  30 koppen_2                            2.97e- 5 1   e+0  0       1   e+0 Y     
+    ##  31 koppen_21                           9.92e- 7 1   e+0  0       1   e+0 Y     
+    ##  32 koppen_22                           1.73e- 4 1   e+0  0       1   e+0 Y     
+    ##  33 koppen_23                           1.06e- 2 6.68e-1  0       1   e+0 Y     
+    ##  34 koppen_25                           2.29e- 6 1   e+0  0       1   e+0 Y     
+    ##  35 koppen_26                           1.52e- 7 1   e+0  0       1   e+0 Y     
+    ##  36 koppen_27                           1.94e- 7 1   e+0  0       1   e+0 Y     
+    ##  37 koppen_29                           9.28e- 5 1   e+0  0       1   e+0 Y     
+    ##  38 koppen_3                            5.56e- 4 1   e+0  0       1   e+0 Y     
+    ##  39 koppen_30                           5.00e- 3 5.00e-3  0       1   e+0 Y     
+    ##  40 koppen_4                            2.32e- 4 1   e+0  0       1   e+0 Y     
+    ##  41 koppen_5                            1.14e- 5 1   e+0  0       1   e+0 Y     
+    ##  42 koppen_6                            1.34e- 6 1   e+0  0       1   e+0 Y     
+    ##  43 koppen_7                            2.10e- 5 1   e+0  0       1   e+0 Y     
+    ##  44 koppen_8                            2.32e- 5 1   e+0  0       1   e+0 Y     
+    ##  45 koppen_9                            3.03e- 5 1   e+0  0       1   e+0 Y     
+    ##  46 koppen_confidence                   0        1   e+2  0       1   e+2 Y     
+    ##  47 lai                                 1.00e-20 7.35e+0  0       9   e+0 Y     
+    ##  48 lwgab                               1.96e+ 2 4.20e+2  2  e+ 2 4   e+2 N     
+    ##  49 md30_grd                            0        3.61e+3 -4  e+ 2 8.85e+3 Y     
+    ##  50 mi30_grd                            0        3.48e+3 -4  e+ 2 8.85e+3 Y     
+    ##  51 mn30_grd                            0        3.61e+3 -4  e+ 2 8.85e+3 Y     
+    ##  52 mx30_grd                            0        3.77e+3  0       8.85e+3 Y     
+    ##  53 pblh                                2.98e+ 2 1.43e+3  5  e+ 1 2.5 e+3 Y     
+    ##  54 pdsi                                0        1.30e+1 -1  e+ 1 2   e+1 Y     
+    ##  55 pet                                 1.47e+ 0 2.06e+2  0       3.5 e+2 Y     
+    ##  56 ppt                                 0        6.53e+2  0       1.4 e+3 Y     
+    ##  57 pr                                  6.11e- 2 1.39e+1  0       5   e+1 Y     
+    ##  58 precsno                             0        6.58e-5  0       7   e-5 Y     
+    ##  59 prectotcorr                         1.67e- 6 1.38e-4  1  e- 7 5   e-4 Y     
+    ##  60 prop_cover_huc2_01                  0        1   e+0  0       1   e+0 Y     
+    ##  61 prop_cover_huc2_02                  0        1   e+0  0       1   e+0 Y     
+    ##  62 prop_cover_huc2_03                  0        1   e+0  0       1   e+0 Y     
+    ##  63 prop_cover_huc2_04                  0        1   e+0  0       1   e+0 Y     
+    ##  64 prop_cover_huc2_05                  0        1   e+0  0       1   e+0 Y     
+    ##  65 prop_cover_huc2_06                  0        1   e+0  0       1   e+0 Y     
+    ##  66 prop_cover_huc2_07                  0        1   e+0  0       1   e+0 Y     
+    ##  67 prop_cover_huc2_08                  0        1   e+0  0       1   e+0 Y     
+    ##  68 prop_cover_huc2_09                  0        1   e+0  0       1   e+0 Y     
+    ##  69 prop_cover_huc2_10                  0        1   e+0  0       1   e+0 Y     
+    ##  70 prop_cover_huc2_11                  0        1   e+0  0       1   e+0 Y     
+    ##  71 prop_cover_huc2_12                  0        1   e+0  0       1   e+0 Y     
+    ##  72 prop_cover_huc2_13                  0        1   e+0  0       1   e+0 Y     
+    ##  73 prop_cover_huc2_14                  0        1   e+0  0       1   e+0 Y     
+    ##  74 prop_cover_huc2_15                  0        1   e+0  0       1   e+0 Y     
+    ##  75 prop_cover_huc2_16                  0        1   e+0  0       1   e+0 Y     
+    ##  76 prop_cover_huc2_17                  0        1   e+0  0       1   e+0 Y     
+    ##  77 prop_cover_huc2_18                  0        1   e+0  0       1   e+0 Y     
+    ##  78 prop_cover_huc2_20                  0        1   e+0  0       1   e+0 Y     
+    ##  79 prop_cover_huc2_21                  0        1   e+0  0       1   e+0 Y     
+    ##  80 prop_cover_huc2_22                  0        9.99e-1  0       1   e+0 Y     
+    ##  81 ps                                  6.83e+ 4 1.02e+5  5  e+ 4 1.05e+5 Y     
+    ##  82 qv2m                                1.11e- 3 1.97e-2  0       4   e-2 Y     
+    ##  83 rmax                                3.24e+ 1 9.98e+1  0       1   e+2 Y     
+    ##  84 rmin                                9.92e+ 0 7.38e+1  0       1   e+2 Y     
+    ##  85 road_density_km_per_km2             3.21e- 6 1.54e+1  0       9   e+0 N     
+    ##  86 sd30_grd                            0        1.20e+2  0       6   e+2 Y     
+    ##  87 slp                                 1.00e+ 5 1.02e+5  9.9e+ 4 1.02e+5 Y     
+    ##  88 soil                                0        3.74e+2  0       5   e+2 Y     
+    ##  89 solclear                            4.52e+ 0 3.39e+1  2  e+ 0 3.5 e+1 Y     
+    ##  90 solslope                            1.78e+ 0 3.02e+1  0       4   e+1 Y     
+    ##  91 soltotal                            1.80e+ 0 3.03e+1  0       3.2 e+1 Y     
+    ##  92 soltrans                            3.18e- 1 9.37e-1  0       1   e+0 Y     
+    ##  93 sph                                 2.73e- 3 1.60e-2  0       3   e-2 Y     
+    ##  94 srad                                6.16e+ 1 2.65e+2  0       4   e+2 Y     
+    ##  95 swe                                 0        4.46e+2  0       1.3 e+3 Y     
+    ##  96 t2mdew                              2.53e+ 2 2.98e+2  2.3e+ 2 3.5 e+2 Y     
+    ##  97 tdmean                             -1.79e+ 1 2.49e+1 -4  e+ 1 2.7 e+1 Y     
+    ##  98 th                                  0        3.59e+2  0       3.6 e+2 Y     
+    ##  99 tmax                                0        3.33e+1 -5  e+ 1 5   e+1 Y     
+    ## 100 tmax_norm                          -1.08e+ 1 4.31e+1 -5  e+ 1 5   e+1 Y     
+    ## 101 tmean                              -1.56e+ 1 3.55e+1 -1.6e+ 1 4   e+1 Y     
+    ## 102 tmin                                0        2.60e+1 -6  e+ 1 3.3 e+1 Y     
+    ## 103 tmin_norm                          -2.11e+ 1 2.80e+1 -6  e+ 1 3   e+1 Y     
+    ## 104 tmmn                                2.65e+ 2 2.97e+2  2.4e+ 2 3.5 e+2 Y     
+    ## 105 tmmx                                2.78e+ 2 3.07e+2  2.4e+ 2 3.5 e+2 Y     
+    ## 106 total_road_km                       1.02e- 4 4.45e+2  0       6   e+4 Y     
+    ## 107 totexttau                           5.06e- 2 2.64e-1  2  e- 2 3   e-1 Y     
+    ## 108 ts                                  2.51e+ 2 3.02e+2  2.5e+ 2 3.05e+2 Y     
+    ## 109 u10m                               -6.59e+ 0 5.12e+0 -2  e+ 1 2   e+1 Y     
+    ## 110 vap                                 2.25e- 1 3.15e+0  0       5   e+0 Y     
+    ## 111 vpd                                 4.66e- 2 3.01e+0  0       6   e+0 Y     
+    ## 112 vpdmax                              7.13e- 1 7.50e+1  0       8   e+1 Y     
+    ## 113 vpdmin                              1.91e- 3 2.46e+1  0       3   e+1 Y     
+    ## 114 vs                                  1.71e+ 0 7.32e+0  0       2   e+1 Y     
+    ## 115 ws                                  1.64e+ 0 9.18e+0  0       1.4 e+1 Y     
+    ## 116 z0m                                 1.85e- 4 2.26e+0  1  e- 4 3   e+0 Y
+
+# Zip-Monthly Sanity checks
+
+``` r
+# Duplicates: include month in the key
+dup_zip_monthly <- zip_monthly %>%
+  group_by(geoid, year, month, variable) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  filter(n > 1) %>%
+  collect()
+
+any_dups_zip_monthly <- nrow(dup_zip_monthly) > 0
+any_dups_zip_monthly
+```
+
+    ## [1] TRUE
+
+``` r
+dup_zip_monthly  # inspect if TRUE
+```
+
+    ## # A tibble: 12,164,760 × 5
+    ##    geoid year  month variable     n
+    ##    <chr> <chr> <int> <chr>    <int>
+    ##  1 47236 2010      1 pet          2
+    ##  2 47236 2010      2 pet          2
+    ##  3 47236 2010      3 pet          2
+    ##  4 47236 2010      4 pet          2
+    ##  5 47236 2010      5 pet          2
+    ##  6 47236 2010      6 pet          2
+    ##  7 47236 2010      7 pet          2
+    ##  8 47236 2010      8 pet          2
+    ##  9 47236 2010      9 pet          2
+    ## 10 47236 2010     10 pet          2
+    ## # ℹ 12,164,750 more rows
+
+``` r
+# Basic shape (exact)
+zip_monthly_shape <- list(
+  n_rows  = zip_monthly %>% summarise(n = n()) %>% collect() %>% pull(),
+  n_zips  = zip_monthly %>% distinct(geoid)   %>% summarise(n = n()) %>% collect() %>% pull(),
+  n_years = zip_monthly %>% distinct(year)    %>% summarise(n = n()) %>% collect() %>% pull(),
+  n_vars  = zip_monthly %>% distinct(variable)%>% summarise(n = n()) %>% collect() %>% pull()
+) %>% tibble::as_tibble()
+zip_monthly_shape
+```
+
+    ## # A tibble: 1 × 4
+    ##      n_rows n_zips n_years n_vars
+    ##       <int>  <int>   <int>  <int>
+    ## 1 167104600  33791      17     96
+
+``` r
+# Distinct year-month pairs
+zip_monthly %>%
+  distinct(year, month) %>%
+  arrange(year, month) %>%
+  collect() %>%
+  print(n = Inf)
+```
+
+    ## # A tibble: 193 × 2
+    ##     year   month
+    ##     <chr>  <int>
+    ##   1 2010       1
+    ##   2 2010       2
+    ##   3 2010       3
+    ##   4 2010       4
+    ##   5 2010       5
+    ##   6 2010       6
+    ##   7 2010       7
+    ##   8 2010       8
+    ##   9 2010       9
+    ##  10 2010      10
+    ##  11 2010      11
+    ##  12 2010      12
+    ##  13 2011       1
+    ##  14 2011       2
+    ##  15 2011       3
+    ##  16 2011       4
+    ##  17 2011       5
+    ##  18 2011       6
+    ##  19 2011       7
+    ##  20 2011       8
+    ##  21 2011       9
+    ##  22 2011      10
+    ##  23 2011      11
+    ##  24 2011      12
+    ##  25 2012       1
+    ##  26 2012       2
+    ##  27 2012       3
+    ##  28 2012       4
+    ##  29 2012       5
+    ##  30 2012       6
+    ##  31 2012       7
+    ##  32 2012       8
+    ##  33 2012       9
+    ##  34 2012      10
+    ##  35 2012      11
+    ##  36 2012      12
+    ##  37 2013       1
+    ##  38 2013       2
+    ##  39 2013       3
+    ##  40 2013       4
+    ##  41 2013       5
+    ##  42 2013       6
+    ##  43 2013       7
+    ##  44 2013       8
+    ##  45 2013       9
+    ##  46 2013      10
+    ##  47 2013      11
+    ##  48 2013      12
+    ##  49 2014       1
+    ##  50 2014       2
+    ##  51 2014       3
+    ##  52 2014       4
+    ##  53 2014       5
+    ##  54 2014       6
+    ##  55 2014       7
+    ##  56 2014       8
+    ##  57 2014       9
+    ##  58 2014      10
+    ##  59 2014      11
+    ##  60 2014      12
+    ##  61 2015       1
+    ##  62 2015       2
+    ##  63 2015       3
+    ##  64 2015       4
+    ##  65 2015       5
+    ##  66 2015       6
+    ##  67 2015       7
+    ##  68 2015       8
+    ##  69 2015       9
+    ##  70 2015      10
+    ##  71 2015      11
+    ##  72 2015      12
+    ##  73 2016       1
+    ##  74 2016       2
+    ##  75 2016       3
+    ##  76 2016       4
+    ##  77 2016       5
+    ##  78 2016       6
+    ##  79 2016       7
+    ##  80 2016       8
+    ##  81 2016       9
+    ##  82 2016      10
+    ##  83 2016      11
+    ##  84 2016      12
+    ##  85 2017       1
+    ##  86 2017       2
+    ##  87 2017       3
+    ##  88 2017       4
+    ##  89 2017       5
+    ##  90 2017       6
+    ##  91 2017       7
+    ##  92 2017       8
+    ##  93 2017       9
+    ##  94 2017      10
+    ##  95 2017      11
+    ##  96 2017      12
+    ##  97 2018       1
+    ##  98 2018       2
+    ##  99 2018       3
+    ## 100 2018       4
+    ## 101 2018       5
+    ## 102 2018       6
+    ## 103 2018       7
+    ## 104 2018       8
+    ## 105 2018       9
+    ## 106 2018      10
+    ## 107 2018      11
+    ## 108 2018      12
+    ## 109 2019       1
+    ## 110 2019       2
+    ## 111 2019       3
+    ## 112 2019       4
+    ## 113 2019       5
+    ## 114 2019       6
+    ## 115 2019       7
+    ## 116 2019       8
+    ## 117 2019       9
+    ## 118 2019      10
+    ## 119 2019      11
+    ## 120 2019      12
+    ## 121 2020       1
+    ## 122 2020       2
+    ## 123 2020       3
+    ## 124 2020       4
+    ## 125 2020       5
+    ## 126 2020       6
+    ## 127 2020       7
+    ## 128 2020       8
+    ## 129 2020       9
+    ## 130 2020      10
+    ## 131 2020      11
+    ## 132 2020      12
+    ## 133 2021       1
+    ## 134 2021       2
+    ## 135 2021       3
+    ## 136 2021       4
+    ## 137 2021       5
+    ## 138 2021       6
+    ## 139 2021       7
+    ## 140 2021       8
+    ## 141 2021       9
+    ## 142 2021      10
+    ## 143 2021      11
+    ## 144 2021      12
+    ## 145 2022       1
+    ## 146 2022       2
+    ## 147 2022       3
+    ## 148 2022       4
+    ## 149 2022       5
+    ## 150 2022       6
+    ## 151 2022       7
+    ## 152 2022       8
+    ## 153 2022       9
+    ## 154 2022      10
+    ## 155 2022      11
+    ## 156 2022      12
+    ## 157 2023       1
+    ## 158 2023       2
+    ## 159 2023       3
+    ## 160 2023       4
+    ## 161 2023       5
+    ## 162 2023       6
+    ## 163 2023       7
+    ## 164 2023       8
+    ## 165 2023       9
+    ## 166 2023      10
+    ## 167 2023      11
+    ## 168 2023      12
+    ## 169 2024       1
+    ## 170 2024       2
+    ## 171 2024       3
+    ## 172 2024       4
+    ## 173 2024       5
+    ## 174 2024       6
+    ## 175 2024       7
+    ## 176 2024       8
+    ## 177 2024       9
+    ## 178 2024      10
+    ## 179 2024      11
+    ## 180 2024      12
+    ## 181 normal     1
+    ## 182 normal     2
+    ## 183 normal     3
+    ## 184 normal     4
+    ## 185 normal     5
+    ## 186 normal     6
+    ## 187 normal     7
+    ## 188 normal     8
+    ## 189 normal     9
+    ## 190 normal    10
+    ## 191 normal    11
+    ## 192 normal    12
+    ## 193 static    NA
+
+``` r
+# Variable distribution summary (then compare)
+var_summary_zip_monthly <- zip_monthly %>%
+  group_by(variable) %>%
+  summarise(
+    min_val    = min(value, na.rm = TRUE),
+    max_val    = max(value, na.rm = TRUE),
+    mean_val   = mean(value, na.rm = TRUE),
+    median_val = median(value, na.rm = TRUE),
+    sd_val     = sd(value, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  arrange(variable) %>%
+  collect()
+
+comparison_zip_monthly <- var_summary_zip_monthly %>%
+  dplyr::left_join(expected_ranges, by = "variable") %>%
+  mutate(
+    min_ok = min_val >= min_exp,
+    max_ok = max_val <= max_exp,
+    passes = ifelse(min_ok & max_ok, "Y", "N")
+  ) %>%
+  select(variable, min_val, max_val, min_exp, max_exp, passes)
+
+print(comparison_zip_monthly, n = Inf)
+```
+
+    ## # A tibble: 96 × 6
+    ##    variable                               min_val max_val min_exp max_exp passes
+    ##    <chr>                                    <dbl>   <dbl>   <dbl>   <dbl> <chr> 
+    ##  1 aet                                    0       2.14e+2       0 2.5 e+2 Y     
+    ##  2 annual_total_air_lb                    0       8.66e+6       0 1   e+8 Y     
+    ##  3 annual_total_air_lb_per_km2            0       3.20e+6       0 1   e+6 N     
+    ##  4 annual_total_air_lb_plusbuffer         0       8.66e+6       0 1   e+8 Y     
+    ##  5 annual_total_fugitive_air_lb           0       8.48e+6       0 1   e+8 Y     
+    ##  6 annual_total_fugitive_air_lb_per_km2   0       5.37e+4       0 5   e+5 Y     
+    ##  7 annual_total_fugitive_air_lb_plusbuf…  0       8.48e+6       0 1   e+8 Y     
+    ##  8 annual_total_stack_air_lb              0       4.50e+6       0 1   e+8 Y     
+    ##  9 annual_total_stack_air_lb_per_km2      0       3.20e+6       0 1   e+6 N     
+    ## 10 annual_total_stack_air_lb_plusbuffer   0       6.25e+6       0 1   e+8 Y     
+    ## 11 area_km2                               8.25e-3 3.57e+4       5 3.83e+5 N     
+    ## 12 be30_grd                               0       3.59e+3       0 6   e+3 Y     
+    ## 13 def                                    0       3.31e+2       0 3.4 e+2 Y     
+    ## 14 ds30_grd                               0       3.61e+3       0 6   e+3 Y     
+    ## 15 etr                                    8.61e-2 1.75e+1       0 1.8 e+1 Y     
+    ## 16 koppen_1                               1.47e-4 1   e+0       0 1   e+0 Y     
+    ## 17 koppen_14                              7.89e-6 1   e+0       0 1   e+0 Y     
+    ## 18 koppen_15                              9.95e-5 1   e+0       0 1   e+0 Y     
+    ## 19 koppen_16                              2.76e-5 8.17e-2       0 1   e+0 Y     
+    ## 20 koppen_17                              1.90e-3 1   e+0       0 1   e+0 Y     
+    ## 21 koppen_18                              1.11e-7 1   e+0       0 1   e+0 Y     
+    ## 22 koppen_19                              1.24e-4 1   e+0       0 1   e+0 Y     
+    ## 23 koppen_2                               2.97e-5 1   e+0       0 1   e+0 Y     
+    ## 24 koppen_21                              9.92e-7 1   e+0       0 1   e+0 Y     
+    ## 25 koppen_22                              1.73e-4 1   e+0       0 1   e+0 Y     
+    ## 26 koppen_23                              1.06e-2 6.68e-1       0 1   e+0 Y     
+    ## 27 koppen_25                              2.29e-6 1   e+0       0 1   e+0 Y     
+    ## 28 koppen_26                              1.52e-7 1   e+0       0 1   e+0 Y     
+    ## 29 koppen_27                              1.94e-7 1   e+0       0 1   e+0 Y     
+    ## 30 koppen_29                              9.28e-5 1   e+0       0 1   e+0 Y     
+    ## 31 koppen_3                               5.56e-4 1   e+0       0 1   e+0 Y     
+    ## 32 koppen_30                              5.00e-3 5.00e-3       0 1   e+0 Y     
+    ## 33 koppen_4                               2.32e-4 1   e+0       0 1   e+0 Y     
+    ## 34 koppen_5                               1.14e-5 1   e+0       0 1   e+0 Y     
+    ## 35 koppen_6                               1.34e-6 1   e+0       0 1   e+0 Y     
+    ## 36 koppen_7                               2.10e-5 1   e+0       0 1   e+0 Y     
+    ## 37 koppen_8                               2.32e-5 1   e+0       0 1   e+0 Y     
+    ## 38 koppen_9                               3.03e-5 1   e+0       0 1   e+0 Y     
+    ## 39 koppen_confidence                      0       1   e+2       0 1   e+2 Y     
+    ## 40 md30_grd                               0       3.61e+3    -400 8.85e+3 Y     
+    ## 41 mi30_grd                               0       3.48e+3    -400 8.85e+3 Y     
+    ## 42 mn30_grd                               0       3.61e+3    -400 8.85e+3 Y     
+    ## 43 mx30_grd                               0       3.77e+3       0 8.85e+3 Y     
+    ## 44 pdsi                                   0       1.87e+1     -10 2   e+1 Y     
+    ## 45 pet                                    0       3.38e+2       0 3.5 e+2 Y     
+    ## 46 ppt                                    0       1.23e+3       0 1.4 e+3 Y     
+    ## 47 pr                                     0       4.92e+1       0 5   e+1 Y     
+    ## 48 prop_cover_huc2_01                     0       1   e+0       0 1   e+0 Y     
+    ## 49 prop_cover_huc2_02                     0       1   e+0       0 1   e+0 Y     
+    ## 50 prop_cover_huc2_03                     0       1   e+0       0 1   e+0 Y     
+    ## 51 prop_cover_huc2_04                     0       1   e+0       0 1   e+0 Y     
+    ## 52 prop_cover_huc2_05                     0       1   e+0       0 1   e+0 Y     
+    ## 53 prop_cover_huc2_06                     0       1   e+0       0 1   e+0 Y     
+    ## 54 prop_cover_huc2_07                     0       1   e+0       0 1   e+0 Y     
+    ## 55 prop_cover_huc2_08                     0       1   e+0       0 1   e+0 Y     
+    ## 56 prop_cover_huc2_09                     0       1   e+0       0 1   e+0 Y     
+    ## 57 prop_cover_huc2_10                     0       1   e+0       0 1   e+0 Y     
+    ## 58 prop_cover_huc2_11                     0       1   e+0       0 1   e+0 Y     
+    ## 59 prop_cover_huc2_12                     0       1   e+0       0 1   e+0 Y     
+    ## 60 prop_cover_huc2_13                     0       1   e+0       0 1   e+0 Y     
+    ## 61 prop_cover_huc2_14                     0       1   e+0       0 1   e+0 Y     
+    ## 62 prop_cover_huc2_15                     0       1   e+0       0 1   e+0 Y     
+    ## 63 prop_cover_huc2_16                     0       1   e+0       0 1   e+0 Y     
+    ## 64 prop_cover_huc2_17                     0       1   e+0       0 1   e+0 Y     
+    ## 65 prop_cover_huc2_18                     0       1   e+0       0 1   e+0 Y     
+    ## 66 prop_cover_huc2_20                     0       1   e+0       0 1   e+0 Y     
+    ## 67 prop_cover_huc2_21                     0       1   e+0       0 1   e+0 Y     
+    ## 68 prop_cover_huc2_22                     0       9.99e-1       0 1   e+0 Y     
+    ## 69 rmax                                   1.39e+1 1.00e+2       0 1   e+2 N     
+    ## 70 rmin                                   2.83e+0 9.09e+1       0 1   e+2 Y     
+    ## 71 road_density_km_per_km2                3.21e-6 1.54e+1       0 9   e+0 N     
+    ## 72 sd30_grd                               0       1.20e+2       0 6   e+2 Y     
+    ## 73 soil                                   0       4.67e+2       0 5   e+2 Y     
+    ## 74 solclear                               4.52e+0 3.39e+1       2 3.5 e+1 Y     
+    ## 75 solslope                               1.78e+0 3.02e+1       0 4   e+1 Y     
+    ## 76 soltotal                               1.80e+0 3.03e+1       0 3.2 e+1 Y     
+    ## 77 soltrans                               3.18e-1 9.37e-1       0 1   e+0 Y     
+    ## 78 sph                                    6.67e-4 2.19e-2       0 3   e-2 Y     
+    ## 79 srad                                   0       3.83e+2       0 4   e+2 Y     
+    ## 80 swe                                    0       1.31e+3       0 1.3 e+3 N     
+    ## 81 tdmean                                -1.79e+1 2.49e+1     -40 2.7 e+1 Y     
+    ## 82 th                                     0       3.59e+2       0 3.6 e+2 Y     
+    ## 83 tmax                                   0       4.61e+1     -50 5   e+1 Y     
+    ## 84 tmax_norm                             -1.08e+1 4.31e+1     -50 5   e+1 Y     
+    ## 85 tmean                                 -1.56e+1 3.55e+1     -16 4   e+1 Y     
+    ## 86 tmin                                   0       3.24e+1     -60 3.3 e+1 Y     
+    ## 87 tmin_norm                             -2.11e+1 2.80e+1     -60 3   e+1 Y     
+    ## 88 tmmn                                   2.44e+2 3.05e+2     240 3.5 e+2 Y     
+    ## 89 tmmx                                   2.57e+2 3.20e+2     240 3.5 e+2 Y     
+    ## 90 total_road_km                          1.02e-4 4.45e+2       0 6   e+4 Y     
+    ## 91 vap                                    0       3.42e+0       0 5   e+0 Y     
+    ## 92 vpd                                    0       6.55e+0       0 6   e+0 N     
+    ## 93 vpdmax                                 7.13e-1 7.50e+1       0 8   e+1 Y     
+    ## 94 vpdmin                                 1.91e-3 2.46e+1       0 3   e+1 Y     
+    ## 95 vs                                     6.62e-1 1.08e+1       0 2   e+1 Y     
+    ## 96 ws                                     0       1.55e+1       0 1.4 e+1 N

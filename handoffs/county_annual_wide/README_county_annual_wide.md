@@ -3,20 +3,21 @@
 **File Names:**  
 
 **Dynamic Variable Files:**  
-`county_2010.csv` | `county_2011.csv` | `county_2012.csv` | `county_2013.csv`  |  
-`county_2014.csv` | `county_2015.csv` | `county_2016.csv` | `county_2017.csv`  |   
-`county_2018.csv` | `county_2019.csv` | `county_2020.csv` | `county_2021.csv`  |  
-`county_2022.csv` | `county_2023.csv` | `county_2024.csv` 
+county_2010.csv … county_2024.csv
+(Each file also available as .parquet)
+
 
 **Static Variable File:**  
 `county_static.csv`
+(and .parquet)
 
 **Normal Variable File:**  
 `county_normal.csv`
+(and .parquet)
 
-**Last Updated:** 2025-08-29 
+**Last Updated:** 2025-09-12 
 
-**Format:** Comma-Separated Values (CSV)
+**Format:** Apache Parquet; Comma-Separated Values (CSV)
 
 ## Description
 

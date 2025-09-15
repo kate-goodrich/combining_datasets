@@ -1,6 +1,6 @@
 build_exposure_long_streamed <- function(
     agg = c("annual", "monthly"),
-    level = c("county", "tract"),
+    level = c("county", "tract", "zip"),
     input_dir = "summary_sets",
     handoff_dir = "handoffs"
 ) {
@@ -60,15 +60,9 @@ build_exposure_long_streamed <- function(
             df <- rename(df, value = !!have[1])
         }
 
-        # geoid
+        # geoid (all summary sets already provide it)
         if (!"geoid" %in% names(df)) {
-            if ("geoid10" %in% names(df)) {
-                df <- rename(df, geoid = geoid10)
-            } else if ("geoid_county" %in% names(df)) {
-                df <- rename(df, geoid = geoid_county)
-            } else {
-                stop("Missing geoid column in ", basename(file))
-            }
+            stop("Missing geoid column in ", basename(file))
         }
 
         file_name <- basename(file)
@@ -122,12 +116,12 @@ build_exposure_long_streamed <- function(
         is_monthly = is_monthly
     )
 
-    # Drop annual-normals from monthly builds (year=="normal" & month is NA)
+    # Drop annual-normals from monthly builds
     if (is_monthly) {
         all_data <- all_data %>% filter(!(year == "normal" & is.na(month)))
     }
 
-    # --- Write long outputs (unchanged) ---
+    # --- Write long outputs ---
     long_csv <- file.path(long_dir, paste0(level, "_", agg, ".csv"))
     long_parq <- file.path(long_dir, paste0(level, "_", agg, ".parquet"))
     readr::write_csv(all_data, long_csv)
@@ -136,15 +130,14 @@ build_exposure_long_streamed <- function(
     # Helper: pivot a chunk to wide (one row per geoid, columns = variables)
     to_wide <- function(df) {
         df %>%
-            group_by(geoid, variable) %>% # dedupe safety
+            group_by(geoid, variable) %>%
             summarise(value = dplyr::first(value), .groups = "drop") %>%
             tidyr::pivot_wider(names_from = variable, values_from = value) %>%
             arrange(geoid)
     }
 
-    # --- Write wide outputs (now truly wide) ---
+    # --- Write wide outputs (CSV + Parquet) ---
     if (is_monthly) {
-        # One file per (year, month); also handle normal/static if present
         all_data %>%
             mutate(year = as.character(year)) %>%
             group_split(year, month) %>%
@@ -155,34 +148,27 @@ build_exposure_long_streamed <- function(
                     stop("Unexpected grouping")
                 }
 
-                # choose filename; include month for "normal" to avoid overwrite
-                if (y == "normal") {
-                    fn <- file.path(
-                        wide_dir,
-                        sprintf("%s_normal_%02d.csv", level, m)
-                    )
+                # base filename (no extension)
+                base <- if (y == "normal") {
+                    sprintf("%s_normal_%02d", level, m)
                 } else if (y == "static") {
-                    # static is typically monthless; if month present, suffix it
                     if (is.na(m)) {
-                        fn <- file.path(wide_dir, paste0(level, "_static.csv"))
+                        sprintf("%s_static", level)
                     } else {
-                        fn <- file.path(
-                            wide_dir,
-                            sprintf("%s_static_%02d.csv", level, m)
-                        )
+                        sprintf("%s_static_%02d", level, m)
                     }
                 } else {
-                    fn <- file.path(
-                        wide_dir,
-                        sprintf("%s_%s_%02d.csv", level, y, m)
-                    )
+                    sprintf("%s_%s_%02d", level, y, m)
                 }
 
+                fn_csv <- file.path(wide_dir, paste0(base, ".csv"))
+                fn_parq <- file.path(wide_dir, paste0(base, ".parquet"))
+
                 chunk_wide <- to_wide(chunk)
-                readr::write_csv(chunk_wide, fn)
+                readr::write_csv(chunk_wide, fn_csv)
+                arrow::write_parquet(chunk_wide, fn_parq)
             })
     } else {
-        # Annual: one file per year; also handle normal & static
         all_data %>%
             mutate(year = as.character(year)) %>%
             group_split(year) %>%
@@ -192,16 +178,21 @@ build_exposure_long_streamed <- function(
                     stop("Unexpected grouping")
                 }
 
-                if (y == "normal") {
-                    fn <- file.path(wide_dir, paste0(level, "_normal.csv"))
+                # base filename (no extension)
+                base <- if (y == "normal") {
+                    paste0(level, "_normal")
                 } else if (y == "static") {
-                    fn <- file.path(wide_dir, paste0(level, "_static.csv"))
+                    paste0(level, "_static")
                 } else {
-                    fn <- file.path(wide_dir, sprintf("%s_%s.csv", level, y))
+                    sprintf("%s_%s", level, y)
                 }
 
+                fn_csv <- file.path(wide_dir, paste0(base, ".csv"))
+                fn_parq <- file.path(wide_dir, paste0(base, ".parquet"))
+
                 chunk_wide <- to_wide(chunk)
-                readr::write_csv(chunk_wide, fn)
+                readr::write_csv(chunk_wide, fn_csv)
+                arrow::write_parquet(chunk_wide, fn_parq)
             })
     }
 

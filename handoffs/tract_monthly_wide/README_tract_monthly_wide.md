@@ -3,22 +3,25 @@
 **File Names:**  
 
 **Dynamic Variable Files:**  
-
-`tract_2010_01.csv` | `tract_2010_02.csv` | … | `tract_2010_12.csv`  
-`tract_2011_01.csv` | `tract_2011_02.csv` | … | `tract_2011_12.csv`  
-`tract_2012_01.csv` | `tract_2012_02.csv` | … | `tract_2012_12.csv`  
+`tract_2010_01.csv` … `tract_2010_12.csv`  
+`tract_2011_01.csv` … `tract_2011_12.csv`  
+`tract_2012_01.csv` … `tract_2012_12.csv`  
 …  
-`tract_2024_01.csv` | `tract_2024_02.csv` | … | `tract_2024_12.csv`  
+`tract_2024_01.csv` … `tract_2024_12.csv`  
+(Each file also available as `.parquet`)  
 
-**Normal Variable Files:** 
-`tract_normal_01.csv`| `tract_normal_02.csv` | … | `tract_normal_12.csv`
+**Normal Variable Files:**  
+`tract_normal_01.csv` … `tract_normal_12.csv`  
+(Also available as `.parquet`)  
 
 **Static Variable File:**  
-`tract_static.csv`
+`tract_static.csv`  
+(Also available as `.parquet`)  
 
-**Last Updated:** 2025-08-29 
+**Last Updated:** 2025-09-12  
 
-**Format:** Comma-Separated Values (CSV)
+**Format:** Apache Parquet; Comma-Separated Values (CSV)  
+
 
 ## Description
 
@@ -29,7 +32,7 @@ This dataset includes monthly summaries of environmental and climate health vari
 This dataset is designed to support geospatial epidemiological analyses and environmental exposure mapping by providing relevant covariates at the tract-month level.
 
 
-## Structure
+## Structure 
 
 Each file (`tract_<year_month>.csv`) is a wide-form dataset where:
 

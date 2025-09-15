@@ -1,4 +1,12 @@
-# ---- Library paths & packages ----
+# =============================================================================
+# Targets Pipeline
+# Purpose: Load raw datasets, process/clean them, compute summaries,
+#          aggregate to county/tract levels, and produce handoff files & figures.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 0) Library paths and packages
+# -----------------------------------------------------------------------------
 .libPaths("/usr/local/lib/R/site-library")
 
 library(targets)
@@ -18,16 +26,26 @@ library(stringr)
 library(purrr)
 library(readr)
 
-# ---- Source local R helpers ----
+# -----------------------------------------------------------------------------
+# 1) Source local R helpers
+# -----------------------------------------------------------------------------
 purrr::walk(list.files("R", full.names = TRUE, pattern = "\\.R$"), source)
 
-# ---- Global constants ----
+# -----------------------------------------------------------------------------
+# 2) Global constants
+# -----------------------------------------------------------------------------
 YEARS <- 2010:2024
 MONTHS <- 1:12
-CENSUS_GPKG <- "clean_data/county_census/canonical_2024.gpkg"
-LAYER <- list(county = "counties_500k", tract = "tracts_500k")
+CENSUS_GPKG <- "clean_data/county_census_zip/canonical_2024.gpkg"
+LAYER <- list(
+    county = "counties_500k",
+    tract = "tracts_500k",
+    zip = "zctas_500k"
+)
 
-# ---- targets options ----
+# -----------------------------------------------------------------------------
+# 3) targets options
+# -----------------------------------------------------------------------------
 tar_option_set(
     packages = c(
         "targets",
@@ -48,23 +66,22 @@ tar_option_set(
         "exactextractr",
         "readr"
     ),
-    error = "continue", # continue on error
-    memory = "transient", # use transient memory
+    error = "continue", # Continue on error
+    memory = "transient", # Use transient memory
     library = "/usr/local/lib/R/site-library",
-    format = "rds" # default storage format
+    format = "rds" # Default storage format
 )
 
-
-# =========================================
-# Pipeline
-# =========================================
+# =============================================================================
+# 4) Pipeline
+# =============================================================================
 list(
-    # ======================
-    # LOAD (raw downloads)
-    # ======================
-
-    # All download functions are idempotent - delete the file if you want it to redo
-
+    # ======================================================================
+    # 4.1) LOAD — raw downloads
+    # ----------------------------------------------------------------------
+    # Note: All download functions are idempotent; delete an output file to
+    #       force a re-download.
+    # ======================================================================
     tar_target(gmted, load_gmted(save_dir = "raw_data/gmted")),
     tar_target(gridmet, load_gridmet(save_dir = "raw_data/gridmet")),
     tar_target(groads, load_groads()),
@@ -90,10 +107,34 @@ list(
     ),
     tar_target(tri, load_tri(save_dir = "raw_data/tri")),
 
-    # ======================
-    # PROCESS (clean)
-    # ======================
+    # --- Counties & tracts (cb_ 500k) download -------------------------------
+    tar_target(
+        cb_county_tract_raw,
+        download_counties_tracts(
+            year = 2024,
+            scale = "500k",
+            save_dir = "raw_data/county_census_zip",
+            overwrite = FALSE,
+            verbose = TRUE
+        ),
+        format = "rds"
+    ),
 
+    # --- ZCTA (ZIP) download -------------------------------------------------
+    tar_target(
+        zcta_raw,
+        load_zcta(
+            year = 2024,
+            save_dir = "raw_data/county_census_zip",
+            overwrite = FALSE,
+            verbose = TRUE
+        ),
+        format = "file" # track the .shp file
+    ),
+
+    # ======================================================================
+    # 4.2) PROCESS — clean/prepare datasets
+    # ======================================================================
     tar_target(
         gmted_outputs,
         clean_gmted(),
@@ -131,7 +172,7 @@ list(
     ),
 
     tar_target(
-        merra2_files, # single target
+        merra2_files, # Single output target
         clean_merra2(
             years = 2011:2024,
             raw_dir = "./raw_data/merra2",
@@ -195,18 +236,40 @@ list(
         format = "file"
     ),
 
-    # ======================
-    # LOADING TRACTS AND COUNTIES
-    # ======================
+    # ======================================================================
+    # 4.3) GEOMETRY — process tracts and counties
+    # ======================================================================
+    # --- Write raw GPKG that build_canonical_census() expects --------------------
 
+    # --- Canonical GPKG (counties_500k, tracts_500k) -----------------------------
     tar_target(
         canonical_gpkg,
         build_canonical_census(
-            in_gpkg = "raw_data/county_census/cb_2024_us_all_500k.gpkg",
+            county_path = cb_county_tract_raw$county_shp,
+            tract_path = cb_county_tract_raw$tract_shp,
             out_gpkg = CENSUS_GPKG,
-            make_valid = TRUE
+            make_valid = TRUE,
+            quiet = TRUE
         ),
         format = "file"
+    ),
+
+    # --- ZCTA (ZIP) -> canonical GPKG layer ----------------------------------
+    tar_target(
+        zcta_layer_written,
+        {
+            # Ensure canonical_gpkg exists before we append ZCTAs into it
+            canonical_gpkg
+            clean_zcta(
+                in_shp = zcta_raw,
+                out_gpkg = CENSUS_GPKG,
+                out_layer = "zctas_500k",
+                crs_out = 5070,
+                make_valid = TRUE,
+                verbose = TRUE
+            )
+        }
+        # no file format: the function writes into the canonical GPKG as a side-effect
     ),
 
     tar_target(
@@ -219,11 +282,20 @@ list(
         sf::st_read(canonical_gpkg, layer = LAYER$tract, quiet = TRUE)
     ),
 
-    # ======================
-    # CALCULATE
-    # ======================
+    tar_target(
+        zctas_500k,
+        {
+            # Ensure the layer is created before reading
+            zcta_layer_written
+            sf::st_read(canonical_gpkg, layer = "zctas_500k", quiet = TRUE)
+        }
+    ),
 
-    # ---- GMTED (static) ----
+    # ======================================================================
+    # 4.4) CALCULATE — zonal summaries and derived products
+    # ======================================================================
+
+    # ---- GMTED (static) -----------------------------------------------------
     tar_target(
         gmted_static_county,
         static_zonal_summary(
@@ -244,8 +316,20 @@ list(
             write_csv = "summary_sets/static_tract_gmted.csv"
         )
     ),
+    # ZIP (ZCTA)
+    tar_target(
+        static_zip_summary,
+        static_zonal_summary(
+            tif_dir = "clean_data/gmted_clean", # path to your static raster GeoTIFFs
+            level = "zip",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zone_layer = "zctas_500k", # optional, default may already be correct for zip
+            id_col = "geoid",
+            write_csv = "summary_sets/static_zip_gmted.csv"
+        )
+    ),
 
-    # ---- GRIDMET ----
+    # ---- GRIDMET ------------------------------------------------------------
     tar_target(
         gridmet_county_annual,
         gridmet_zonal(
@@ -292,8 +376,42 @@ list(
             write_csv = "summary_sets/monthly_tract_gridmet.csv"
         )
     ),
+    # ZIP (ZCTA) — Annual / Monthly / Overall
+    tar_target(
+        zip_annual,
+        gridmet_zonal(
+            tif_dir = "clean_data/gridmet_clean", # replace with your actual directory
+            level = "zip",
+            aggregate_to = "annual",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            id_col = "geoid",
+            write_csv = "summary_sets/annual_zip_gridmet.csv"
+        )
+    ),
+    tar_target(
+        zip_monthly,
+        gridmet_zonal(
+            tif_dir = "clean_data/gridmet_clean",
+            level = "zip",
+            aggregate_to = "monthly",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            id_col = "geoid",
+            write_csv = "summary_sets/monthly_zip_gridmet.csv"
+        )
+    ),
+    tar_target(
+        zip_overall,
+        gridmet_zonal(
+            tif_dir = "clean_data/gridmet_clean",
+            level = "zip",
+            aggregate_to = "overall",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            id_col = "geoid",
+            write_csv = "summary_sets/overall_zip_gridmet.csv"
+        )
+    ),
 
-    # ---- GROADS (static) ----
+    # ---- GROADS (static) ----------------------------------------------------
     tar_target(
         groads_county_long,
         road_density_zonal(
@@ -312,8 +430,19 @@ list(
             write_csv = "summary_sets/static_tract_groads.csv"
         )
     ),
+    # ZIP (ZCTA)
+    tar_target(
+        zip_roads,
+        road_density_zonal(
+            roads_gpkg = "clean_data/groads_clean/groads_clean.gpkg",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "zip",
+            id_col = "geoid",
+            write_csv = "summary_sets/static_zip_road_density.csv"
+        )
+    ),
 
-    # ---- HMS ----
+    # ---- HMS ----------------------------------------------------------------
     tar_target(
         hms_county_annual,
         hms_fire_exposure(
@@ -350,12 +479,46 @@ list(
             write_csv = "summary_sets/hms_tract_monthly.csv"
         )
     ),
+    # ZIP (ZCTA) — Monthly / Annual / Overall
+    tar_target(
+        zip_hms_monthly,
+        hms_fire_exposure(
+            hms_dir = "clean_data/hms_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "zip",
+            agg = "monthly",
+            id_col = "geoid",
+            write_csv = "summary_sets/monthly_zip_hms.csv"
+        )
+    ),
+    tar_target(
+        zip_hms_annual,
+        hms_fire_exposure(
+            hms_dir = "clean_data/hms_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "zip",
+            agg = "annual",
+            id_col = "geoid",
+            write_csv = "summary_sets/annual_zip_hms.csv"
+        )
+    ),
+    tar_target(
+        zip_hms_overall,
+        hms_fire_exposure(
+            hms_dir = "clean_data/hms_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "zip",
+            agg = "overall",
+            id_col = "geoid",
+            write_csv = "summary_sets/overall_zip_hms.csv"
+        )
+    ),
 
-    # ---- HUC (static) ----
+    # ---- HUC (static) -------------------------------------------------------
     tar_target(
         county_huc2,
         huc2_from_huc12_gpkg(
-            huc12_gpkg = "/ddn/gs1/group/set/chords/combining_datasets/clean_data/huc_clean/HUC12.gpkg",
+            huc12_gpkg = "clean_data/huc_clean/HUC12.gpkg",
             zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
             level = "county",
             id_col = "geoid",
@@ -363,20 +526,30 @@ list(
         ),
         format = "parquet" # optional; use if you want parquet instead of rds
     ),
-
     # Tract-level HUC2 coverage
     tar_target(
         tract_huc2,
         huc2_from_huc12_gpkg(
-            huc12_gpkg = "/ddn/gs1/group/set/chords/combining_datasets/clean_data/huc_clean/HUC12.gpkg",
+            huc12_gpkg = "clean_data/huc_clean/HUC12.gpkg",
             zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
             level = "tract",
             id_col = "geoid",
             write_csv = "/ddn/gs1/group/set/chords/combining_datasets/summary_sets/static_tract_huc.csv"
         )
     ),
+    # ZIP (ZCTA)
+    tar_target(
+        zip_huc2,
+        huc2_from_huc12_gpkg(
+            huc12_gpkg = "clean_data/huc_clean/HUC12.gpkg",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "zip",
+            id_col = "geoid",
+            write_csv = "summary_sets/static_zip_huc2.csv"
+        )
+    ),
 
-    # ---- Köppen–Geiger (static) ----
+    # ---- Köppen–Geiger (static) --------------------------------------------
     tar_target(
         koppen_county_long,
         koppen_geiger_summary(
@@ -391,8 +564,20 @@ list(
             write_csv = "summary_sets/static_tract_koppen_geiger.csv"
         )
     ),
+    # ZIP (ZCTA)
+    tar_target(
+        zip_koppen,
+        koppen_geiger_summary(
+            raster_path_koppen = "clean_data/koppen_geiger_clean/Beck_KG_V1_present_0p083_processed.tif",
+            raster_path_conf = "clean_data/koppen_geiger_clean/Beck_KG_V1_present_conf_0p083_processed.tif",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "zip",
+            id_col = "geoid",
+            write_csv = "summary_sets/static_zip_koppen_geiger.csv"
+        )
+    ),
 
-    # ---- MERRA-2 ----
+    # ---- MERRA-2 ------------------------------------------------------------
     tar_target(
         merra2_county_annual,
         merra2_summary(
@@ -437,8 +622,45 @@ list(
         ),
         format = "rds"
     ),
+    # ZIP (ZCTA) — Monthly / Annual / Overall
+    tar_target(
+        zip_merra2_monthly,
+        merra2_summary(
+            tif_dir = "clean_data/merra2_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "zip",
+            agg = "monthly",
+            id_col = "geoid",
+            write_csv = "summary_sets/monthly_zip_merra2.csv"
+        ),
+        format = "rds"
+    ),
+    tar_target(
+        zip_merra2_annual,
+        merra2_summary(
+            tif_dir = "clean_data/merra2_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "zip",
+            agg = "annual",
+            id_col = "geoid",
+            write_csv = "summary_sets/annual_zip_merra2.csv"
+        ),
+        format = "rds"
+    ),
+    tar_target(
+        zip_merra2_overall,
+        merra2_summary(
+            tif_dir = "clean_data/merra2_clean",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "zip",
+            agg = "overall",
+            id_col = "geoid",
+            write_csv = "summary_sets/overall_zip_merra2.csv"
+        ),
+        format = "rds"
+    ),
 
-    # ---- MODIS ----
+    # ---- MODIS --------------------------------------------------------------
     tar_target(
         modis_county_annual,
         summarize_modis(
@@ -479,10 +701,40 @@ list(
         ),
         format = "qs"
     ),
+    # ZIP (ZCTA) — Monthly / Annual / Overall
+    tar_target(
+        zip_modis_monthly,
+        summarize_modis(
+            level = "zip",
+            agg = "monthly",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            write_csv = "summary_sets/monthly_zip_modis.csv"
+        ),
+        format = "qs"
+    ),
+    tar_target(
+        zip_modis_annual,
+        summarize_modis(
+            level = "zip",
+            agg = "annual",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            write_csv = "summary_sets/annual_zip_modis.csv"
+        ),
+        format = "qs"
+    ),
+    tar_target(
+        zip_modis_overall,
+        summarize_modis(
+            level = "zip",
+            agg = "overall",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            write_csv = "summary_sets/overall_zip_modis.csv"
+        ),
+        format = "qs"
+    ),
 
-    # === NLCD Summaries ===
-
-    # 1. County-level, Annual
+    # ---- NLCD summaries -----------------------------------------------------
+    # County-level
     tar_target(
         county_nlcd_annual,
         summarize_nlcd(
@@ -492,8 +744,6 @@ list(
         ),
         format = "rds"
     ),
-
-    # 2. County-level, Monthly
     tar_target(
         county_nlcd_monthly,
         summarize_nlcd(
@@ -503,8 +753,7 @@ list(
         ),
         format = "rds"
     ),
-
-    # 3. Tract-level, Annual
+    # Tract-level
     tar_target(
         tract_nlcd_annual,
         summarize_nlcd(
@@ -514,8 +763,6 @@ list(
         ),
         format = "rds"
     ),
-
-    # 4. Tract-level, Monthly
     tar_target(
         tract_nlcd_monthly,
         summarize_nlcd(
@@ -525,9 +772,46 @@ list(
         ),
         format = "rds"
     ),
+    # ZIP (ZCTA)
+    tar_target(
+        zip_nlcd_monthly,
+        summarize_nlcd(
+            level = "zip",
+            agg = "monthly",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            nlcd_dir = "clean_data/nlcd_clean",
+            id_col = "geoid",
+            write_csv = "summary_sets/monthly_zip_nlcd.csv"
+        ),
+        format = "rds"
+    ),
+    tar_target(
+        zip_nlcd_annual,
+        summarize_nlcd(
+            level = "zip",
+            agg = "annual",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            nlcd_dir = "clean_data/nlcd_clean",
+            id_col = "geoid",
+            write_csv = "summary_sets/annual_zip_nlcd.csv"
+        ),
+        format = "rds"
+    ),
+    tar_target(
+        zip_nlcd_overall,
+        summarize_nlcd(
+            level = "zip",
+            agg = "overall",
+            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            nlcd_dir = "clean_data/nlcd_clean",
+            id_col = "geoid",
+            write_csv = "summary_sets/overall_zip_nlcd.csv"
+        ),
+        format = "rds"
+    ),
 
-    # ---- PRISM normals ----
-    # County monthly normals (keeps 12 months)
+    # ---- PRISM normals ------------------------------------------------------
+    # County
     tar_target(
         prism_county_monthly_normals,
         prism_normals_from_tifs(
@@ -550,7 +834,7 @@ list(
             write_csv = "summary_sets/normal_annual_county_prism.csv"
         )
     ),
-    # Tract monthly normals (keeps 12 months)
+    # Tract
     tar_target(
         prism_tract_monthly_normals,
         prism_normals_from_tifs(
@@ -562,7 +846,6 @@ list(
             write_csv = "summary_sets/normal_monthly_tract_prism.csv"
         )
     ),
-    # Tract annual normals (mean of months 1..12)
     tar_target(
         prism_tract_annual_normals,
         prism_normals_from_tifs(
@@ -574,8 +857,34 @@ list(
             write_csv = "summary_sets/normal_annual_tract_prism.csv"
         )
     ),
+    # ZIP (ZCTA)
+    tar_target(
+        zip_prism_monthly,
+        prism_normals_from_tifs(
+            level = "zip",
+            agg = "monthly",
+            write_csv = TRUE
+        ) # → writes summary_sets/normal_monthly_zip_prism_normals.csv
+    ),
+    tar_target(
+        zip_prism_annual,
+        prism_normals_from_tifs(
+            level = "zip",
+            agg = "annual",
+            write_csv = "summary_sets/normal_annual_zip_prism.csv"
+        )
+    ),
+    # Note: same as annual since the normals don't change
+    tar_target(
+        zip_prism_overall,
+        prism_normals_from_tifs(
+            level = "zip",
+            agg = "annual",
+            write_csv = "summary_sets/normal_overall_zip_prism.csv"
+        )
+    ),
 
-    # ---- TerraClimate ----
+    # ---- TerraClimate --------------------------------------------------------
     tar_target(
         terraclimate_county_annual,
         summarize_terraclimate(
@@ -620,9 +929,46 @@ list(
         ),
         format = "file"
     ),
+    # ZIP (ZCTA) — Monthly / Annual / Overall
+    tar_target(
+        zip_terraclimate_monthly,
+        summarize_terraclimate(
+            tif_dir = "clean_data/terraclimate_clean",
+            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "zip",
+            agg = "monthly",
+            id_col = "geoid",
+            write_csv = "summary_sets/monthly_zip_terraclimate.csv"
+        ),
+        format = "file"
+    ),
+    tar_target(
+        zip_terraclimate_annual,
+        summarize_terraclimate(
+            tif_dir = "clean_data/terraclimate_clean",
+            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "zip",
+            agg = "annual",
+            id_col = "geoid",
+            write_csv = "summary_sets/annual_zip_terraclimate.csv"
+        ),
+        format = "file"
+    ),
+    tar_target(
+        zip_terraclimate_overall,
+        summarize_terraclimate(
+            tif_dir = "clean_data/terraclimate_clean",
+            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "zip",
+            agg = "overall",
+            id_col = "geoid",
+            write_csv = "summary_sets/overall_zip_terraclimate.csv"
+        ),
+        format = "file"
+    ),
 
-    # ---- TRI ----
-    # COUNTY ANNUAL
+    # ---- TRI -----------------------------------------------------------------
+    # County — annual/monthly (unchanged above), add ZIP below
     tar_target(
         tri_county_annual,
         summarise_tri_air_totals(
@@ -646,8 +992,6 @@ list(
         },
         format = "file"
     ),
-
-    # COUNTY MONTHLY
     tar_target(
         tri_county_monthly,
         summarise_tri_air_totals(
@@ -671,8 +1015,6 @@ list(
         },
         format = "file"
     ),
-
-    # TRACT ANNUAL
     tar_target(
         tri_tract_annual,
         summarise_tri_air_totals(
@@ -696,8 +1038,6 @@ list(
         },
         format = "file"
     ),
-
-    # TRACT MONTHLY
     tar_target(
         tri_tract_monthly,
         summarise_tri_air_totals(
@@ -721,12 +1061,82 @@ list(
         },
         format = "file"
     ),
+    # ZIP (ZCTA) — Annual / Monthly / Overall
+    tar_target(
+        zip_tri_annual,
+        summarise_tri_air_totals(
+            tri_dir = "clean_data/tri_clean",
+            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "zip",
+            agg = "annual"
+        )
+    ),
+    tar_target(
+        zip_tri_annual_csv,
+        {
+            out_path <- "summary_sets/annual_zip_tri_air.csv"
+            dir.create(
+                dirname(out_path),
+                showWarnings = FALSE,
+                recursive = TRUE
+            )
+            readr::write_csv(zip_tri_annual, out_path)
+            out_path
+        },
+        format = "file"
+    ),
+    tar_target(
+        zip_tri_monthly,
+        summarise_tri_air_totals(
+            tri_dir = "clean_data/tri_clean",
+            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "zip",
+            agg = "monthly"
+        )
+    ),
+    tar_target(
+        zip_tri_monthly_csv,
+        {
+            out_path <- "summary_sets/monthly_zip_tri_air.csv"
+            dir.create(
+                dirname(out_path),
+                showWarnings = FALSE,
+                recursive = TRUE
+            )
+            readr::write_csv(zip_tri_monthly, out_path)
+            out_path
+        },
+        format = "file"
+    ),
+    tar_target(
+        zip_tri_overall,
+        summarise_tri_air_totals(
+            tri_dir = "clean_data/tri_clean",
+            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            level = "zip",
+            agg = "overall"
+        )
+    ),
+    tar_target(
+        zip_tri_overall_csv,
+        {
+            out_path <- "summary_sets/overall_zip_tri_air.csv"
+            dir.create(
+                dirname(out_path),
+                showWarnings = FALSE,
+                recursive = TRUE
+            )
+            readr::write_csv(zip_tri_overall, out_path)
+            out_path
+        },
+        format = "file"
+    ),
 
-    # ======================
-    # AGGREGATE
-    # ======================
+    # ======================================================================
+    # 4.5) AGGREGATE — build long-format handoffs
+    # ======================================================================
 
-    # County - Annual
+    # County — annual
     tar_target(
         county_annual,
         build_exposure_long_streamed(
@@ -735,10 +1145,10 @@ list(
             input_dir = "summary_sets",
             handoff_dir = "handoffs"
         ),
-        format = "file" # output is files on disk
+        format = "file" # Output is files on disk
     ),
 
-    # County - Monthly
+    # County — monthly
     tar_target(
         county_monthly,
         build_exposure_long_streamed(
@@ -750,7 +1160,7 @@ list(
         format = "file"
     ),
 
-    # Tract - Annual
+    # Tract — annual
     tar_target(
         tract_annual,
         build_exposure_long_streamed(
@@ -762,7 +1172,7 @@ list(
         format = "file"
     ),
 
-    # Tract - Monthly
+    # Tract — monthly
     tar_target(
         tract_monthly,
         build_exposure_long_streamed(
@@ -774,23 +1184,25 @@ list(
         format = "file"
     ),
 
-    # ---- Bundle all handoffs into a zip ----
+    # --- Bundle all handoffs into a ZIP -------------------------------------
     tar_target(
         handoffs_zip,
         {
-            # run after all handoffs are created
+            # Run after all handoffs are created
             zip_handoffs(
                 handoffs_dir = "handoffs",
                 zipfile = "handoffs.zip",
                 junk_paths = FALSE
             )
         },
-        format = "file" # so targets tracks the zip
+        format = "file" # Track the ZIP in the DAG
     ),
 
-    # FIGURES
-    # huc
+    # ======================================================================
+    # 4.6) FIGURES — datasets and rendered outputs
+    # ======================================================================
 
+    # Open handoff datasets (Arrow)
     tar_target(
         county_annual_ds,
         arrow::open_dataset("handoffs/county_annual_long/county_annual.parquet")
@@ -867,7 +1279,7 @@ list(
     tar_target(
         gif_params,
         {
-            # per-variable settings (keep AK flags/bboxes as shown)
+            # Per-variable settings (AK/HI flags and bounding boxes preserved)
             var_cfg <- tibble::tibble(
                 var = c(
                     "dusmass25",
@@ -951,7 +1363,9 @@ list(
         ),
         values = gif_params,
         format = "file"
-    ), # ---- County NLCD ----
+    ),
+
+    # --- County panels: NLCD -------------------------------------------------
     tar_target(
         panel_nlcd_county,
         plot_proportion_panel(
@@ -978,7 +1392,7 @@ list(
         format = "file"
     ),
 
-    # ---- County Köppen ----
+    # --- County panels: Köppen–Geiger ---------------------------------------
     tar_target(
         panel_koppen_county,
         plot_proportion_panel(
@@ -1005,7 +1419,7 @@ list(
         format = "file"
     ),
 
-    # ---- County HUC2 ----
+    # --- County panels: HUC2 -------------------------------------------------
     tar_target(
         panel_huc2_county,
         plot_proportion_panel(
@@ -1040,7 +1454,7 @@ list(
         format = "file"
     ),
 
-    # ---- Tract NLCD ----
+    # --- Tract panels: NLCD --------------------------------------------------
     tar_target(
         panel_nlcd_tract,
         plot_proportion_panel(
@@ -1067,7 +1481,7 @@ list(
         format = "file"
     ),
 
-    # ---- Tract Köppen ----
+    # --- Tract panels: Köppen–Geiger ----------------------------------------
     tar_target(
         panel_koppen_tract,
         plot_proportion_panel(
@@ -1094,7 +1508,7 @@ list(
         format = "file"
     ),
 
-    # ---- Tract HUC2 ----
+    # --- Tract panels: HUC2 --------------------------------------------------
     tar_target(
         panel_huc2_tract,
         plot_proportion_panel(
@@ -1128,6 +1542,8 @@ list(
         ),
         format = "file"
     ),
+
+    # --- Static maps: County -------------------------------------------------
     tar_target(
         county_static_mn30_grd_png,
         plot_static_map(
@@ -1169,6 +1585,7 @@ list(
         format = "file"
     ),
 
+    # --- Static maps: Tract --------------------------------------------------
     # Tract: GMTED mean elevation (viridis, identity)
     tar_target(
         tract_static_mn30_grd_png,
@@ -1211,7 +1628,8 @@ list(
         format = "file"
     ),
 
-    # County: PRISM SolTotal normals (log10)
+    # --- PRISM SolTotal normals ---------------------------------------------
+    # County (identity scale)
     tar_target(
         county_normal_soltotal_png,
         plot_normal_map(
@@ -1225,12 +1643,12 @@ list(
             title = "County normal PRISM SolTotal",
             geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
             dataset = county_annual,
-            trans = "identity" # linear scale
+            trans = "identity" # Linear scale
         ),
         format = "file"
     ),
 
-    # Tract: PRISM SolTotal normals (log10)
+    # Tract (identity scale)
     tar_target(
         tract_normal_soltotal_png,
         plot_normal_map(
@@ -1245,7 +1663,7 @@ list(
             title = "Tract normal PRISM SolTotal",
             geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
             dataset = tract_annual,
-            trans = "identity" # linear scale
+            trans = "identity" # Linear scale
         ),
         format = "file"
     )
