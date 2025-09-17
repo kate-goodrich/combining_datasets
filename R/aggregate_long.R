@@ -7,18 +7,30 @@ build_exposure_long_streamed <- function(
     agg <- match.arg(agg)
     level <- match.arg(level)
 
-    # --- Set up directories ---
+    # --- Set up output directories ---
     long_dir <- file.path(handoff_dir, paste0(level, "_", agg, "_long"))
     wide_dir <- file.path(handoff_dir, paste0(level, "_", agg, "_wide"))
     dir.create(long_dir, recursive = TRUE, showWarnings = FALSE)
     dir.create(wide_dir, recursive = TRUE, showWarnings = FALSE)
 
-    # --- File matching (always include normal + static) ---
-    pattern <- sprintf(
-        "^(%1$s_%2$s|normal_.*_%2$s|static_%2$s).*\\.csv$",
+    # --- Build the strict filename pattern by agg + level ---
+    # Examples matched:
+    #  - annual:  annual_<level>_*.csv | normal_annual_<level>_*.csv | static_<level>*.csv
+    #  - monthly: monthly_<level>_*.csv | normal_monthly_<level>_*.csv | static_<level>*.csv
+    #
+    # Examples NOT matched: overall_* , other levels, other time specs
+    pattern <- switch(
         agg,
-        level
+        "annual" = sprintf(
+            "^(annual_%1$s_.+|normal_annual_%1$s.+|static_%1$s.+)\\.csv$",
+            level
+        ),
+        "monthly" = sprintf(
+            "^(monthly_%1$s_.+|normal_monthly_%1$s.+|static_%1$s.+)\\.csv$",
+            level
+        )
     )
+
     csv_files <- list.files(input_dir, pattern = pattern, full.names = TRUE)
     if (length(csv_files) == 0) {
         stop(sprintf(
@@ -41,38 +53,38 @@ build_exposure_long_streamed <- function(
     normalize_one <- function(file, is_monthly) {
         df <- readr::read_csv(file, show_col_types = FALSE)
         names(df) <- tolower(names(df))
+        file_name <- basename(file)
 
         # variable
         if ("var" %in% names(df)) {
             df <- rename(df, variable = var)
         }
         if (!"variable" %in% names(df)) {
-            stop("Missing 'variable' column in ", basename(file))
+            stop("Missing 'variable' column in ", file_name)
         }
 
         # value
         candidates <- c("value", "annual_mean", "mean", "val")
         have <- candidates[candidates %in% names(df)]
         if (length(have) == 0) {
-            stop("Missing value column in ", basename(file))
+            stop("Missing value column in ", file_name)
         }
         if (have[1] != "value") {
             df <- rename(df, value = !!have[1])
         }
 
-        # geoid (all summary sets already provide it)
+        # geoid
         if (!"geoid" %in% names(df)) {
-            stop("Missing geoid column in ", basename(file))
+            stop("Missing geoid column in ", file_name)
         }
-
-        file_name <- basename(file)
 
         # year
         if (!"year" %in% names(df)) {
             df <- mutate(
                 df,
                 year = case_when(
-                    str_detect(file_name, "^normal_") ~ "normal",
+                    str_detect(file_name, "^normal_annual_") ~ "normal",
+                    str_detect(file_name, "^normal_monthly_") ~ "normal",
                     str_detect(file_name, "^static_") ~ "static",
                     TRUE ~ NA_character_
                 )
@@ -84,11 +96,12 @@ build_exposure_long_streamed <- function(
         # month handling
         if (is_monthly) {
             if (!"month" %in% names(df)) {
-                df$month <- NA_integer_
+                df$month <- NA_integer_ # monthly pipeline tolerates NA month (e.g., static)
             } else {
                 df$month <- suppressWarnings(as.integer(df$month))
             }
         } else {
+            # annual pipeline should not carry month
             if ("month" %in% names(df)) df$month <- NULL
         }
 
@@ -96,7 +109,7 @@ build_exposure_long_streamed <- function(
             mutate(
                 variable = variable %>%
                     tolower() %>%
-                    str_remove("_\\d{4}$") %>% # drop trailing year in var name if present
+                    str_remove("_\\d{4}$") %>% # drop trailing year in var names if present
                     str_remove("_clean$"),
                 value = if_else(
                     str_starts(variable, "land_cover_") & is.na(value),
@@ -116,7 +129,7 @@ build_exposure_long_streamed <- function(
         is_monthly = is_monthly
     )
 
-    # Drop annual-normals from monthly builds
+    # For monthly builds, drop annual normals that lack month (keeps static rows if you want them)
     if (is_monthly) {
         all_data <- all_data %>% filter(!(year == "normal" & is.na(month)))
     }
@@ -127,7 +140,7 @@ build_exposure_long_streamed <- function(
     readr::write_csv(all_data, long_csv)
     arrow::write_parquet(all_data, long_parq)
 
-    # Helper: pivot a chunk to wide (one row per geoid, columns = variables)
+    # Helper: pivot to wide (one row per geoid, columns = variables)
     to_wide <- function(df) {
         df %>%
             group_by(geoid, variable) %>%
@@ -148,7 +161,6 @@ build_exposure_long_streamed <- function(
                     stop("Unexpected grouping")
                 }
 
-                # base filename (no extension)
                 base <- if (y == "normal") {
                     sprintf("%s_normal_%02d", level, m)
                 } else if (y == "static") {
@@ -178,7 +190,6 @@ build_exposure_long_streamed <- function(
                     stop("Unexpected grouping")
                 }
 
-                # base filename (no extension)
                 base <- if (y == "normal") {
                     paste0(level, "_normal")
                 } else if (y == "static") {

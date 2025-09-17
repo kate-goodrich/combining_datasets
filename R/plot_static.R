@@ -1,8 +1,7 @@
-# PATCH: add dataset + trans; remove ds()
-# ---- Static map (county/tract) with viridis; works for one or many vars ----
+# ---- Static map (county/tract/zip) with viridis; minimal changes for ZIPs ----
 plot_static_map <- function(
     var, # string or character vector
-    level = c("county", "tract"),
+    level = c("county", "tract", "zip"),
     include_alaska = TRUE,
     include_hawaii = FALSE,
     legend_title = if (length(var) == 1) var else "Value",
@@ -12,25 +11,47 @@ plot_static_map <- function(
     out_file = NULL, # auto filename if NULL
     title = NULL, # auto title if NULL
     dataset, # REQUIRED: arrow/tibble with geoid, year, variable, value
-    geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+    geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
     trans = "identity", # e.g. "log10"
     na_fill = "grey90"
 ) {
     level <- match.arg(level)
-    geom_layer <- if (level == "county") "counties_500k" else "tracts_500k"
+    geom_layer <- switch(
+        level,
+        county = "counties_500k",
+        tract = "tracts_500k",
+        zip = "zctas_500k"
+    )
+
+    # helper for ZIP padding
+    pad_zip5 <- function(x) {
+        x <- gsub("\\D", "", as.character(x))
+        ifelse(nchar(x) < 5, sprintf("%05s", x), x)
+    }
 
     # --- Read zones ---
     geom <- sf::st_read(geoms_gpkg, layer = geom_layer, quiet = TRUE)
     geom <- sf::st_make_valid(geom)
     geom <- sf::st_zm(geom, drop = TRUE)
 
-    # Drop states if requested (AK=02, HI=15)
-    drop_states <- c(
-        if (!include_alaska) "02" else NULL,
-        if (!include_hawaii) "15" else NULL
-    )
-    if (length(drop_states)) {
-        geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
+    # Normalize geometry IDs
+    if (!"geoid" %in% names(geom)) {
+        stop("Geometry must have a 'geoid' column.")
+    }
+    geom$geoid <- as.character(geom$geoid)
+    if (level == "zip") {
+        geom$geoid <- pad_zip5(geom$geoid)
+    }
+
+    # Drop states if requested (AK=02, HI=15) — only meaningful for county/tract
+    if (level %in% c("county", "tract")) {
+        drop_states <- c(
+            if (!include_alaska) "02" else NULL,
+            if (!include_hawaii) "15" else NULL
+        )
+        if (length(drop_states)) {
+            geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
+        }
     }
 
     # --- Data (collect first; then filter) ---
@@ -47,8 +68,11 @@ plot_static_map <- function(
         ))
     }
 
-    # Ensure join keys are character
+    # Ensure join keys are character (and pad for ZIPs)
     df$geoid <- as.character(df$geoid)
+    if (level == "zip") {
+        df$geoid <- pad_zip5(df$geoid)
+    }
 
     # --- Join and clean ---
     plot_df <- dplyr::left_join(geom, df, by = "geoid")

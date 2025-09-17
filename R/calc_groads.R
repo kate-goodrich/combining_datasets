@@ -1,6 +1,6 @@
 road_density_zonal <- function(
     roads_gpkg = "clean_data/groads_clean/groads_clean.gpkg",
-    zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+    zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
     level = c("county", "tract", "zip"),
     zone_layer = NULL,
     id_col = "geoid",

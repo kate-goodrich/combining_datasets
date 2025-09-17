@@ -1,57 +1,123 @@
-# ---- Consolidated 3-map proportion panel ----
+# Requires: sf, dplyr, tidyr, ggplot2, cowplot, ragg
 plot_proportion_panel <- function(
-    vars, # c("var_a","var_b","var_c")
-    pretty_names, # named chr: c(var_a="Name A", ...)
-    high_colors, # named chr: c(var_a="#hex", ...)
-    target_year, # e.g., 2021 or "static"
-    outfile = NULL, # path to save; if NULL, don't save
-    dataset = county_annual, # arrow/tibble with geoid, year, variable, value
-    level = c("county", "tract"),
-    geoms_gpkg = ds("clean_data/county_census/canonical_2024.gpkg"),
-    layer_counties = "counties_500k",
+    vars, # e.g., c("prop_a","prop_b","prop_c")
+    pretty_names, # named chr: c(prop_a="Name A", ...)
+    high_colors = NULL, # kept for backward compat (not used here)
+    target_year, # e.g., 2021 or "normal"
+    outfile = NULL,
+    dataset, # arrow/tibble with geoid, year, variable, value
+    level = c("county", "tract", "zip"),
+    geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
+    geoms_layers = list(
+        county = "counties_500k",
+        tract = "tracts_500k",
+        zip = "zctas_500k" # ZCTA layer name
+    ),
     include_alaska = FALSE,
     include_hawaii = FALSE,
-    bbox = NULL # c(xmin, xmax, ymin, ymax); if NULL, auto by flags
+    bbox = NULL, # lon/lat bbox; if NULL auto by flags
+    plot_crs = 4326 # draw/output in lon/lat consistently
 ) {
     stopifnot(length(vars) == 3L)
-
     level <- match.arg(level)
 
-    # --- Geometry ---
-    counties <- sf::st_read(geoms_gpkg, layer = layer_counties, quiet = TRUE) |>
-        sf::st_make_valid()
-
-    # FIPS: AK=02, HI=15  (apply filters conditionally)
-    if (!include_alaska) {
-        counties <- dplyr::filter(counties, substr(geoid, 1, 2) != "02")
-    }
-    if (!include_hawaii) {
-        counties <- dplyr::filter(counties, substr(geoid, 1, 2) != "15")
+    pad_zip5 <- function(x) {
+        x <- gsub("\\D", "", as.character(x))
+        ifelse(nchar(x) < 5, sprintf("%05s", x), x)
     }
 
-    # Default bbox if not provided
-    if (is.null(bbox)) {
-        if (include_alaska && !include_hawaii) {
-            bbox <- c(-170, -60, 18, 72) # AK + CONUS
-        } else if (!include_alaska && !include_hawaii) {
-            bbox <- c(-125, -66, 24, 50) # CONUS
-        } else if (include_alaska && include_hawaii) {
-            bbox <- c(-170, -60, 18, 72) # simple wide view (HI may be off-screen)
-        } else {
-            bbox <- c(-160, -60, 18, 72) # catch-all
+    # ---- Geometry ----
+    layer <- geoms_layers[[level]]
+    if (is.null(layer)) {
+        stop("No geometry layer configured for level='", level, "'.")
+    }
+
+    geom <- sf::st_read(geoms_gpkg, layer = layer, quiet = TRUE) |>
+        sf::st_make_valid() |>
+        sf::st_zm(drop = TRUE)
+
+    if (!"geoid" %in% names(geom)) {
+        stop("Geometry must have a 'geoid' column.")
+    }
+    geom$geoid <- as.character(geom$geoid)
+    if (level == "zip") {
+        geom$geoid <- pad_zip5(geom$geoid)
+    }
+
+    # Drop AK/HI only for county/tract via FIPS
+    if (level %in% c("county", "tract")) {
+        if (!include_alaska) {
+            geom <- dplyr::filter(geom, substr(geoid, 1, 2) != "02")
+        }
+        if (!include_hawaii) {
+            geom <- dplyr::filter(geom, substr(geoid, 1, 2) != "15")
         }
     }
 
-    # --- Data ---
+    # ---- Data (wide) ----
     wide_df <- dataset |>
         dplyr::filter(.data$variable %in% vars, .data$year == target_year) |>
         dplyr::select(geoid, variable, value) |>
         dplyr::collect() |>
-        tidyr::pivot_wider(names_from = variable, values_from = value)
+        dplyr::mutate(geoid = as.character(geoid))
 
-    plot_df <- dplyr::left_join(counties, wide_df, by = "geoid")
+    if (nrow(wide_df) == 0) {
+        stop("No rows found for requested vars/target_year in dataset.")
+    }
 
-    # --- Guard: ensure names are present in color/name vectors ---
+    if (level == "zip") {
+        wide_df$geoid <- pad_zip5(wide_df$geoid)
+    }
+
+    # Guardrail: basic length check
+    len_ok <- switch(
+        level,
+        county = all(nchar(unique(wide_df$geoid)) %in% c(5, 4, 3, 2)), # counties are 5 (state+county), but allow oddities
+        tract = all(nchar(unique(wide_df$geoid)) >= 11),
+        zip = all(nchar(unique(wide_df$geoid)) == 5)
+    )
+    if (!len_ok) {
+        stop(
+            "Dataset GEOIDs don't look like '",
+            level,
+            "' IDs. Did you pass the wrong dataset for this level?"
+        )
+    }
+
+    wide_df <- tidyr::pivot_wider(
+        wide_df,
+        names_from = variable,
+        values_from = value
+    )
+
+    # ---- Join ----
+    plot_df <- dplyr::left_join(geom, wide_df, by = "geoid")
+    # Count matches to catch empty join early
+    matched <- sum(Reduce(`|`, lapply(vars, function(v) !is.na(plot_df[[v]]))))
+    if (matched == 0) {
+        stop(
+            "No data matched the geometry GEOIDs. ",
+            "Check that `dataset` corresponds to `level` (e.g., zip data for level='zip')."
+        )
+    }
+
+    # ---- Bbox defaults (lon/lat) ----
+    if (is.null(bbox)) {
+        bbox <- if (include_alaska && !include_hawaii) {
+            c(-170, -60, 18, 72)
+        } else if (!include_alaska && !include_hawaii) {
+            c(-125, -66, 24, 50)
+        } else if (include_alaska && include_hawaii) {
+            c(-170, -60, 18, 72)
+        } else {
+            c(-160, -60, 18, 72)
+        }
+    }
+
+    # ---- Transform to plotting CRS for consistent axes ----
+    plot_df <- sf::st_transform(plot_df, plot_crs)
+
+    # ---- Arg checks for labels/colors ----
     missing_names <- setdiff(vars, names(pretty_names))
     if (length(missing_names)) {
         stop(
@@ -59,15 +125,8 @@ plot_proportion_panel <- function(
             paste(missing_names, collapse = ", ")
         )
     }
-    missing_colors <- setdiff(vars, names(high_colors))
-    if (length(missing_colors)) {
-        stop(
-            "Missing high_colors for: ",
-            paste(missing_colors, collapse = ", ")
-        )
-    }
 
-    # --- Single map builder ---
+    # ---- Single-map builder ----
     map_one <- function(col_name) {
         ggplot2::ggplot(plot_df) +
             ggplot2::geom_sf(
@@ -75,7 +134,7 @@ plot_proportion_panel <- function(
                 color = NA
             ) +
             ggplot2::scale_fill_viridis_c(
-                option = "viridis", # or "mako","plasma","cividis" if you prefer
+                option = "viridis",
                 direction = 1,
                 limits = c(0, 1),
                 oob = scales::squish,
@@ -86,6 +145,8 @@ plot_proportion_panel <- function(
             ggplot2::coord_sf(
                 xlim = bbox[1:2],
                 ylim = bbox[3:4],
+                crs = sf::st_crs(plot_crs),
+                default_crs = sf::st_crs(plot_crs),
                 expand = FALSE
             ) +
             ggplot2::labs(
@@ -121,5 +182,5 @@ plot_proportion_panel <- function(
         message("Saved: ", normalizePath(outfile))
     }
 
-    return(panel)
+    panel
 }

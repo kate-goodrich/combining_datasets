@@ -1,11 +1,12 @@
 summarize_terraclimate <- function(
     tif_dir = "clean_data/terraclimate_clean",
-    county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+    county_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
     level = c("county", "tract", "zip"),
     agg = c("annual", "monthly", "overall"),
     zone_layer = NULL,
     id_col = "geoid",
-    write_csv = NULL
+    write_csv = NULL,
+    exclude_vars = "srad" # <— exclude these TerraClimate variables (default: srad)
 ) {
     # --- Match args and infer layer if needed ---
     level <- match.arg(level)
@@ -42,14 +43,66 @@ summarize_terraclimate <- function(
         names(ra) <- as.character(sort(unique(yrs)))
         ra
     }
+    # variable name from PATH, normalized (strip common suffixes like _processed/_clean/_YYYYMMDD)
     var_from_path <- function(p) {
         nm <- tools::file_path_sans_ext(basename(p))
-        sub("_processed$", "", nm)
+        nm <- tolower(nm)
+        nm <- sub("(_processed|_clean)$", "", nm)
+        nm <- sub("_\\d{6}$", "", nm) # strip trailing YYYYMM if present
+        nm <- sub("_\\d{4}$", "", nm) # or trailing YYYY
+        nm
+    }
+    # variable name from RASTER names (first layer), normalized
+    var_from_r <- function(r) {
+        nm <- tolower(names(r)[1])
+        nm <- sub("(_processed|_clean)$", "", nm)
+        nm <- sub("_\\d{6}$", "", nm)
+        nm <- sub("_\\d{4}$", "", nm)
+        nm
+    }
+
+    # --- List all .tif files ---
+    tifs <- list.files(tif_dir, pattern = "\\.tif$", full.names = TRUE)
+    if (length(tifs) == 0L) {
+        stop("No .tif files found in '", tif_dir, "'.")
+    }
+    # Early filter by filename to skip excluded variables fast
+    if (length(exclude_vars)) {
+        vars_inferred <- vapply(tifs, var_from_path, character(1))
+        keep <- !(vars_inferred %in% tolower(exclude_vars))
+        tifs <- tifs[keep]
+    }
+    if (length(tifs) == 0L) {
+        # nothing to do after exclusions
+        out <- tibble::tibble(
+            !!id_col := zones[[id_col]],
+            var = character(),
+            year = integer(),
+            month = integer(),
+            value = double()
+        )[0, ]
+        if (!is.null(write_csv)) {
+            readr::write_csv(out, write_csv)
+        }
+        return(out)
     }
 
     # --- Zonal summary for one file ---
     summarise_one <- function(tif_path, zones_ll, agg_mode) {
         r <- terra::rast(tif_path)
+        vname <- var_from_r(r)
+
+        # Defensive skip if variable is excluded (covers odd filenames/metadata)
+        if (length(exclude_vars) && vname %in% tolower(exclude_vars)) {
+            return(tibble::tibble(
+                !!id_col := zones_ll[[id_col]],
+                var = character(),
+                year = integer(),
+                month = integer(),
+                value = double()
+            )[0, ])
+        }
+
         zones_proj <- sf::st_transform(zones_ll, terra::crs(r))
 
         r_use <- switch(
@@ -65,7 +118,7 @@ summarize_terraclimate <- function(
         # Clamp negatives to zero
         r_use <- terra::ifel(r_use < 0, 0, r_use)
 
-        # Area weights (m^2); one weights raster is fine for a stack on same grid
+        # Area weights (m^2); one weights raster is fine for stack on same grid
         w <- terra::cellSize(r_use[[1]], unit = "m")
 
         # Area-weighted mean extraction
@@ -87,7 +140,7 @@ summarize_terraclimate <- function(
                 values_to = "value"
             ) |>
             dplyr::mutate(
-                var = var_from_path(tif_path),
+                var = vname,
                 year = if (agg_mode == "monthly") {
                     as.integer(substr(.data$date, 1, 4))
                 } else {
@@ -101,7 +154,6 @@ summarize_terraclimate <- function(
             )
 
         if (agg_mode == "overall") {
-            # keep only 2010–2024 then average across years per id x var
             base |>
                 dplyr::filter(year >= 2010, year <= 2024) |>
                 dplyr::group_by(.data[[id_col]], var) |>
@@ -114,16 +166,9 @@ summarize_terraclimate <- function(
             base |>
                 dplyr::select(dplyr::all_of(id_col), year, var, value)
         } else {
-            # monthly
             base |>
                 dplyr::select(dplyr::all_of(id_col), year, month, var, value)
         }
-    }
-
-    # --- List all .tif files ---
-    tifs <- list.files(tif_dir, pattern = "\\.tif$", full.names = TRUE)
-    if (length(tifs) == 0L) {
-        stop("No .tif files found in '", tif_dir, "'.")
     }
 
     # --- Run zonal summaries ---

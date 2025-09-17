@@ -1,13 +1,14 @@
 gridmet_zonal <- function(
     tif_dir,
     level = c("county", "tract", "zip"),
-    zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+    zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
     zone_layer = NULL,
     id_col = "geoid",
     files_pattern = "\\.tif$",
     aggregate_to = c("annual", "monthly", "overall"),
     chunk_size = 365, # retained but rarely needed now
-    write_csv = NULL
+    write_csv = NULL,
+    exclude_vars = c("pet", "srad") # <— exclude from GridMET output
 ) {
     level <- match.arg(level)
     aggregate_to <- match.arg(aggregate_to)
@@ -42,7 +43,15 @@ gridmet_zonal <- function(
         }
         tibble::tibble(layer = names(r), date = dates_from_names(names(r)))
     }
-    var_from_r <- function(r) sub("_\\d{8}$", "", names(r)[1])
+    var_from_r <- function(r) tolower(sub("_\\d{8}$", "", names(r)[1])) # ensure lower-case
+
+    # Optional: fast variable name from filename to skip early (speeds things up)
+    var_from_path <- function(path) {
+        bn <- basename(path)
+        # typical pattern like "srad_YYYYMMDD.tif" or "pet_YYYYMMDD.tif"
+        m <- stringr::str_match(bn, "^([a-zA-Z0-9]+)_")[, 2]
+        tolower(ifelse(is.na(m), tools::file_path_sans_ext(bn), m))
+    }
 
     # ---- zones ----
     zones <- sf::st_read(zones_gpkg, layer = zone_layer, quiet = TRUE) |>
@@ -71,10 +80,43 @@ gridmet_zonal <- function(
         )
     }
 
+    # Early skip (faster): drop files whose inferred var is in exclude list
+    if (length(exclude_vars)) {
+        inferred <- vapply(tifs, var_from_path, character(1))
+        keep <- !(inferred %in% tolower(exclude_vars))
+        tifs <- tifs[keep]
+    }
+    if (length(tifs) == 0L) {
+        # Nothing to process after exclusion
+        out <- tibble::tibble(
+            !!id_col := zones[[id_col]],
+            var = character(),
+            year = integer(),
+            month = integer(),
+            value = double()
+        )[0, ]
+        if (!is.null(write_csv)) {
+            readr::write_csv(out, write_csv)
+        }
+        return(out)
+    }
+
     # ---- per-file worker (pre-aggregate in raster space) ----
     means_for_file <- function(tif, zones_sf, id_col, aggregate_to) {
         r <- terra::rast(tif)
         vname <- var_from_r(r)
+
+        # Hard skip (defensive): if the raster-derived var is excluded, return empty
+        if (length(exclude_vars) && vname %in% tolower(exclude_vars)) {
+            return(tibble::tibble(
+                !!id_col := zones_sf[[id_col]],
+                var = character(),
+                year = integer(),
+                month = integer(),
+                value = double()
+            )[0, ])
+        }
+
         zones_r <- sf::st_transform(zones_sf, terra::crs(r))
 
         # dates for layers
@@ -91,12 +133,11 @@ gridmet_zonal <- function(
         # area weights (true cell areas; CRS-agnostic)
         w <- terra::cellSize(r, unit = "m")
 
-        # limit to 2010-2024 for "overall" (and keep behavior unchanged for annual/monthly)
+        # limit to 2010-2024 for "overall"
         yrs_all <- as.integer(format(key$date, "%Y"))
         keep_overall <- yrs_all >= 2010 & yrs_all <= 2024
 
         if (terra::nlyr(r) == 1L) {
-            # single-layer: just extract that date
             vals <- exactextractr::exact_extract(
                 r,
                 zones_r,
@@ -120,7 +161,6 @@ gridmet_zonal <- function(
                     value = as.numeric(vals)
                 ))
             } else {
-                # overall
                 if (dt < as.Date("2010-01-01") || dt > as.Date("2024-12-31")) {
                     return(tibble::tibble(
                         !!id_col := zones_sf[[id_col]],
@@ -171,7 +211,7 @@ gridmet_zonal <- function(
                 as.integer(format(key$date, "%m"))
             r_agg <- terra::tapp(r, index = ym, fun = mean, na.rm = TRUE)
             uym <- sort(unique(ym))
-            names(r_agg) <- paste0("m", uym) # e.g., m201601
+            names(r_agg) <- paste0("m", uym)
 
             vals <- exactextractr::exact_extract(
                 r_agg,
@@ -206,9 +246,7 @@ gridmet_zonal <- function(
                     value = NA_real_
                 ))
             }
-            # keep only layers in 2010-2024
             r_keep <- r[[which(keep_overall)]]
-            # mean across all kept layers first (in raster space)
             r_mean <- terra::app(r_keep, fun = mean, na.rm = TRUE)
             vals <- exactextractr::exact_extract(
                 r_mean,

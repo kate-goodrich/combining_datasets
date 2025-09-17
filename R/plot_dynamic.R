@@ -13,7 +13,7 @@ animate_geo_gif <- function(
     ),
     include_alaska = TRUE,
     include_hawaii = FALSE,
-    bbox = NULL, # numeric vector c(xmin, xmax, ymin, ymax) in bbox_crs
+    bbox = NULL, # numeric c(xmin, xmax, ymin, ymax) in bbox_crs
     bbox_crs = 4326, # CRS of bbox; default lon/lat
     legend_title = var,
     title = NULL, # defaults to "... — {current_frame}"
@@ -30,6 +30,8 @@ animate_geo_gif <- function(
     drop_na_time = TRUE,
     tween_shapes = FALSE,
     scale_limits = NULL, # c(min,max) for consistent color across runs
+    simplify_zcta = FALSE, # keep FALSE by default for lon/lat safety
+    simplify_tolerance_deg = 0.01, # ~1 km at equator; ~0.7–1.1 km typical CONUS
     verbose = FALSE
 ) {
     level <- match.arg(level)
@@ -46,7 +48,7 @@ animate_geo_gif <- function(
     }
     msg <- function(...) if (isTRUE(verbose)) message(...)
 
-    # ---- Geometry (stay in native CRS, e.g., EPSG:5070 for ZIPs) ----
+    # ---- Geometry (assumed EPSG:4326 lon/lat) ----
     geom_layer <- geoms_layers[[level]]
     if (is.null(geom_layer)) {
         stop(
@@ -66,17 +68,14 @@ animate_geo_gif <- function(
 
     crs_geom <- sf::st_crs(geom)
     if (is.na(crs_geom)) {
-        stop(
-            "Geometry layer '",
-            geom_layer,
-            "' has no CRS. Please assign one in the GPKG."
-        )
+        stop("Geometry layer '", geom_layer, "' has no CRS.")
     }
     msg(
         "Geometry CRS: ",
         if (!is.null(crs_geom$input)) crs_geom$input else crs_geom$epsg
     )
 
+    # Require/normalize GEOIDs
     if (!"geoid" %in% names(geom)) {
         stop("Geometry must have a 'geoid' column.")
     }
@@ -85,7 +84,12 @@ animate_geo_gif <- function(
         geom$geoid <- pad_zip5(geom$geoid)
     }
 
-    # Optionally drop AK/HI for county/tract via FIPS prefix; for ZIP we generally use bbox instead
+    # Keep only geoid + geometry
+    gcol <- attr(geom, "sf_column") # name of the geometry column
+    keep_cols <- unique(c("geoid", gcol))
+    geom <- geom[, intersect(keep_cols, names(geom))]
+
+    # Optional: drop AK/HI (county/tract only, via FIPS)
     if (level %in% c("county", "tract")) {
         drop_states <- c(
             if (!include_alaska) "02" else NULL,
@@ -94,6 +98,15 @@ animate_geo_gif <- function(
         if (length(drop_states)) {
             geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
         }
+    }
+
+    # Optional: simplify (in DEGREES — because layer is lon/lat)
+    if (level == "zip" && isTRUE(simplify_zcta)) {
+        geom <- suppressWarnings(sf::st_simplify(
+            geom,
+            dTolerance = simplify_tolerance_deg
+        ))
+        geom <- sf::st_make_valid(geom)
     }
 
     # ---- Data source ----
@@ -134,7 +147,6 @@ animate_geo_gif <- function(
             dplyr::select(tmp, -variable)
         }
     )
-
     if (nrow(df) == 0) {
         stop(
             "No rows found for variable '",
@@ -147,7 +159,6 @@ animate_geo_gif <- function(
         )
     }
 
-    # Normalize IDs
     if (!"geoid" %in% names(df)) {
         stop("Data must have a 'geoid' column.")
     }
@@ -156,12 +167,11 @@ animate_geo_gif <- function(
         df$geoid <- pad_zip5(df$geoid)
     }
 
-    # Optional numeric transform
     if (!is.null(value_fun)) {
         df <- dplyr::mutate(df, value = value_fun(value))
     }
 
-    # ---- Time fields + frame labels (robust to NA) ----
+    # ---- Time fields + frame labels ----
     df <- dplyr::mutate(
         df,
         year_chr = as.character(year),
@@ -205,38 +215,20 @@ animate_geo_gif <- function(
             "'."
         )
     }
-
     if (all(is.na(df$value))) {
         stop("All 'value' are NA for variable '", var, "'.")
     }
-
     levs <- unique(df$frame_label)
     if (length(levs) == 0) {
         stop("No valid frames for variable '", var, "'.")
     }
     df$time_state <- factor(df$frame_label, levels = levs)
 
-    # ---- Join to geometry; drop empties + rows without frames ----
-    joined <- dplyr::left_join(geom, df, by = "geoid")
-    if (!inherits(joined, "sf")) {
-        joined <- sf::st_as_sf(joined, crs = crs_geom)
-    }
-    joined <- joined[!sf::st_is_empty(joined), , drop = FALSE]
-    plot_df <- sf::st_make_valid(joined)
-    plot_df <- dplyr::filter(plot_df, !is.na(time_state))
+    # Trim to join columns
+    df <- dplyr::select(df, geoid, time_state, value)
 
-    if (nrow(plot_df) == 0) {
-        stop(
-            "No geometries matched data for '",
-            var,
-            "'. Check GEOID formats and filters."
-        )
-    }
-
-    # ---- View defaults / spatial cropping in GEOMETRY CRS (e.g., EPSG:5070) ----
-    # If bbox is NULL, define a sensible default in lon/lat (4326), then transform to geom CRS
+    # ---- Bbox handling (lon/lat) ----
     if (is.null(bbox)) {
-        # Default CONUS vs. AK-inclusive boxes provided in lon/lat
         bbox <- if (isTRUE(include_alaska)) {
             c(-170, -60, 18, 72)
         } else {
@@ -245,27 +237,50 @@ animate_geo_gif <- function(
         bbox_crs <- 4326
     }
 
-    # Build bbox in its declared CRS, then transform to the geometry CRS for cropping
     bbox_sfc_input <- sf::st_as_sfc(
         sf::st_bbox(
             c(xmin = bbox[1], xmax = bbox[2], ymin = bbox[3], ymax = bbox[4]),
             crs = bbox_crs
         )
     )
-    if (sf::st_crs(bbox_sfc_input) != crs_geom) {
-        bbox_sfc <- sf::st_transform(bbox_sfc_input, crs_geom)
+    # Transform bbox to geometry CRS if needed (does NOT assume any specific CRS)
+    bbox_sfc <- if (sf::st_crs(bbox_sfc_input) != crs_geom) {
+        sf::st_transform(bbox_sfc_input, crs_geom)
     } else {
-        bbox_sfc <- bbox_sfc_input
+        bbox_sfc_input
     }
 
-    # For ZIPs (and as a safety), apply bbox cropping
+    # Fast bbox filter via s2-aware intersects (keeps s2 ON)
     if (level == "zip" || !include_alaska || !include_hawaii) {
-        plot_df <- suppressWarnings(sf::st_crop(plot_df, bbox_sfc))
-        if (nrow(plot_df) == 0) {
-            stop(
-                "All geometries were cropped out by the provided bbox (reprojected to geometry CRS)."
-            )
+        keep_mat <- suppressWarnings(sf::st_intersects(
+            geom,
+            bbox_sfc,
+            sparse = FALSE
+        ))
+        if (nrow(keep_mat) == 0) {
+            stop("Failed bbox intersection matrix.")
         }
+        keep <- keep_mat[, 1]
+        geom <- geom[keep, , drop = FALSE]
+        if (nrow(geom) == 0) {
+            stop("All geometries were filtered out by the bbox.")
+        }
+    }
+
+    # ---- Join + final checks ----
+    joined <- dplyr::left_join(geom, df, by = "geoid")
+    if (!inherits(joined, "sf")) {
+        joined <- sf::st_as_sf(joined, crs = crs_geom)
+    }
+    joined <- joined[!sf::st_is_empty(joined), , drop = FALSE]
+    plot_df <- sf::st_make_valid(joined)
+    plot_df <- dplyr::filter(plot_df, !is.na(time_state))
+    if (nrow(plot_df) == 0) {
+        stop(
+            "No geometries matched data for '",
+            var,
+            "'. Check GEOID formats and filters."
+        )
     }
 
     # ---- Titles ----
@@ -276,6 +291,12 @@ animate_geo_gif <- function(
             agg,
             var
         )
+    }
+
+    # ---- Scale limits (optional: compute once if not provided) ----
+    if (is.null(scale_limits)) {
+        rng <- range(plot_df$value, na.rm = TRUE)
+        if (any(is.finite(rng))) scale_limits <- rng
     }
 
     # ---- Plot ----
@@ -292,7 +313,7 @@ animate_geo_gif <- function(
     p <- ggplot2::ggplot(plot_df) +
         ggplot2::geom_sf(ggplot2::aes(fill = value), color = NA) +
         sc +
-        ggplot2::coord_sf(expand = FALSE) + # in geometry CRS
+        ggplot2::coord_sf(expand = FALSE) +
         ggplot2::theme_minimal() +
         ggplot2::labs(title = title)
 

@@ -322,7 +322,7 @@ list(
         static_zonal_summary(
             tif_dir = "clean_data/gmted_clean", # path to your static raster GeoTIFFs
             level = "zip",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             zone_layer = "zctas_500k", # optional, default may already be correct for zip
             id_col = "geoid",
             write_csv = "summary_sets/static_zip_gmted.csv"
@@ -383,7 +383,7 @@ list(
             tif_dir = "clean_data/gridmet_clean", # replace with your actual directory
             level = "zip",
             aggregate_to = "annual",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             id_col = "geoid",
             write_csv = "summary_sets/annual_zip_gridmet.csv"
         )
@@ -394,7 +394,7 @@ list(
             tif_dir = "clean_data/gridmet_clean",
             level = "zip",
             aggregate_to = "monthly",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             id_col = "geoid",
             write_csv = "summary_sets/monthly_zip_gridmet.csv"
         )
@@ -405,7 +405,7 @@ list(
             tif_dir = "clean_data/gridmet_clean",
             level = "zip",
             aggregate_to = "overall",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             id_col = "geoid",
             write_csv = "summary_sets/overall_zip_gridmet.csv"
         )
@@ -435,7 +435,7 @@ list(
         zip_roads,
         road_density_zonal(
             roads_gpkg = "clean_data/groads_clean/groads_clean.gpkg",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             level = "zip",
             id_col = "geoid",
             write_csv = "summary_sets/static_zip_road_density.csv"
@@ -484,7 +484,7 @@ list(
         zip_hms_monthly,
         hms_fire_exposure(
             hms_dir = "clean_data/hms_clean",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             level = "zip",
             agg = "monthly",
             id_col = "geoid",
@@ -495,7 +495,7 @@ list(
         zip_hms_annual,
         hms_fire_exposure(
             hms_dir = "clean_data/hms_clean",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             level = "zip",
             agg = "annual",
             id_col = "geoid",
@@ -506,7 +506,7 @@ list(
         zip_hms_overall,
         hms_fire_exposure(
             hms_dir = "clean_data/hms_clean",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             level = "zip",
             agg = "overall",
             id_col = "geoid",
@@ -519,7 +519,7 @@ list(
         county_huc2,
         huc2_from_huc12_gpkg(
             huc12_gpkg = "clean_data/huc_clean/HUC12.gpkg",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             level = "county",
             id_col = "geoid",
             write_csv = "/ddn/gs1/group/set/chords/combining_datasets/summary_sets/static_county_huc.csv"
@@ -531,7 +531,7 @@ list(
         tract_huc2,
         huc2_from_huc12_gpkg(
             huc12_gpkg = "clean_data/huc_clean/HUC12.gpkg",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             level = "tract",
             id_col = "geoid",
             write_csv = "/ddn/gs1/group/set/chords/combining_datasets/summary_sets/static_tract_huc.csv"
@@ -542,7 +542,7 @@ list(
         zip_huc2,
         huc2_from_huc12_gpkg(
             huc12_gpkg = "clean_data/huc_clean/HUC12.gpkg",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             level = "zip",
             id_col = "geoid",
             write_csv = "summary_sets/static_zip_huc2.csv"
@@ -570,7 +570,7 @@ list(
         koppen_geiger_summary(
             raster_path_koppen = "clean_data/koppen_geiger_clean/Beck_KG_V1_present_0p083_processed.tif",
             raster_path_conf = "clean_data/koppen_geiger_clean/Beck_KG_V1_present_conf_0p083_processed.tif",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             level = "zip",
             id_col = "geoid",
             write_csv = "summary_sets/static_zip_koppen_geiger.csv"
@@ -627,7 +627,7 @@ list(
         zip_merra2_monthly,
         merra2_summary(
             tif_dir = "clean_data/merra2_clean",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             level = "zip",
             agg = "monthly",
             id_col = "geoid",
@@ -639,7 +639,7 @@ list(
         zip_merra2_annual,
         merra2_summary(
             tif_dir = "clean_data/merra2_clean",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             level = "zip",
             agg = "annual",
             id_col = "geoid",
@@ -651,7 +651,7 @@ list(
         zip_merra2_overall,
         merra2_summary(
             tif_dir = "clean_data/merra2_clean",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             level = "zip",
             agg = "overall",
             id_col = "geoid",
@@ -707,7 +707,7 @@ list(
         summarize_modis(
             level = "zip",
             agg = "monthly",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             write_csv = "summary_sets/monthly_zip_modis.csv"
         ),
         format = "qs"
@@ -717,7 +717,7 @@ list(
         summarize_modis(
             level = "zip",
             agg = "annual",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             write_csv = "summary_sets/annual_zip_modis.csv"
         ),
         format = "qs"
@@ -727,7 +727,7 @@ list(
         summarize_modis(
             level = "zip",
             agg = "overall",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             write_csv = "summary_sets/overall_zip_modis.csv"
         ),
         format = "qs"
@@ -778,7 +778,7 @@ list(
         summarize_nlcd(
             level = "zip",
             agg = "monthly",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             nlcd_dir = "clean_data/nlcd_clean",
             id_col = "geoid",
             write_csv = "summary_sets/monthly_zip_nlcd.csv"
@@ -790,7 +790,7 @@ list(
         summarize_nlcd(
             level = "zip",
             agg = "annual",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             nlcd_dir = "clean_data/nlcd_clean",
             id_col = "geoid",
             write_csv = "summary_sets/annual_zip_nlcd.csv"
@@ -802,7 +802,7 @@ list(
         summarize_nlcd(
             level = "zip",
             agg = "overall",
-            zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             nlcd_dir = "clean_data/nlcd_clean",
             id_col = "geoid",
             write_csv = "summary_sets/overall_zip_nlcd.csv"
@@ -934,7 +934,7 @@ list(
         zip_terraclimate_monthly,
         summarize_terraclimate(
             tif_dir = "clean_data/terraclimate_clean",
-            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            county_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             level = "zip",
             agg = "monthly",
             id_col = "geoid",
@@ -946,7 +946,7 @@ list(
         zip_terraclimate_annual,
         summarize_terraclimate(
             tif_dir = "clean_data/terraclimate_clean",
-            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            county_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             level = "zip",
             agg = "annual",
             id_col = "geoid",
@@ -958,7 +958,7 @@ list(
         zip_terraclimate_overall,
         summarize_terraclimate(
             tif_dir = "clean_data/terraclimate_clean",
-            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            county_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             level = "zip",
             agg = "overall",
             id_col = "geoid",
@@ -1066,7 +1066,7 @@ list(
         zip_tri_annual,
         summarise_tri_air_totals(
             tri_dir = "clean_data/tri_clean",
-            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            county_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             level = "zip",
             agg = "annual"
         )
@@ -1089,7 +1089,7 @@ list(
         zip_tri_monthly,
         summarise_tri_air_totals(
             tri_dir = "clean_data/tri_clean",
-            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            county_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             level = "zip",
             agg = "monthly"
         )
@@ -1112,7 +1112,7 @@ list(
         zip_tri_overall,
         summarise_tri_air_totals(
             tri_dir = "clean_data/tri_clean",
-            county_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            county_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             level = "zip",
             agg = "overall"
         )
@@ -1229,7 +1229,7 @@ list(
             data = county_annual_ds,
             level = "county",
             agg = "annual",
-            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             out_gif = "figures/county_annual_hms_smoke.gif",
             include_alaska = TRUE,
             include_hawaii = FALSE
@@ -1242,7 +1242,7 @@ list(
             data = county_monthly_ds,
             level = "county",
             agg = "monthly",
-            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             out_gif = "figures/county_monthly_hms_smoke.gif",
             include_alaska = TRUE,
             include_hawaii = FALSE
@@ -1255,7 +1255,7 @@ list(
             data = tract_annual_ds,
             level = "tract",
             agg = "annual",
-            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             out_gif = "figures/tract_annual_hms_smoke.gif",
             include_alaska = TRUE,
             include_hawaii = FALSE
@@ -1268,12 +1268,46 @@ list(
             data = tract_monthly_ds,
             level = "tract",
             agg = "monthly",
-            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             out_gif = "figures/tract_monthly_hms_smoke.gif",
             include_alaska = TRUE,
             include_hawaii = FALSE
         ),
         format = "file"
+    ),
+
+    # Annual ZIP HMS smoke GIF
+    tar_target(
+        zip_hms_smoke_annual,
+        animate_hms_smoke(
+            data = zip_annual,
+            level = "zip",
+            agg = "annual",
+            geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
+            geoms_layers = list(zip = "zctas_500k"),
+            include_alaska = TRUE,
+            include_hawaii = FALSE,
+            bbox = c(-170, -60, 18, 72), # lon/lat
+            bbox_crs = 4326,
+            out_gif = "figures/zip_annual_hms_smoke.gif"
+        )
+    ),
+
+    # Monthly ZIP HMS smoke GIF
+    tar_target(
+        zip_hms_smoke_monthly,
+        animate_hms_smoke(
+            data = zip_monthly,
+            level = "zip",
+            agg = "monthly",
+            geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
+            geoms_layers = list(zip = "zctas_500k"),
+            include_alaska = TRUE,
+            include_hawaii = FALSE,
+            bbox = c(-170, -60, 18, 72), # lon/lat
+            bbox_crs = 4326,
+            out_gif = "figures/zip_monthly_hms_smoke.gif"
+        )
     ),
 
     tar_target(
@@ -1319,7 +1353,7 @@ list(
 
             combos <- tidyr::crossing(
                 var_cfg,
-                tibble::tibble(level = c("county", "tract")),
+                tibble::tibble(level = c("county", "tract", "zip")),
                 tibble::tibble(agg = c("annual", "monthly"))
             )
 
@@ -1383,7 +1417,7 @@ list(
             outfile = "figures/county_annual_nlcd.png",
             dataset = county_annual,
             level = "county",
-            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             layer_counties = "counties_500k",
             include_alaska = FALSE,
             include_hawaii = FALSE,
@@ -1410,7 +1444,7 @@ list(
             outfile = "figures/county_static_koppen.png",
             dataset = county_annual,
             level = "county",
-            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             layer_counties = "counties_500k",
             include_alaska = TRUE,
             include_hawaii = FALSE,
@@ -1445,7 +1479,7 @@ list(
             outfile = "figures/county_static_huc2_panel.png",
             dataset = county_annual,
             level = "county",
-            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             layer_counties = "counties_500k",
             include_alaska = TRUE,
             include_hawaii = FALSE,
@@ -1472,7 +1506,7 @@ list(
             outfile = "figures/tract_annual_nlcd.png",
             dataset = tract_annual,
             level = "tract",
-            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             layer_counties = "tracts_500k",
             include_alaska = FALSE,
             include_hawaii = FALSE,
@@ -1499,7 +1533,7 @@ list(
             outfile = "figures/tract_static_koppen.png",
             dataset = tract_annual,
             level = "tract",
-            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             layer_counties = "tracts_500k",
             include_alaska = TRUE,
             include_hawaii = FALSE,
@@ -1534,7 +1568,7 @@ list(
             outfile = "figures/tract_static_huc2_panel.png",
             dataset = tract_annual,
             level = "tract",
-            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             layer_counties = "tracts_500k",
             include_alaska = TRUE,
             include_hawaii = FALSE,
@@ -1558,7 +1592,7 @@ list(
             title = "County static GMTED Mean Elevation",
             out_file = "figures/county_static_mn30_grd.png",
             dataset = county_annual_ds,
-            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             trans = "identity"
         ),
         format = "file"
@@ -1579,7 +1613,7 @@ list(
             title = "County static Road Density (log10)",
             out_file = "figures/county_static_road_density_km_per_km2.png",
             dataset = county_annual_ds,
-            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             trans = "log10"
         ),
         format = "file"
@@ -1601,7 +1635,7 @@ list(
             title = "Tract static GMTED Mean Elevation",
             out_file = "figures/tract_static_mn30_grd.png",
             dataset = tract_annual_ds,
-            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             trans = "identity"
         ),
         format = "file"
@@ -1622,7 +1656,7 @@ list(
             title = "Tract static Road Density (log10)",
             out_file = "figures/tract_static_road_density_km_per_km2.png",
             dataset = tract_annual_ds,
-            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             trans = "log10"
         ),
         format = "file"
@@ -1641,7 +1675,7 @@ list(
             palette = "viridis",
             limits = c(0.001, 20),
             title = "County normal PRISM SolTotal",
-            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             dataset = county_annual,
             trans = "identity" # Linear scale
         ),
@@ -1661,7 +1695,7 @@ list(
             bbox = c(-140, -60, 18, 72),
             limits = c(0.001, 20),
             title = "Tract normal PRISM SolTotal",
-            geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+            geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
             dataset = tract_annual,
             trans = "identity" # Linear scale
         ),

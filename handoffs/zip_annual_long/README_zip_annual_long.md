@@ -56,6 +56,7 @@ This file was generated using data from:
 - TRI point source emissions were summed by zip code; additional per-area and +4 km buffer summaries included.
 - PRISM normals represent 1991–2020 climatological averages (static).
 - Geographic coverage spans the 48 contiguous U.S. states. Alaska and Hawaii are excluded from gridMET, NLCD, PRISM, and MODIS here.
+- ZCTAs (ZIP Code Tabulation Areas) were used for zip codes, resulting in gaps in sparsely populated areas.
 
 
 ## Covariate Descriptions

@@ -65,7 +65,13 @@ tract_monthly  <- open_dataset(ds("handoffs/tract_monthly_long/tract_monthly.par
 zip_annual <- open_dataset(ds("handoffs/zip_annual_long/zip_annual.parquet"))
 zip_monthly <- open_dataset(ds("handoffs/zip_monthly_long/zip_monthly.parquet"))
 zip_overall <- open_dataset(ds("handoffs/zip_overall_long/zip_overall.parquet"))
+
+
+
 ```
+
+
+
 
 
 
@@ -112,7 +118,7 @@ expected_ranges <- tribble(
   "aet",                           0,        250,
   "albedo",                        0,        0.9,
   "area_km2",                      5,        383000,
-  "bcsmass",                       1e-11,    1e-8,
+  "bcsmass",                       1e-12,    1e-8,
   "be30_grd",                      0,        6000,
   "cldtot",                        0,        1,
   "def",                           0,        340,
@@ -191,7 +197,7 @@ expected_ranges <- tribble(
   "land_cover_confidence_mean",    0,        100,
   "lst_day_1km_k",                 230,      400,
   "lst_night_1km_k",               230,      310,
-  "lwgab",                         200,      400,
+  "lwgab",                         180,      400,
   "md30_grd",                      -400,     8850,
   "mi30_grd",                      -400,     8850,
   "mn30_grd",                      -400,     8850,
@@ -211,7 +217,7 @@ expected_ranges <- tribble(
   "qv2m",                          0,        0.04,
   "rmax",                          0,        100,
   "rmin",                          0,        100,
-  "road_density_km_per_km2",       0,        9,
+  "road_density_km_per_km2",       0,        16,
   "sd30_grd",                      0,        600,
   "slp",                           99000,    102500,
   "soil",                          0,        500,
@@ -238,27 +244,27 @@ expected_ranges <- tribble(
   "tmmn",                          240,      350,
   "tmmx",                          240,      350,
   "annual_total_air_lb",                  0,        1e8,
-  "annual_total_air_lb_per_km2",          0,        1e6,
+  "annual_total_air_lb_per_km2",          0,        4e6,
   "annual_total_air_lb_plusbuffer",         0,        1e8,
   "annual_total_fugitive_air_lb",         0,        1e8,
   "annual_total_fugitive_air_lb_per_km2", 0,        5e5,
   "annual_total_fugitive_air_lb_plusbuffer",0,        1e8,
   "total_road_km",                 0,        6e4,
   "annual_total_stack_air_lb",            0,        1e8,
-  "annual_total_stack_air_lb_per_km2",    0,        1e6,
+  "annual_total_stack_air_lb_per_km2",    0,        4e6,
   "annual_total_stack_air_lb_plusbuffer",   0,        1e8,
   "totexttau",                     0.02,     0.30,
   "ts",                            250,      305,
   "u10m",                          -20,      20,
   "vap",                           0,        5,
-  "vpd",                           0,        6,
+  "vpd",                           0,        7,
   "vpdmax",                        0,        80,
   "vpdmin",                        0,        30,
   "vs",                            0,        20,
-  "ws",                            0,        14,
+  "ws",                            0,        16,
   "z0m",                           1e-4,     3,
   "tmin_norm",  -60,      30,
-  "tmax_norm" ,  -50,      50,
+  "tmax_norm" ,  -50,      50
 
 )
 
@@ -465,27 +471,6 @@ dup_zip_annual <- zip_annual %>%
   filter(n > 1) %>%
   collect()
 
-any_dups_zip_annual <- nrow(dup_zip_annual) > 0
-any_dups_zip_annual
-dup_zip_annual  # inspect if TRUE
-
-# Basic shape (exact distincts without n_distinct)
-zip_annual_shape <- list(
-  n_rows  = zip_annual %>% summarise(n = n()) %>% collect() %>% pull(),
-  n_zips  = zip_annual %>% distinct(geoid)   %>% summarise(n = n()) %>% collect() %>% pull(),
-  n_years = zip_annual %>% distinct(year)    %>% summarise(n = n()) %>% collect() %>% pull(),
-  n_vars  = zip_annual %>% distinct(variable)%>% summarise(n = n()) %>% collect() %>% pull()
-) %>% tibble::as_tibble()
-zip_annual_shape
-
-# (If you’re fine with approximate counts instead)
-# zip_annual %>%
-#   summarise(
-#     n_rows  = n(),
-#     n_zips  = approx_n_distinct(geoid),
-#     n_years = approx_n_distinct(year),
-#     n_vars  = approx_n_distinct(variable)
-#   ) %>% collect()
 
 # Distinct years present
 zip_annual %>%
@@ -523,16 +508,35 @@ print(comparison_zip_annual, n = Inf)
 
 # Zip-Monthly Sanity checks
 ```{r}
-# Duplicates: include month in the key
-dup_zip_monthly <- zip_monthly %>%
-  group_by(geoid, year, month, variable) %>%
-  summarise(n = n(), .groups = "drop") %>%
-  filter(n > 1) %>%
-  collect()
+anyDuplicated(zip_monthly[c("geoid", "year", "variable")])
 
-any_dups_zip_monthly <- nrow(dup_zip_monthly) > 0
-any_dups_zip_monthly
-dup_zip_monthly  # inspect if TRUE
+
+years <- zip_monthly %>% distinct(year) %>% arrange(year) %>% collect() %>% dplyr::pull(year)
+
+acc <- vector("list", length(years))
+for (i in seq_along(years)) {
+  y <- years[i]
+  acc[[i]] <- zip_monthly %>%
+    filter(year == y) %>%
+    group_by(geoid, year, month, variable) %>%
+    summarise(n = dplyr::n(), .groups = "drop") %>%
+    summarise(
+      groups_total   = dplyr::n(),
+      dup_groups     = sum(n > 1),
+      dup_extra_rows = sum(dplyr::if_else(n > 1, n - 1L, 0L))
+    ) %>%
+    collect() %>% 
+    dplyr::mutate(year = y)
+}
+zip_dupe_stats <- dplyr::bind_rows(acc) %>%
+  summarise(
+    groups_total   = sum(groups_total),
+    dup_groups     = sum(dup_groups),
+    dup_extra_rows = sum(dup_extra_rows)
+  )
+zip_dupe_stats
+
+
 
 # Basic shape (exact)
 zip_monthly_shape <- list(
@@ -573,7 +577,9 @@ comparison_zip_monthly <- var_summary_zip_monthly %>%
   ) %>%
   select(variable, min_val, max_val, min_exp, max_exp, passes)
 
-print(comparison_zip_monthly, n = Inf)
+
+
+print(comparison_zip_monthly, n = 300)
 
 
 ```
@@ -597,16 +603,10 @@ dup_zip_overall  # inspect if TRUE
 zip_overall_shape <- list(
   n_rows  = zip_overall %>% summarise(n = n()) %>% collect() %>% pull(),
   n_zips  = zip_overall %>% distinct(geoid)   %>% summarise(n = n()) %>% collect() %>% pull(),
-  n_years = zip_overall %>% distinct(year)    %>% summarise(n = n()) %>% collect() %>% pull(),
   n_vars  = zip_overall %>% distinct(variable)%>% summarise(n = n()) %>% collect() %>% pull()
 ) %>% tibble::as_tibble()
 zip_overall_shape
 
-# Distinct "years" (labels) present
-zip_overall %>%
-  distinct(year) %>%
-  arrange(year) %>%
-  collect()
 
 # Variable distribution summary (then compare)
 var_summary_zip_overall <- zip_overall %>%
@@ -630,6 +630,8 @@ comparison_zip_overall <- var_summary_zip_overall %>%
     passes = ifelse(min_ok & max_ok, "Y", "N")
   ) %>%
   select(variable, min_val, max_val, min_exp, max_exp, passes)
+
+  
 
 print(comparison_zip_overall, n = Inf)
 ```

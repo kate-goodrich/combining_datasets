@@ -1,17 +1,25 @@
+# Requires: dplyr, sf, ggplot2, viridis, ragg, scales
+
 plot_normal_map <- function(
     var,
-    level = c("county", "tract"),
+    level = c("county", "tract", "zip"),
     include_alaska = TRUE,
     include_hawaii = FALSE,
     legend_title = var,
     palette = "viridis",
     direction = 1,
-    bbox = c(-140, -60, 18, 72),
+    bbox = c(-140, -60, 18, 72), # interpreted in bbox_crs
+    bbox_crs = 4326, # CRS of bbox (default lon/lat)
     limits = NULL,
     out_file = NULL,
     title = NULL,
     dataset = county_annual, # Arrow/tibble with geoid, year, variable, value
-    geoms_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+    geoms_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
+    geoms_layers = list(
+        county = "counties_500k",
+        tract = "tracts_500k",
+        zip = "zctas_500k"
+    ),
     trans = "log10", # log-transform outcome variable by default
     boundary = c("none", "white"), # boundary toggle
     boundary_size = 0.0001
@@ -19,23 +27,51 @@ plot_normal_map <- function(
     level <- match.arg(level)
     boundary <- match.arg(boundary)
     stopifnot(is.numeric(boundary_size), boundary_size >= 0)
-    geom_layer <- if (level == "county") "counties_500k" else "tracts_500k"
 
-    # --- Read zones ---
+    # --- helpers ---
+    pad_zip5 <- function(x) {
+        x <- gsub("\\D", "", as.character(x))
+        n <- nchar(x)
+        if (length(n) && any(n < 5)) {
+            x[n < 5] <- paste0(strrep("0", 5 - n[n < 5]), x[n < 5])
+        }
+        x
+    }
+
+    # --- Read geometries (stay in native CRS, e.g., EPSG:5070 for ZCTAs) ---
+    geom_layer <- geoms_layers[[level]]
+    if (is.null(geom_layer)) {
+        stop("No geometry layer configured for level='", level, "'.")
+    }
     geom <- sf::st_read(geoms_gpkg, layer = geom_layer, quiet = TRUE)
     geom <- sf::st_make_valid(geom)
     geom <- sf::st_zm(geom, drop = TRUE)
 
-    # Drop states if requested (AK=02, HI=15)
-    drop_states <- c(
-        if (!include_alaska) "02" else NULL,
-        if (!include_hawaii) "15" else NULL
-    )
-    if (length(drop_states)) {
-        geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
+    crs_geom <- sf::st_crs(geom)
+    if (is.na(crs_geom)) {
+        stop("Geometry layer '", geom_layer, "' has no CRS assigned.")
     }
 
-    # --- Arrow-safe: collect then filter on var ---
+    if (!"geoid" %in% names(geom)) {
+        stop("Geometry must have a 'geoid' column.")
+    }
+    geom$geoid <- as.character(geom$geoid)
+    if (level == "zip") {
+        geom$geoid <- pad_zip5(geom$geoid)
+    }
+
+    # Drop states via FIPS only for county/tract
+    if (level %in% c("county", "tract")) {
+        drop_states <- c(
+            if (!include_alaska) "02" else NULL,
+            if (!include_hawaii) "15" else NULL
+        )
+        if (length(drop_states)) {
+            geom <- dplyr::filter(geom, !substr(geoid, 1, 2) %in% drop_states)
+        }
+    }
+
+    # --- Arrow-safe: collect then filter on var + "normal" ---
     df <- dataset %>%
         dplyr::select(geoid, year, variable, value) %>%
         dplyr::filter(year == "normal") %>%
@@ -47,6 +83,11 @@ plot_normal_map <- function(
         stop(sprintf("No rows found for normal variable: %s", var))
     }
 
+    df$geoid <- as.character(df$geoid)
+    if (level == "zip") {
+        df$geoid <- pad_zip5(df$geoid)
+    }
+
     # --- Join and filter empties ---
     plot_df <- dplyr::left_join(geom, df, by = "geoid")
     keep <- !sf::st_is_empty(sf::st_geometry(plot_df))
@@ -54,6 +95,35 @@ plot_normal_map <- function(
         plot_df <- plot_df[keep, , drop = FALSE]
     }
     plot_df <- sf::st_make_valid(plot_df)
+
+    # --- For ZIPs (and as a safety), crop using bbox in bbox_crs reprojected to geometry CRS ---
+    if (is.null(bbox)) {
+        # sensible defaults in lon/lat; reproject below
+        bbox <- if (isTRUE(include_alaska)) {
+            c(-170, -60, 18, 72)
+        } else {
+            c(-125, -66, 24, 50)
+        }
+        bbox_crs <- 4326
+    }
+    bbox_sfc_input <- sf::st_as_sfc(
+        sf::st_bbox(
+            c(xmin = bbox[1], xmax = bbox[2], ymin = bbox[3], ymax = bbox[4]),
+            crs = bbox_crs
+        )
+    )
+    bbox_sfc <- if (sf::st_crs(bbox_sfc_input) != crs_geom) {
+        sf::st_transform(bbox_sfc_input, crs_geom)
+    } else {
+        bbox_sfc_input
+    }
+
+    if (level == "zip" || !include_alaska || !include_hawaii) {
+        plot_df <- suppressWarnings(sf::st_crop(plot_df, bbox_sfc))
+        if (nrow(plot_df) == 0) {
+            stop("All geometries were cropped out by the provided bbox.")
+        }
+    }
 
     # ---- Stable color limits (ensure valid for log scales) ----
     vals <- plot_df$value
@@ -89,13 +159,13 @@ plot_normal_map <- function(
 
     # ---- Plot ----
     border_col <- if (boundary == "white") "white" else NA
-    border_size <- if (boundary == "white") boundary_size else 0
+    border_sz <- if (boundary == "white") boundary_size else 0
 
     p <- ggplot2::ggplot(plot_df) +
         ggplot2::geom_sf(
             ggplot2::aes(fill = value),
             color = border_col,
-            linewidth = border_size
+            linewidth = border_sz
         ) +
         ggplot2::scale_fill_viridis_c(
             option = palette,
@@ -106,7 +176,7 @@ plot_normal_map <- function(
             na.value = "grey90",
             trans = trans
         ) +
-        ggplot2::coord_sf(xlim = bbox[1:2], ylim = bbox[3:4], expand = FALSE) +
+        ggplot2::coord_sf(expand = FALSE) + # axes in geometry CRS
         ggplot2::labs(title = title) +
         ggplot2::theme_minimal() +
         ggplot2::theme(
@@ -123,13 +193,13 @@ plot_normal_map <- function(
         )
 
     if (is.null(out_file)) {
+        dir.create("figures", showWarnings = FALSE, recursive = TRUE)
         out_file <- file.path(
             "figures",
             sprintf("%s_normal_%s.png", level, var)
         )
     }
 
-    dir.create(dirname(out_file), showWarnings = FALSE, recursive = TRUE)
     ggplot2::ggsave(
         out_file,
         p,

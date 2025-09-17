@@ -1,6 +1,6 @@
 prism_normals_from_tifs <- function(
     input_dir = "clean_data/prism_clean",
-    zones_gpkg = "clean_data/county_census/canonical_2024.gpkg",
+    zones_gpkg = "clean_data/county_census_zip/canonical_2024.gpkg",
     level = c("county", "tract", "zip"),
     zone_layer = NULL,
     agg = c("annual", "monthly"),

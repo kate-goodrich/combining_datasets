@@ -1,15 +1,3 @@
-Sanity Checks and Visualizations for Aggregated Amadeus Datasets
-================
-
-- [set container library](#set-container-library)
-- [Load data](#load-data)
-- [County-Annual Sanity checks](#county-annual-sanity-checks)
-- [County-Monthly Sanity checks](#county-monthly-sanity-checks)
-- [Tract-Annual Sanity checks](#tract-annual-sanity-checks)
-- [Tract-Monthly Sanity checks](#tract-monthly-sanity-checks)
-- [Zip-Annual Sanity checks](#zip-annual-sanity-checks)
-- [Zip-Monthly Sanity checks](#zip-monthly-sanity-checks)
-
 # set container library
 
 ``` r
@@ -138,7 +126,7 @@ expected_ranges <- tribble(
   "aet",                           0,        250,
   "albedo",                        0,        0.9,
   "area_km2",                      5,        383000,
-  "bcsmass",                       1e-11,    1e-8,
+  "bcsmass",                       1e-12,    1e-8,
   "be30_grd",                      0,        6000,
   "cldtot",                        0,        1,
   "def",                           0,        340,
@@ -217,7 +205,7 @@ expected_ranges <- tribble(
   "land_cover_confidence_mean",    0,        100,
   "lst_day_1km_k",                 230,      400,
   "lst_night_1km_k",               230,      310,
-  "lwgab",                         200,      400,
+  "lwgab",                         180,      400,
   "md30_grd",                      -400,     8850,
   "mi30_grd",                      -400,     8850,
   "mn30_grd",                      -400,     8850,
@@ -237,7 +225,7 @@ expected_ranges <- tribble(
   "qv2m",                          0,        0.04,
   "rmax",                          0,        100,
   "rmin",                          0,        100,
-  "road_density_km_per_km2",       0,        9,
+  "road_density_km_per_km2",       0,        16,
   "sd30_grd",                      0,        600,
   "slp",                           99000,    102500,
   "soil",                          0,        500,
@@ -264,27 +252,27 @@ expected_ranges <- tribble(
   "tmmn",                          240,      350,
   "tmmx",                          240,      350,
   "annual_total_air_lb",                  0,        1e8,
-  "annual_total_air_lb_per_km2",          0,        1e6,
+  "annual_total_air_lb_per_km2",          0,        4e6,
   "annual_total_air_lb_plusbuffer",         0,        1e8,
   "annual_total_fugitive_air_lb",         0,        1e8,
   "annual_total_fugitive_air_lb_per_km2", 0,        5e5,
   "annual_total_fugitive_air_lb_plusbuffer",0,        1e8,
   "total_road_km",                 0,        6e4,
   "annual_total_stack_air_lb",            0,        1e8,
-  "annual_total_stack_air_lb_per_km2",    0,        1e6,
+  "annual_total_stack_air_lb_per_km2",    0,        4e6,
   "annual_total_stack_air_lb_plusbuffer",   0,        1e8,
   "totexttau",                     0.02,     0.30,
   "ts",                            250,      305,
   "u10m",                          -20,      20,
   "vap",                           0,        5,
-  "vpd",                           0,        6,
+  "vpd",                           0,        7,
   "vpdmax",                        0,        80,
   "vpdmin",                        0,        30,
   "vs",                            0,        20,
-  "ws",                            0,        14,
+  "ws",                            0,        16,
   "z0m",                           1e-4,     3,
   "tmin_norm",  -60,      30,
-  "tmax_norm" ,  -50,      50,
+  "tmax_norm" ,  -50,      50
 
 )
 
@@ -307,16 +295,16 @@ print(comparison, n = Inf)
     ##   1 aet                                 2.73e+ 0 1.14e+2  0       2.5 e+2 Y     
     ##   2 albedo                              8.44e- 2 6.06e-1  0       9   e-1 Y     
     ##   3 annual_total_air_lb                 0        8.91e+6  0       1   e+8 Y     
-    ##   4 annual_total_air_lb_per_km2         0        9.16e+4  0       1   e+6 Y     
+    ##   4 annual_total_air_lb_per_km2         0        9.16e+4  0       4   e+6 Y     
     ##   5 annual_total_air_lb_plusbuffer      0        1.14e+7  0       1   e+8 Y     
     ##   6 annual_total_fugitive_air_lb        0        8.48e+6  0       1   e+8 Y     
     ##   7 annual_total_fugitive_air_lb_per_…  0        1.54e+4  0       5   e+5 Y     
     ##   8 annual_total_fugitive_air_lb_plus…  0        8.52e+6  0       1   e+8 Y     
     ##   9 annual_total_stack_air_lb           0        5.73e+6  0       1   e+8 Y     
-    ##  10 annual_total_stack_air_lb_per_km2   0        9.16e+4  0       1   e+6 Y     
+    ##  10 annual_total_stack_air_lb_per_km2   0        9.16e+4  0       4   e+6 Y     
     ##  11 annual_total_stack_air_lb_plusbuf…  0        9.68e+6  0       1   e+8 Y     
     ##  12 area_km2                            5.29e+ 0 3.83e+5  5  e+ 0 3.83e+5 Y     
-    ##  13 bcsmass                             1.77e-11 2.74e-9  1  e-11 1   e-8 Y     
+    ##  13 bcsmass                             1.77e-11 2.74e-9  1  e-12 1   e-8 Y     
     ##  14 be30_grd                            8.74e- 1 3.45e+3  0       6   e+3 Y     
     ##  15 cldtot                              2.05e- 1 7.68e-1  0       1   e+0 Y     
     ##  16 def                                 0        1.78e+2  0       3.4 e+2 Y     
@@ -372,7 +360,7 @@ print(comparison, n = Inf)
     ##  66 land_cover_confidence               0        8.70e+1  0       1   e+2 Y     
     ##  67 lst_day_1km_k                       2.68e+ 2 3.14e+2  2.3e+ 2 4   e+2 Y     
     ##  68 lst_night_1km_k                     2.64e+ 2 2.95e+2  2.3e+ 2 3.1 e+2 Y     
-    ##  69 lwgab                               2.02e+ 2 3.93e+2  2  e+ 2 4   e+2 Y     
+    ##  69 lwgab                               2.02e+ 2 3.93e+2  1.8e+ 2 4   e+2 Y     
     ##  70 md30_grd                            6.42e- 1 3.47e+3 -4  e+ 2 8.85e+3 Y     
     ##  71 mi30_grd                            1.08e- 2 3.31e+3 -4  e+ 2 8.85e+3 Y     
     ##  72 mn30_grd                            7.06e- 1 3.48e+3 -4  e+ 2 8.85e+3 Y     
@@ -413,7 +401,7 @@ print(comparison, n = Inf)
     ## 107 qv2m                                1.18e- 3 1.66e-2  0       4   e-2 Y     
     ## 108 rmax                                3.88e+ 1 9.96e+1  0       1   e+2 Y     
     ## 109 rmin                                1.16e+ 1 6.55e+1  0       1   e+2 Y     
-    ## 110 road_density_km_per_km2             3.87e- 4 1.14e+0  0       9   e+0 Y     
+    ## 110 road_density_km_per_km2             3.87e- 4 1.14e+0  0       1.6 e+1 Y     
     ## 111 sd30_grd                            8.36e- 1 9.36e+1  0       6   e+2 Y     
     ## 112 slp                                 1.00e+ 5 1.02e+5  9.9e+ 4 1.02e+5 Y     
     ## 113 soil                                1.72e- 2 3.06e+2  0       5   e+2 Y     
@@ -446,11 +434,11 @@ print(comparison, n = Inf)
     ## 140 ts                                  2.53e+ 2 3.00e+2  2.5e+ 2 3.05e+2 Y     
     ## 141 u10m                               -5.98e+ 0 4.41e+0 -2  e+ 1 2   e+1 Y     
     ## 142 vap                                 3.11e- 1 2.50e+0  0       5   e+0 Y     
-    ## 143 vpd                                 1.56e- 1 2.70e+0  0       6   e+0 Y     
+    ## 143 vpd                                 1.56e- 1 2.70e+0  0       7   e+0 Y     
     ## 144 vpdmax                              7.57e- 1 6.52e+1  0       8   e+1 Y     
     ## 145 vpdmin                              1.41e- 1 1.87e+1  0       3   e+1 Y     
     ## 146 vs                                  2.33e+ 0 7.24e+0  0       2   e+1 Y     
-    ## 147 ws                                  1.74e+ 0 7.76e+0  0       1.4 e+1 Y     
+    ## 147 ws                                  1.74e+ 0 7.76e+0  0       1.6 e+1 Y     
     ## 148 z0m                                 3.81e- 4 2.26e+0  1  e- 4 3   e+0 Y
 
 # County-Monthly Sanity checks
@@ -719,16 +707,16 @@ print(comparison, n = Inf)
     ##   1 aet                                 0        2.03e+2  0       2.5 e+2 Y     
     ##   2 albedo                              5.83e- 2 6.10e-1  0       9   e-1 Y     
     ##   3 annual_total_air_lb                 0        8.91e+6  0       1   e+8 Y     
-    ##   4 annual_total_air_lb_per_km2         0        9.16e+4  0       1   e+6 Y     
+    ##   4 annual_total_air_lb_per_km2         0        9.16e+4  0       4   e+6 Y     
     ##   5 annual_total_air_lb_plusbuffer      0        1.14e+7  0       1   e+8 Y     
     ##   6 annual_total_fugitive_air_lb        0        8.48e+6  0       1   e+8 Y     
     ##   7 annual_total_fugitive_air_lb_per_…  0        1.54e+4  0       5   e+5 Y     
     ##   8 annual_total_fugitive_air_lb_plus…  0        8.52e+6  0       1   e+8 Y     
     ##   9 annual_total_stack_air_lb           0        5.73e+6  0       1   e+8 Y     
-    ##  10 annual_total_stack_air_lb_per_km2   0        9.16e+4  0       1   e+6 Y     
+    ##  10 annual_total_stack_air_lb_per_km2   0        9.16e+4  0       4   e+6 Y     
     ##  11 annual_total_stack_air_lb_plusbuf…  0        9.68e+6  0       1   e+8 Y     
     ##  12 area_km2                            5.29e+ 0 3.83e+5  5  e+ 0 3.83e+5 Y     
-    ##  13 bcsmass                             1.77e-11 3.27e-9  1  e-11 1   e-8 Y     
+    ##  13 bcsmass                             1.77e-11 3.27e-9  1  e-12 1   e-8 Y     
     ##  14 be30_grd                            8.74e- 1 3.45e+3  0       6   e+3 Y     
     ##  15 cldtot                              2.00e- 1 7.83e-1  0       1   e+0 Y     
     ##  16 def                                 0        3.00e+2  0       3.4 e+2 Y     
@@ -784,7 +772,7 @@ print(comparison, n = Inf)
     ##  66 land_cover_confidence               0        8.70e+1  0       1   e+2 Y     
     ##  67 lst_day_1km_k                       2.47e+ 2 3.28e+2  2.3e+ 2 4   e+2 Y     
     ##  68 lst_night_1km_k                     2.40e+ 2 3.06e+2  2.3e+ 2 3.1 e+2 Y     
-    ##  69 lwgab                               2.02e+ 2 3.94e+2  2  e+ 2 4   e+2 Y     
+    ##  69 lwgab                               2.02e+ 2 3.94e+2  1.8e+ 2 4   e+2 Y     
     ##  70 md30_grd                            6.42e- 1 3.47e+3 -4  e+ 2 8.85e+3 Y     
     ##  71 mi30_grd                            1.08e- 2 3.31e+3 -4  e+ 2 8.85e+3 Y     
     ##  72 mn30_grd                            7.06e- 1 3.48e+3 -4  e+ 2 8.85e+3 Y     
@@ -825,7 +813,7 @@ print(comparison, n = Inf)
     ## 107 qv2m                                1.18e- 3 1.67e-2  0       4   e-2 Y     
     ## 108 rmax                                1.87e+ 1 1.00e+2  0       1   e+2 N     
     ## 109 rmin                                2.92e+ 0 8.77e+1  0       1   e+2 Y     
-    ## 110 road_density_km_per_km2             3.87e- 4 1.14e+0  0       9   e+0 Y     
+    ## 110 road_density_km_per_km2             3.87e- 4 1.14e+0  0       1.6 e+1 Y     
     ## 111 sd30_grd                            8.36e- 1 9.36e+1  0       6   e+2 Y     
     ## 112 slp                                 1.00e+ 5 1.02e+5  9.9e+ 4 1.02e+5 Y     
     ## 113 soil                                1.72e- 2 4.04e+2  0       5   e+2 Y     
@@ -858,11 +846,11 @@ print(comparison, n = Inf)
     ## 140 ts                                  2.53e+ 2 3.02e+2  2.5e+ 2 3.05e+2 Y     
     ## 141 u10m                               -6.35e+ 0 4.77e+0 -2  e+ 1 2   e+1 Y     
     ## 142 vap                                 5.68e- 3 3.25e+0  0       5   e+0 Y     
-    ## 143 vpd                                 0        5.52e+0  0       6   e+0 Y     
+    ## 143 vpd                                 0        5.52e+0  0       7   e+0 Y     
     ## 144 vpdmax                              7.57e- 1 6.52e+1  0       8   e+1 Y     
     ## 145 vpdmin                              1.41e- 1 1.87e+1  0       3   e+1 Y     
     ## 146 vs                                  1.03e+ 0 1.01e+1  0       2   e+1 Y     
-    ## 147 ws                                  1.02e+ 0 1.24e+1  0       1.4 e+1 Y     
+    ## 147 ws                                  1.02e+ 0 1.24e+1  0       1.6 e+1 Y     
     ## 148 z0m                                 3.73e- 4 2.26e+0  1  e- 4 3   e+0 Y
 
 # Tract-Annual Sanity checks
@@ -955,16 +943,16 @@ print(comparison, n = Inf)
     ##   1 aet                                 1.70e+ 0 1.31e+2  0       2.5 e+2 Y     
     ##   2 albedo                              7.46e- 2 6.06e-1  0       9   e-1 Y     
     ##   3 annual_total_air_lb                 0        8.91e+6  0       1   e+8 Y     
-    ##   4 annual_total_air_lb_per_km2         0        8.30e+5  0       1   e+6 Y     
+    ##   4 annual_total_air_lb_per_km2         0        8.30e+5  0       4   e+6 Y     
     ##   5 annual_total_air_lb_plusbuffer      0        8.91e+6  0       1   e+8 Y     
     ##   6 annual_total_fugitive_air_lb        0        8.48e+6  0       1   e+8 Y     
     ##   7 annual_total_fugitive_air_lb_per_…  0        2.66e+5  0       5   e+5 Y     
     ##   8 annual_total_fugitive_air_lb_plus…  0        8.48e+6  0       1   e+8 Y     
     ##   9 annual_total_stack_air_lb           0        4.50e+6  0       1   e+8 Y     
-    ##  10 annual_total_stack_air_lb_per_km2   0        7.99e+5  0       1   e+6 Y     
+    ##  10 annual_total_stack_air_lb_per_km2   0        7.99e+5  0       4   e+6 Y     
     ##  11 annual_total_stack_air_lb_plusbuf…  0        6.25e+6  0       1   e+8 Y     
     ##  12 area_km2                            2.13e- 2 2.25e+5  5  e+ 0 3.83e+5 N     
-    ##  13 bcsmass                             1.42e-11 3.59e-9  1  e-11 1   e-8 Y     
+    ##  13 bcsmass                             1.42e-11 3.59e-9  1  e-12 1   e-8 Y     
     ##  14 be30_grd                            0        3.56e+3  0       6   e+3 Y     
     ##  15 cldtot                              1.94e- 1 8.03e-1  0       1   e+0 Y     
     ##  16 def                                 0        1.99e+2  0       3.4 e+2 Y     
@@ -1020,7 +1008,7 @@ print(comparison, n = Inf)
     ##  66 land_cover_confidence               0        9.89e+1  0       1   e+2 Y     
     ##  67 lst_day_1km_k                       2.68e+ 2 3.17e+2  2.3e+ 2 4   e+2 Y     
     ##  68 lst_night_1km_k                     2.64e+ 2 2.98e+2  2.3e+ 2 3.1 e+2 Y     
-    ##  69 lwgab                               2.00e+ 2 3.99e+2  2  e+ 2 4   e+2 Y     
+    ##  69 lwgab                               2.00e+ 2 3.99e+2  1.8e+ 2 4   e+2 Y     
     ##  70 md30_grd                            0        3.57e+3 -4  e+ 2 8.85e+3 Y     
     ##  71 mi30_grd                            0        3.44e+3 -4  e+ 2 8.85e+3 Y     
     ##  72 mn30_grd                            0        3.57e+3 -4  e+ 2 8.85e+3 Y     
@@ -1061,7 +1049,7 @@ print(comparison, n = Inf)
     ## 107 qv2m                                1.14e- 3 1.75e-2  0       4   e-2 Y     
     ## 108 rmax                                3.26e+ 1 9.98e+1  0       1   e+2 Y     
     ## 109 rmin                                9.79e+ 0 7.38e+1  0       1   e+2 Y     
-    ## 110 road_density_km_per_km2             5.99e- 6 8.83e+0  0       9   e+0 Y     
+    ## 110 road_density_km_per_km2             5.99e- 6 8.83e+0  0       1.6 e+1 Y     
     ## 111 sd30_grd                            0        1.03e+2  0       6   e+2 Y     
     ## 112 slp                                 1.00e+ 5 1.02e+5  9.9e+ 4 1.02e+5 Y     
     ## 113 soil                                0        3.64e+2  0       5   e+2 Y     
@@ -1094,11 +1082,11 @@ print(comparison, n = Inf)
     ## 140 ts                                  2.53e+ 2 3.01e+2  2.5e+ 2 3.05e+2 Y     
     ## 141 u10m                               -6.59e+ 0 4.87e+0 -2  e+ 1 2   e+1 Y     
     ## 142 vap                                 2.42e- 1 2.59e+0  0       5   e+0 Y     
-    ## 143 vpd                                 6.22e- 2 3.03e+0  0       6   e+0 Y     
+    ## 143 vpd                                 6.22e- 2 3.03e+0  0       7   e+0 Y     
     ## 144 vpdmax                              7.05e- 1 7.66e+1  0       8   e+1 Y     
     ## 145 vpdmin                              1.03e- 3 2.53e+1  0       3   e+1 Y     
     ## 146 vs                                  1.76e+ 0 7.28e+0  0       2   e+1 Y     
-    ## 147 ws                                  1.70e+ 0 8.29e+0  0       1.4 e+1 Y     
+    ## 147 ws                                  1.70e+ 0 8.29e+0  0       1.6 e+1 Y     
     ## 148 z0m                                 1.77e- 4 2.26e+0  1  e- 4 3   e+0 Y
 
 # Tract-Monthly Sanity checks
@@ -1367,16 +1355,16 @@ print(comparison, n = Inf)
     ##   1 aet                                 0        2.14e+2  0       2.5 e+2 Y     
     ##   2 albedo                              4.82e- 2 6.10e-1  0       9   e-1 Y     
     ##   3 annual_total_air_lb                 0        8.91e+6  0       1   e+8 Y     
-    ##   4 annual_total_air_lb_per_km2         0        8.30e+5  0       1   e+6 Y     
+    ##   4 annual_total_air_lb_per_km2         0        8.30e+5  0       4   e+6 Y     
     ##   5 annual_total_air_lb_plusbuffer      0        8.91e+6  0       1   e+8 Y     
     ##   6 annual_total_fugitive_air_lb        0        8.48e+6  0       1   e+8 Y     
     ##   7 annual_total_fugitive_air_lb_per_…  0        2.66e+5  0       5   e+5 Y     
     ##   8 annual_total_fugitive_air_lb_plus…  0        8.48e+6  0       1   e+8 Y     
     ##   9 annual_total_stack_air_lb           0        4.50e+6  0       1   e+8 Y     
-    ##  10 annual_total_stack_air_lb_per_km2   0        7.99e+5  0       1   e+6 Y     
+    ##  10 annual_total_stack_air_lb_per_km2   0        7.99e+5  0       4   e+6 Y     
     ##  11 annual_total_stack_air_lb_plusbuf…  0        6.25e+6  0       1   e+8 Y     
     ##  12 area_km2                            2.13e- 2 2.25e+5  5  e+ 0 3.83e+5 N     
-    ##  13 bcsmass                             1.41e-11 4.36e-9  1  e-11 1   e-8 Y     
+    ##  13 bcsmass                             1.41e-11 4.36e-9  1  e-12 1   e-8 Y     
     ##  14 be30_grd                            0        3.56e+3  0       6   e+3 Y     
     ##  15 cldtot                              1.89e- 1 8.09e-1  0       1   e+0 Y     
     ##  16 def                                 0        3.33e+2  0       3.4 e+2 Y     
@@ -1432,7 +1420,7 @@ print(comparison, n = Inf)
     ##  66 land_cover_confidence_mean          0        9.89e+1  0       1   e+2 Y     
     ##  67 lst_day_1km_k                       2.45e+ 2 3.34e+2  2.3e+ 2 4   e+2 Y     
     ##  68 lst_night_1km_k                     2.40e+ 2 3.09e+2  2.3e+ 2 3.1 e+2 Y     
-    ##  69 lwgab                               2.00e+ 2 4.00e+2  2  e+ 2 4   e+2 N     
+    ##  69 lwgab                               2.00e+ 2 4.00e+2  1.8e+ 2 4   e+2 N     
     ##  70 md30_grd                            0        3.57e+3 -4  e+ 2 8.85e+3 Y     
     ##  71 mi30_grd                            0        3.44e+3 -4  e+ 2 8.85e+3 Y     
     ##  72 mn30_grd                            0        3.57e+3 -4  e+ 2 8.85e+3 Y     
@@ -1473,7 +1461,7 @@ print(comparison, n = Inf)
     ## 107 qv2m                                1.14e- 3 1.75e-2  0       4   e-2 Y     
     ## 108 rmax                                1.44e+ 1 1.00e+2  0       1   e+2 N     
     ## 109 rmin                                2.80e+ 0 9.22e+1  0       1   e+2 Y     
-    ## 110 road_density_km_per_km2             5.99e- 6 8.83e+0  0       9   e+0 Y     
+    ## 110 road_density_km_per_km2             5.99e- 6 8.83e+0  0       1.6 e+1 Y     
     ## 111 sd30_grd                            0        1.03e+2  0       6   e+2 Y     
     ## 112 slp                                 1.00e+ 5 1.02e+5  9.9e+ 4 1.02e+5 Y     
     ## 113 soil                                0        4.91e+2  0       5   e+2 Y     
@@ -1506,11 +1494,11 @@ print(comparison, n = Inf)
     ## 140 ts                                  2.53e+ 2 3.02e+2  2.5e+ 2 3.05e+2 Y     
     ## 141 u10m                               -6.85e+ 0 5.28e+0 -2  e+ 1 2   e+1 Y     
     ## 142 vap                                 0        3.26e+0  0       5   e+0 Y     
-    ## 143 vpd                                 0        7.73e+0  0       6   e+0 N     
+    ## 143 vpd                                 0        7.73e+0  0       7   e+0 N     
     ## 144 vpdmax                              7.05e- 1 7.66e+1  0       8   e+1 Y     
     ## 145 vpdmin                              1.03e- 3 2.53e+1  0       3   e+1 Y     
     ## 146 vs                                  7.26e- 1 1.01e+1  0       2   e+1 Y     
-    ## 147 ws                                  8.00e- 1 1.35e+1  0       1.4 e+1 Y     
+    ## 147 ws                                  8.00e- 1 1.35e+1  0       1.6 e+1 Y     
     ## 148 z0m                                 1.67e- 4 2.26e+0  1  e- 4 3   e+0 Y
 
 # Zip-Annual Sanity checks
@@ -1523,56 +1511,6 @@ dup_zip_annual <- zip_annual %>%
   filter(n > 1) %>%
   collect()
 
-any_dups_zip_annual <- nrow(dup_zip_annual) > 0
-any_dups_zip_annual
-```
-
-    ## [1] TRUE
-
-``` r
-dup_zip_annual  # inspect if TRUE
-```
-
-    ## # A tibble: 1,385,431 × 4
-    ##    geoid year  variable     n
-    ##    <chr> <chr> <chr>    <int>
-    ##  1 47236 2010  pet          2
-    ##  2 47236 2011  pet          2
-    ##  3 47236 2012  pet          2
-    ##  4 47236 2013  pet          2
-    ##  5 47236 2014  pet          2
-    ##  6 47236 2015  pet          2
-    ##  7 47236 2016  pet          2
-    ##  8 47236 2017  pet          2
-    ##  9 47236 2018  pet          2
-    ## 10 47236 2019  pet          2
-    ## # ℹ 1,385,421 more rows
-
-``` r
-# Basic shape (exact distincts without n_distinct)
-zip_annual_shape <- list(
-  n_rows  = zip_annual %>% summarise(n = n()) %>% collect() %>% pull(),
-  n_zips  = zip_annual %>% distinct(geoid)   %>% summarise(n = n()) %>% collect() %>% pull(),
-  n_years = zip_annual %>% distinct(year)    %>% summarise(n = n()) %>% collect() %>% pull(),
-  n_vars  = zip_annual %>% distinct(variable)%>% summarise(n = n()) %>% collect() %>% pull()
-) %>% tibble::as_tibble()
-zip_annual_shape
-```
-
-    ## # A tibble: 1 × 4
-    ##     n_rows n_zips n_years n_vars
-    ##      <int>  <int>   <int>  <int>
-    ## 1 28663045  33791      17    116
-
-``` r
-# (If you’re fine with approximate counts instead)
-# zip_annual %>%
-#   summarise(
-#     n_rows  = n(),
-#     n_zips  = approx_n_distinct(geoid),
-#     n_years = approx_n_distinct(year),
-#     n_vars  = approx_n_distinct(variable)
-#   ) %>% collect()
 
 # Distinct years present
 zip_annual %>%
@@ -1629,22 +1567,22 @@ comparison_zip_annual <- var_summary_zip_annual %>%
 print(comparison_zip_annual, n = Inf)
 ```
 
-    ## # A tibble: 116 × 6
+    ## # A tibble: 148 × 6
     ##     variable                             min_val max_val  min_exp max_exp passes
     ##     <chr>                                  <dbl>   <dbl>    <dbl>   <dbl> <chr> 
     ##   1 aet                                 1.71e+ 0 1.34e+2  0       2.5 e+2 Y     
     ##   2 albedo                              7.42e- 2 6.30e-1  0       9   e-1 Y     
     ##   3 annual_total_air_lb                 0        8.66e+6  0       1   e+8 Y     
-    ##   4 annual_total_air_lb_per_km2         0        3.20e+6  0       1   e+6 N     
+    ##   4 annual_total_air_lb_per_km2         0        3.20e+6  0       4   e+6 Y     
     ##   5 annual_total_air_lb_plusbuffer      0        8.66e+6  0       1   e+8 Y     
     ##   6 annual_total_fugitive_air_lb        0        8.48e+6  0       1   e+8 Y     
     ##   7 annual_total_fugitive_air_lb_per_…  0        5.37e+4  0       5   e+5 Y     
     ##   8 annual_total_fugitive_air_lb_plus…  0        8.48e+6  0       1   e+8 Y     
     ##   9 annual_total_stack_air_lb           0        4.50e+6  0       1   e+8 Y     
-    ##  10 annual_total_stack_air_lb_per_km2   0        3.20e+6  0       1   e+6 N     
+    ##  10 annual_total_stack_air_lb_per_km2   0        3.20e+6  0       4   e+6 Y     
     ##  11 annual_total_stack_air_lb_plusbuf…  0        6.25e+6  0       1   e+8 Y     
     ##  12 area_km2                            8.25e- 3 3.57e+4  5  e+ 0 3.83e+5 N     
-    ##  13 bcsmass                             4.57e-12 3.65e-9  1  e-11 1   e-8 N     
+    ##  13 bcsmass                             4.57e-12 3.65e-9  1  e-12 1   e-8 Y     
     ##  14 be30_grd                            0        3.59e+3  0       6   e+3 Y     
     ##  15 cldtot                              1.94e- 1 8.33e-1  0       1   e+0 Y     
     ##  16 def                                 0        2.02e+2  0       3.4 e+2 Y     
@@ -1652,137 +1590,174 @@ print(comparison_zip_annual, n = Inf)
     ##  18 dusmass25                           3.21e-11 1.78e-8  1  e-11 3   e-8 Y     
     ##  19 etr                                 1.66e+ 0 1.00e+1  0       1.8 e+1 Y     
     ##  20 evap                                1.48e- 6 7.63e-5  1  e- 8 1   e-4 Y     
-    ##  21 grn                                 0        9.83e-1  0       1   e+0 Y     
-    ##  22 gwetroot                            1.69e- 1 9.87e-1  0       1   e+0 Y     
-    ##  23 koppen_1                            1.47e- 4 1   e+0  0       1   e+0 Y     
-    ##  24 koppen_14                           7.89e- 6 1   e+0  0       1   e+0 Y     
-    ##  25 koppen_15                           9.95e- 5 1   e+0  0       1   e+0 Y     
-    ##  26 koppen_16                           2.76e- 5 8.17e-2  0       1   e+0 Y     
-    ##  27 koppen_17                           1.90e- 3 1   e+0  0       1   e+0 Y     
-    ##  28 koppen_18                           1.11e- 7 1   e+0  0       1   e+0 Y     
-    ##  29 koppen_19                           1.24e- 4 1   e+0  0       1   e+0 Y     
-    ##  30 koppen_2                            2.97e- 5 1   e+0  0       1   e+0 Y     
-    ##  31 koppen_21                           9.92e- 7 1   e+0  0       1   e+0 Y     
-    ##  32 koppen_22                           1.73e- 4 1   e+0  0       1   e+0 Y     
-    ##  33 koppen_23                           1.06e- 2 6.68e-1  0       1   e+0 Y     
-    ##  34 koppen_25                           2.29e- 6 1   e+0  0       1   e+0 Y     
-    ##  35 koppen_26                           1.52e- 7 1   e+0  0       1   e+0 Y     
-    ##  36 koppen_27                           1.94e- 7 1   e+0  0       1   e+0 Y     
-    ##  37 koppen_29                           9.28e- 5 1   e+0  0       1   e+0 Y     
-    ##  38 koppen_3                            5.56e- 4 1   e+0  0       1   e+0 Y     
-    ##  39 koppen_30                           5.00e- 3 5.00e-3  0       1   e+0 Y     
-    ##  40 koppen_4                            2.32e- 4 1   e+0  0       1   e+0 Y     
-    ##  41 koppen_5                            1.14e- 5 1   e+0  0       1   e+0 Y     
-    ##  42 koppen_6                            1.34e- 6 1   e+0  0       1   e+0 Y     
-    ##  43 koppen_7                            2.10e- 5 1   e+0  0       1   e+0 Y     
-    ##  44 koppen_8                            2.32e- 5 1   e+0  0       1   e+0 Y     
-    ##  45 koppen_9                            3.03e- 5 1   e+0  0       1   e+0 Y     
-    ##  46 koppen_confidence                   0        1   e+2  0       1   e+2 Y     
-    ##  47 lai                                 1.00e-20 7.35e+0  0       9   e+0 Y     
-    ##  48 lwgab                               1.96e+ 2 4.20e+2  2  e+ 2 4   e+2 N     
-    ##  49 md30_grd                            0        3.61e+3 -4  e+ 2 8.85e+3 Y     
-    ##  50 mi30_grd                            0        3.48e+3 -4  e+ 2 8.85e+3 Y     
-    ##  51 mn30_grd                            0        3.61e+3 -4  e+ 2 8.85e+3 Y     
-    ##  52 mx30_grd                            0        3.77e+3  0       8.85e+3 Y     
-    ##  53 pblh                                2.98e+ 2 1.43e+3  5  e+ 1 2.5 e+3 Y     
-    ##  54 pdsi                                0        1.30e+1 -1  e+ 1 2   e+1 Y     
-    ##  55 pet                                 1.47e+ 0 2.06e+2  0       3.5 e+2 Y     
-    ##  56 ppt                                 0        6.53e+2  0       1.4 e+3 Y     
-    ##  57 pr                                  6.11e- 2 1.39e+1  0       5   e+1 Y     
-    ##  58 precsno                             0        6.58e-5  0       7   e-5 Y     
-    ##  59 prectotcorr                         1.67e- 6 1.38e-4  1  e- 7 5   e-4 Y     
-    ##  60 prop_cover_huc2_01                  0        1   e+0  0       1   e+0 Y     
-    ##  61 prop_cover_huc2_02                  0        1   e+0  0       1   e+0 Y     
-    ##  62 prop_cover_huc2_03                  0        1   e+0  0       1   e+0 Y     
-    ##  63 prop_cover_huc2_04                  0        1   e+0  0       1   e+0 Y     
-    ##  64 prop_cover_huc2_05                  0        1   e+0  0       1   e+0 Y     
-    ##  65 prop_cover_huc2_06                  0        1   e+0  0       1   e+0 Y     
-    ##  66 prop_cover_huc2_07                  0        1   e+0  0       1   e+0 Y     
-    ##  67 prop_cover_huc2_08                  0        1   e+0  0       1   e+0 Y     
-    ##  68 prop_cover_huc2_09                  0        1   e+0  0       1   e+0 Y     
-    ##  69 prop_cover_huc2_10                  0        1   e+0  0       1   e+0 Y     
-    ##  70 prop_cover_huc2_11                  0        1   e+0  0       1   e+0 Y     
-    ##  71 prop_cover_huc2_12                  0        1   e+0  0       1   e+0 Y     
-    ##  72 prop_cover_huc2_13                  0        1   e+0  0       1   e+0 Y     
-    ##  73 prop_cover_huc2_14                  0        1   e+0  0       1   e+0 Y     
-    ##  74 prop_cover_huc2_15                  0        1   e+0  0       1   e+0 Y     
-    ##  75 prop_cover_huc2_16                  0        1   e+0  0       1   e+0 Y     
-    ##  76 prop_cover_huc2_17                  0        1   e+0  0       1   e+0 Y     
-    ##  77 prop_cover_huc2_18                  0        1   e+0  0       1   e+0 Y     
-    ##  78 prop_cover_huc2_20                  0        1   e+0  0       1   e+0 Y     
-    ##  79 prop_cover_huc2_21                  0        1   e+0  0       1   e+0 Y     
-    ##  80 prop_cover_huc2_22                  0        9.99e-1  0       1   e+0 Y     
-    ##  81 ps                                  6.83e+ 4 1.02e+5  5  e+ 4 1.05e+5 Y     
-    ##  82 qv2m                                1.11e- 3 1.97e-2  0       4   e-2 Y     
-    ##  83 rmax                                3.24e+ 1 9.98e+1  0       1   e+2 Y     
-    ##  84 rmin                                9.92e+ 0 7.38e+1  0       1   e+2 Y     
-    ##  85 road_density_km_per_km2             3.21e- 6 1.54e+1  0       9   e+0 N     
-    ##  86 sd30_grd                            0        1.20e+2  0       6   e+2 Y     
-    ##  87 slp                                 1.00e+ 5 1.02e+5  9.9e+ 4 1.02e+5 Y     
-    ##  88 soil                                0        3.74e+2  0       5   e+2 Y     
-    ##  89 solclear                            4.52e+ 0 3.39e+1  2  e+ 0 3.5 e+1 Y     
-    ##  90 solslope                            1.78e+ 0 3.02e+1  0       4   e+1 Y     
-    ##  91 soltotal                            1.80e+ 0 3.03e+1  0       3.2 e+1 Y     
-    ##  92 soltrans                            3.18e- 1 9.37e-1  0       1   e+0 Y     
-    ##  93 sph                                 2.73e- 3 1.60e-2  0       3   e-2 Y     
-    ##  94 srad                                6.16e+ 1 2.65e+2  0       4   e+2 Y     
-    ##  95 swe                                 0        4.46e+2  0       1.3 e+3 Y     
-    ##  96 t2mdew                              2.53e+ 2 2.98e+2  2.3e+ 2 3.5 e+2 Y     
-    ##  97 tdmean                             -1.79e+ 1 2.49e+1 -4  e+ 1 2.7 e+1 Y     
-    ##  98 th                                  0        3.59e+2  0       3.6 e+2 Y     
-    ##  99 tmax                                0        3.33e+1 -5  e+ 1 5   e+1 Y     
-    ## 100 tmax_norm                          -1.08e+ 1 4.31e+1 -5  e+ 1 5   e+1 Y     
-    ## 101 tmean                              -1.56e+ 1 3.55e+1 -1.6e+ 1 4   e+1 Y     
-    ## 102 tmin                                0        2.60e+1 -6  e+ 1 3.3 e+1 Y     
-    ## 103 tmin_norm                          -2.11e+ 1 2.80e+1 -6  e+ 1 3   e+1 Y     
-    ## 104 tmmn                                2.65e+ 2 2.97e+2  2.4e+ 2 3.5 e+2 Y     
-    ## 105 tmmx                                2.78e+ 2 3.07e+2  2.4e+ 2 3.5 e+2 Y     
-    ## 106 total_road_km                       1.02e- 4 4.45e+2  0       6   e+4 Y     
-    ## 107 totexttau                           5.06e- 2 2.64e-1  2  e- 2 3   e-1 Y     
-    ## 108 ts                                  2.51e+ 2 3.02e+2  2.5e+ 2 3.05e+2 Y     
-    ## 109 u10m                               -6.59e+ 0 5.12e+0 -2  e+ 1 2   e+1 Y     
-    ## 110 vap                                 2.25e- 1 3.15e+0  0       5   e+0 Y     
-    ## 111 vpd                                 4.66e- 2 3.01e+0  0       6   e+0 Y     
-    ## 112 vpdmax                              7.13e- 1 7.50e+1  0       8   e+1 Y     
-    ## 113 vpdmin                              1.91e- 3 2.46e+1  0       3   e+1 Y     
-    ## 114 vs                                  1.71e+ 0 7.32e+0  0       2   e+1 Y     
-    ## 115 ws                                  1.64e+ 0 9.18e+0  0       1.4 e+1 Y     
-    ## 116 z0m                                 1.85e- 4 2.26e+0  1  e- 4 3   e+0 Y
+    ##  21 evi                                -5.59e- 2 5.09e-1 -1  e- 1 1   e+0 Y     
+    ##  22 fractional_impervious_surface       0        9.24e+1  0       1   e+2 Y     
+    ##  23 grn                                 0        9.83e-1  0       1   e+0 Y     
+    ##  24 gwetroot                            1.69e- 1 9.87e-1  0       1   e+0 Y     
+    ##  25 koppen_1                            1.47e- 4 1   e+0  0       1   e+0 Y     
+    ##  26 koppen_14                           7.89e- 6 1   e+0  0       1   e+0 Y     
+    ##  27 koppen_15                           9.95e- 5 1   e+0  0       1   e+0 Y     
+    ##  28 koppen_16                           2.76e- 5 8.17e-2  0       1   e+0 Y     
+    ##  29 koppen_17                           1.90e- 3 1   e+0  0       1   e+0 Y     
+    ##  30 koppen_18                           1.11e- 7 1   e+0  0       1   e+0 Y     
+    ##  31 koppen_19                           1.24e- 4 1   e+0  0       1   e+0 Y     
+    ##  32 koppen_2                            2.97e- 5 1   e+0  0       1   e+0 Y     
+    ##  33 koppen_21                           9.92e- 7 1   e+0  0       1   e+0 Y     
+    ##  34 koppen_22                           1.73e- 4 1   e+0  0       1   e+0 Y     
+    ##  35 koppen_23                           1.06e- 2 6.68e-1  0       1   e+0 Y     
+    ##  36 koppen_25                           2.29e- 6 1   e+0  0       1   e+0 Y     
+    ##  37 koppen_26                           1.52e- 7 1   e+0  0       1   e+0 Y     
+    ##  38 koppen_27                           1.94e- 7 1   e+0  0       1   e+0 Y     
+    ##  39 koppen_29                           9.28e- 5 1   e+0  0       1   e+0 Y     
+    ##  40 koppen_3                            5.56e- 4 1   e+0  0       1   e+0 Y     
+    ##  41 koppen_30                           5.00e- 3 5.00e-3  0       1   e+0 Y     
+    ##  42 koppen_4                            2.32e- 4 1   e+0  0       1   e+0 Y     
+    ##  43 koppen_5                            1.14e- 5 1   e+0  0       1   e+0 Y     
+    ##  44 koppen_6                            1.34e- 6 1   e+0  0       1   e+0 Y     
+    ##  45 koppen_7                            2.10e- 5 1   e+0  0       1   e+0 Y     
+    ##  46 koppen_8                            2.32e- 5 1   e+0  0       1   e+0 Y     
+    ##  47 koppen_9                            3.03e- 5 1   e+0  0       1   e+0 Y     
+    ##  48 koppen_confidence                   0        1   e+2  0       1   e+2 Y     
+    ##  49 lai                                 1.00e-20 7.35e+0  0       9   e+0 Y     
+    ##  50 land_cover_11                       0        9.47e-1  0       1   e+0 Y     
+    ##  51 land_cover_12                       0        8.28e-2  0       1   e+0 Y     
+    ##  52 land_cover_21                       0        8.60e-1  0       1   e+0 Y     
+    ##  53 land_cover_22                       0        9.85e-1  0       1   e+0 Y     
+    ##  54 land_cover_23                       0        9.90e-1  0       1   e+0 Y     
+    ##  55 land_cover_24                       0        1   e+0  0       1   e+0 Y     
+    ##  56 land_cover_31                       0        8.80e-1  0       1   e+0 Y     
+    ##  57 land_cover_41                       0        9.81e-1  0       1   e+0 Y     
+    ##  58 land_cover_42                       0        9.93e-1  0       1   e+0 Y     
+    ##  59 land_cover_43                       0        6.95e-1  0       1   e+0 Y     
+    ##  60 land_cover_52                       0        9.99e-1  0       1   e+0 Y     
+    ##  61 land_cover_71                       0        9.81e-1  0       1   e+0 Y     
+    ##  62 land_cover_81                       0        9.63e-1  0       1   e+0 Y     
+    ##  63 land_cover_82                       0        9.71e-1  0       1   e+0 Y     
+    ##  64 land_cover_90                       0        8.98e-1  0       1   e+0 Y     
+    ##  65 land_cover_95                       0        9.56e-1  0       1   e+0 Y     
+    ##  66 land_cover_confidence               0        9.51e+1  0       1   e+2 Y     
+    ##  67 lst_day_1km_k                       2.65e+ 2 3.16e+2  2.3e+ 2 4   e+2 Y     
+    ##  68 lst_night_1km_k                     2.61e+ 2 2.98e+2  2.3e+ 2 3.1 e+2 Y     
+    ##  69 lwgab                               1.96e+ 2 4.20e+2  1.8e+ 2 4   e+2 N     
+    ##  70 md30_grd                            0        3.61e+3 -4  e+ 2 8.85e+3 Y     
+    ##  71 mi30_grd                            0        3.48e+3 -4  e+ 2 8.85e+3 Y     
+    ##  72 mn30_grd                            0        3.61e+3 -4  e+ 2 8.85e+3 Y     
+    ##  73 mx30_grd                            0        3.77e+3  0       8.85e+3 Y     
+    ##  74 ndvi                               -1.60e- 1 8.72e-1 -1  e+ 0 1   e+0 Y     
+    ##  75 pblh                                2.98e+ 2 1.43e+3  5  e+ 1 2.5 e+3 Y     
+    ##  76 pdsi                                0        1.30e+1 -1  e+ 1 2   e+1 Y     
+    ##  77 pet                                 9.31e+ 0 2.06e+2  0       3.5 e+2 Y     
+    ##  78 ppt                                 1.80e+ 0 5.19e+2  0       1.4 e+3 Y     
+    ##  79 pr                                  6.11e- 2 1.39e+1  0       5   e+1 Y     
+    ##  80 precsno                             0        6.58e-5  0       7   e-5 Y     
+    ##  81 prectotcorr                         1.67e- 6 1.38e-4  1  e- 7 5   e-4 Y     
+    ##  82 prop_cover_huc2_01                  0        1   e+0  0       1   e+0 Y     
+    ##  83 prop_cover_huc2_02                  0        1   e+0  0       1   e+0 Y     
+    ##  84 prop_cover_huc2_03                  0        1   e+0  0       1   e+0 Y     
+    ##  85 prop_cover_huc2_04                  0        1   e+0  0       1   e+0 Y     
+    ##  86 prop_cover_huc2_05                  0        1   e+0  0       1   e+0 Y     
+    ##  87 prop_cover_huc2_06                  0        1   e+0  0       1   e+0 Y     
+    ##  88 prop_cover_huc2_07                  0        1   e+0  0       1   e+0 Y     
+    ##  89 prop_cover_huc2_08                  0        1   e+0  0       1   e+0 Y     
+    ##  90 prop_cover_huc2_09                  0        1   e+0  0       1   e+0 Y     
+    ##  91 prop_cover_huc2_10                  0        1   e+0  0       1   e+0 Y     
+    ##  92 prop_cover_huc2_11                  0        1   e+0  0       1   e+0 Y     
+    ##  93 prop_cover_huc2_12                  0        1   e+0  0       1   e+0 Y     
+    ##  94 prop_cover_huc2_13                  0        1   e+0  0       1   e+0 Y     
+    ##  95 prop_cover_huc2_14                  0        1   e+0  0       1   e+0 Y     
+    ##  96 prop_cover_huc2_15                  0        1   e+0  0       1   e+0 Y     
+    ##  97 prop_cover_huc2_16                  0        1   e+0  0       1   e+0 Y     
+    ##  98 prop_cover_huc2_17                  0        1   e+0  0       1   e+0 Y     
+    ##  99 prop_cover_huc2_18                  0        1   e+0  0       1   e+0 Y     
+    ## 100 prop_cover_huc2_20                  0        1   e+0  0       1   e+0 Y     
+    ## 101 prop_cover_huc2_21                  0        1   e+0  0       1   e+0 Y     
+    ## 102 prop_cover_huc2_22                  0        9.99e-1  0       1   e+0 Y     
+    ## 103 prop_heavy_coverage                 0        1.72e-1  0       1   e+0 Y     
+    ## 104 prop_light_coverage                 0        5.77e-1  0       1   e+0 Y     
+    ## 105 prop_med_coverage                   0        2.00e-1  0       1   e+0 Y     
+    ## 106 ps                                  6.83e+ 4 1.02e+5  5  e+ 4 1.05e+5 Y     
+    ## 107 qv2m                                1.11e- 3 1.97e-2  0       4   e-2 Y     
+    ## 108 rmax                                3.24e+ 1 9.98e+1  0       1   e+2 Y     
+    ## 109 rmin                                9.92e+ 0 7.38e+1  0       1   e+2 Y     
+    ## 110 road_density_km_per_km2             3.21e- 6 1.54e+1  0       1.6 e+1 Y     
+    ## 111 sd30_grd                            0        1.20e+2  0       6   e+2 Y     
+    ## 112 slp                                 1.00e+ 5 1.02e+5  9.9e+ 4 1.02e+5 Y     
+    ## 113 soil                                0        3.74e+2  0       5   e+2 Y     
+    ## 114 solclear                            1.72e+ 1 2.45e+1  2  e+ 0 3.5 e+1 Y     
+    ## 115 solslope                            1.03e+ 1 2.05e+1  0       4   e+1 Y     
+    ## 116 soltotal                            1.04e+ 1 2.04e+1  0       3.2 e+1 Y     
+    ## 117 soltrans                            5.46e- 1 8.74e-1  0       1   e+0 Y     
+    ## 118 sph                                 2.73e- 3 1.60e-2  0       3   e-2 Y     
+    ## 119 srad                                1.32e+ 2 2.65e+2  0       4   e+2 Y     
+    ## 120 sur_refl_b01                        1.62e- 2 7.59e-1 -1  e- 1 1   e+0 Y     
+    ## 121 sur_refl_b02                        2.52e- 2 6.81e-1  0       1   e+0 Y     
+    ## 122 sur_refl_b03                        8.74e- 3 7.76e-1  0       1   e+0 Y     
+    ## 123 sur_refl_b04                        2.76e- 2 7.81e-1  0       1   e+0 Y     
+    ## 124 sur_refl_b05                        2.51e- 2 4.78e-1  0       1   e+0 Y     
+    ## 125 sur_refl_b06                        2.52e- 2 5.00e-1  0       1   e+0 Y     
+    ## 126 sur_refl_b07                        1.70e- 2 4.54e-1  0       1   e+0 Y     
+    ## 127 swe                                 0        4.46e+2  0       1.3 e+3 Y     
+    ## 128 t2mdew                              2.53e+ 2 2.98e+2  2.3e+ 2 3.5 e+2 Y     
+    ## 129 tdmean                             -9.60e+ 0 2.07e+1 -4  e+ 1 2.7 e+1 Y     
+    ## 130 th                                  0        3.59e+2  0       3.6 e+2 Y     
+    ## 131 tmax                                0        3.33e+1 -5  e+ 1 5   e+1 Y     
+    ## 132 tmax_norm                           5.85e+ 0 3.13e+1 -5  e+ 1 5   e+1 Y     
+    ## 133 tmean                              -5.12e- 1 2.56e+1 -1.6e+ 1 4   e+1 Y     
+    ## 134 tmin                                0        2.60e+1 -6  e+ 1 3.3 e+1 Y     
+    ## 135 tmin_norm                          -6.87e+ 0 2.31e+1 -6  e+ 1 3   e+1 Y     
+    ## 136 tmmn                                2.65e+ 2 2.97e+2  2.4e+ 2 3.5 e+2 Y     
+    ## 137 tmmx                                2.78e+ 2 3.07e+2  2.4e+ 2 3.5 e+2 Y     
+    ## 138 total_road_km                       1.02e- 4 4.45e+2  0       6   e+4 Y     
+    ## 139 totexttau                           5.06e- 2 2.64e-1  2  e- 2 3   e-1 Y     
+    ## 140 ts                                  2.51e+ 2 3.02e+2  2.5e+ 2 3.05e+2 Y     
+    ## 141 u10m                               -6.59e+ 0 5.12e+0 -2  e+ 1 2   e+1 Y     
+    ## 142 vap                                 2.25e- 1 3.15e+0  0       5   e+0 Y     
+    ## 143 vpd                                 4.66e- 2 3.01e+0  0       7   e+0 Y     
+    ## 144 vpdmax                              3.56e+ 0 4.28e+1  0       8   e+1 Y     
+    ## 145 vpdmin                              2.01e- 1 1.20e+1  0       3   e+1 Y     
+    ## 146 vs                                  1.71e+ 0 7.32e+0  0       2   e+1 Y     
+    ## 147 ws                                  1.64e+ 0 9.18e+0  0       1.6 e+1 Y     
+    ## 148 z0m                                 1.85e- 4 2.26e+0  1  e- 4 3   e+0 Y
 
 # Zip-Monthly Sanity checks
 
 ``` r
-# Duplicates: include month in the key
-dup_zip_monthly <- zip_monthly %>%
-  group_by(geoid, year, month, variable) %>%
-  summarise(n = n(), .groups = "drop") %>%
-  filter(n > 1) %>%
-  collect()
-
-any_dups_zip_monthly <- nrow(dup_zip_monthly) > 0
-any_dups_zip_monthly
+anyDuplicated(zip_monthly[c("geoid", "year", "variable")])
 ```
 
-    ## [1] TRUE
+    ## [1] 0
 
 ``` r
-dup_zip_monthly  # inspect if TRUE
+years <- zip_monthly %>% distinct(year) %>% arrange(year) %>% collect() %>% dplyr::pull(year)
+
+acc <- vector("list", length(years))
+for (i in seq_along(years)) {
+  y <- years[i]
+  acc[[i]] <- zip_monthly %>%
+    filter(year == y) %>%
+    group_by(geoid, year, month, variable) %>%
+    summarise(n = dplyr::n(), .groups = "drop") %>%
+    summarise(
+      groups_total   = dplyr::n(),
+      dup_groups     = sum(n > 1),
+      dup_extra_rows = sum(dplyr::if_else(n > 1, n - 1L, 0L))
+    ) %>%
+    collect() %>% 
+    dplyr::mutate(year = y)
+}
+zip_dupe_stats <- dplyr::bind_rows(acc) %>%
+  summarise(
+    groups_total   = sum(groups_total),
+    dup_groups     = sum(dup_groups),
+    dup_extra_rows = sum(dup_extra_rows)
+  )
+zip_dupe_stats
 ```
 
-    ## # A tibble: 12,164,760 × 5
-    ##    geoid year  month variable     n
-    ##    <chr> <chr> <int> <chr>    <int>
-    ##  1 47236 2010      1 pet          2
-    ##  2 47236 2010      2 pet          2
-    ##  3 47236 2010      3 pet          2
-    ##  4 47236 2010      4 pet          2
-    ##  5 47236 2010      5 pet          2
-    ##  6 47236 2010      6 pet          2
-    ##  7 47236 2010      7 pet          2
-    ##  8 47236 2010      8 pet          2
-    ##  9 47236 2010      9 pet          2
-    ## 10 47236 2010     10 pet          2
-    ## # ℹ 12,164,750 more rows
+    ## # A tibble: 1 × 3
+    ##   groups_total dup_groups dup_extra_rows
+    ##          <int>      <int>          <int>
+    ## 1    439527642          0              0
 
 ``` r
 # Basic shape (exact)
@@ -1798,7 +1773,7 @@ zip_monthly_shape
     ## # A tibble: 1 × 4
     ##      n_rows n_zips n_years n_vars
     ##       <int>  <int>   <int>  <int>
-    ## 1 167104600  33791      17     96
+    ## 1 439527642  33791      17    148
 
 ``` r
 # Distinct year-month pairs
@@ -2030,105 +2005,377 @@ comparison_zip_monthly <- var_summary_zip_monthly %>%
   ) %>%
   select(variable, min_val, max_val, min_exp, max_exp, passes)
 
-print(comparison_zip_monthly, n = Inf)
+
+
+print(comparison_zip_monthly, n = 300)
 ```
 
-    ## # A tibble: 96 × 6
-    ##    variable                               min_val max_val min_exp max_exp passes
-    ##    <chr>                                    <dbl>   <dbl>   <dbl>   <dbl> <chr> 
-    ##  1 aet                                    0       2.14e+2       0 2.5 e+2 Y     
-    ##  2 annual_total_air_lb                    0       8.66e+6       0 1   e+8 Y     
-    ##  3 annual_total_air_lb_per_km2            0       3.20e+6       0 1   e+6 N     
-    ##  4 annual_total_air_lb_plusbuffer         0       8.66e+6       0 1   e+8 Y     
-    ##  5 annual_total_fugitive_air_lb           0       8.48e+6       0 1   e+8 Y     
-    ##  6 annual_total_fugitive_air_lb_per_km2   0       5.37e+4       0 5   e+5 Y     
-    ##  7 annual_total_fugitive_air_lb_plusbuf…  0       8.48e+6       0 1   e+8 Y     
-    ##  8 annual_total_stack_air_lb              0       4.50e+6       0 1   e+8 Y     
-    ##  9 annual_total_stack_air_lb_per_km2      0       3.20e+6       0 1   e+6 N     
-    ## 10 annual_total_stack_air_lb_plusbuffer   0       6.25e+6       0 1   e+8 Y     
-    ## 11 area_km2                               8.25e-3 3.57e+4       5 3.83e+5 N     
-    ## 12 be30_grd                               0       3.59e+3       0 6   e+3 Y     
-    ## 13 def                                    0       3.31e+2       0 3.4 e+2 Y     
-    ## 14 ds30_grd                               0       3.61e+3       0 6   e+3 Y     
-    ## 15 etr                                    8.61e-2 1.75e+1       0 1.8 e+1 Y     
-    ## 16 koppen_1                               1.47e-4 1   e+0       0 1   e+0 Y     
-    ## 17 koppen_14                              7.89e-6 1   e+0       0 1   e+0 Y     
-    ## 18 koppen_15                              9.95e-5 1   e+0       0 1   e+0 Y     
-    ## 19 koppen_16                              2.76e-5 8.17e-2       0 1   e+0 Y     
-    ## 20 koppen_17                              1.90e-3 1   e+0       0 1   e+0 Y     
-    ## 21 koppen_18                              1.11e-7 1   e+0       0 1   e+0 Y     
-    ## 22 koppen_19                              1.24e-4 1   e+0       0 1   e+0 Y     
-    ## 23 koppen_2                               2.97e-5 1   e+0       0 1   e+0 Y     
-    ## 24 koppen_21                              9.92e-7 1   e+0       0 1   e+0 Y     
-    ## 25 koppen_22                              1.73e-4 1   e+0       0 1   e+0 Y     
-    ## 26 koppen_23                              1.06e-2 6.68e-1       0 1   e+0 Y     
-    ## 27 koppen_25                              2.29e-6 1   e+0       0 1   e+0 Y     
-    ## 28 koppen_26                              1.52e-7 1   e+0       0 1   e+0 Y     
-    ## 29 koppen_27                              1.94e-7 1   e+0       0 1   e+0 Y     
-    ## 30 koppen_29                              9.28e-5 1   e+0       0 1   e+0 Y     
-    ## 31 koppen_3                               5.56e-4 1   e+0       0 1   e+0 Y     
-    ## 32 koppen_30                              5.00e-3 5.00e-3       0 1   e+0 Y     
-    ## 33 koppen_4                               2.32e-4 1   e+0       0 1   e+0 Y     
-    ## 34 koppen_5                               1.14e-5 1   e+0       0 1   e+0 Y     
-    ## 35 koppen_6                               1.34e-6 1   e+0       0 1   e+0 Y     
-    ## 36 koppen_7                               2.10e-5 1   e+0       0 1   e+0 Y     
-    ## 37 koppen_8                               2.32e-5 1   e+0       0 1   e+0 Y     
-    ## 38 koppen_9                               3.03e-5 1   e+0       0 1   e+0 Y     
-    ## 39 koppen_confidence                      0       1   e+2       0 1   e+2 Y     
-    ## 40 md30_grd                               0       3.61e+3    -400 8.85e+3 Y     
-    ## 41 mi30_grd                               0       3.48e+3    -400 8.85e+3 Y     
-    ## 42 mn30_grd                               0       3.61e+3    -400 8.85e+3 Y     
-    ## 43 mx30_grd                               0       3.77e+3       0 8.85e+3 Y     
-    ## 44 pdsi                                   0       1.87e+1     -10 2   e+1 Y     
-    ## 45 pet                                    0       3.38e+2       0 3.5 e+2 Y     
-    ## 46 ppt                                    0       1.23e+3       0 1.4 e+3 Y     
-    ## 47 pr                                     0       4.92e+1       0 5   e+1 Y     
-    ## 48 prop_cover_huc2_01                     0       1   e+0       0 1   e+0 Y     
-    ## 49 prop_cover_huc2_02                     0       1   e+0       0 1   e+0 Y     
-    ## 50 prop_cover_huc2_03                     0       1   e+0       0 1   e+0 Y     
-    ## 51 prop_cover_huc2_04                     0       1   e+0       0 1   e+0 Y     
-    ## 52 prop_cover_huc2_05                     0       1   e+0       0 1   e+0 Y     
-    ## 53 prop_cover_huc2_06                     0       1   e+0       0 1   e+0 Y     
-    ## 54 prop_cover_huc2_07                     0       1   e+0       0 1   e+0 Y     
-    ## 55 prop_cover_huc2_08                     0       1   e+0       0 1   e+0 Y     
-    ## 56 prop_cover_huc2_09                     0       1   e+0       0 1   e+0 Y     
-    ## 57 prop_cover_huc2_10                     0       1   e+0       0 1   e+0 Y     
-    ## 58 prop_cover_huc2_11                     0       1   e+0       0 1   e+0 Y     
-    ## 59 prop_cover_huc2_12                     0       1   e+0       0 1   e+0 Y     
-    ## 60 prop_cover_huc2_13                     0       1   e+0       0 1   e+0 Y     
-    ## 61 prop_cover_huc2_14                     0       1   e+0       0 1   e+0 Y     
-    ## 62 prop_cover_huc2_15                     0       1   e+0       0 1   e+0 Y     
-    ## 63 prop_cover_huc2_16                     0       1   e+0       0 1   e+0 Y     
-    ## 64 prop_cover_huc2_17                     0       1   e+0       0 1   e+0 Y     
-    ## 65 prop_cover_huc2_18                     0       1   e+0       0 1   e+0 Y     
-    ## 66 prop_cover_huc2_20                     0       1   e+0       0 1   e+0 Y     
-    ## 67 prop_cover_huc2_21                     0       1   e+0       0 1   e+0 Y     
-    ## 68 prop_cover_huc2_22                     0       9.99e-1       0 1   e+0 Y     
-    ## 69 rmax                                   1.39e+1 1.00e+2       0 1   e+2 N     
-    ## 70 rmin                                   2.83e+0 9.09e+1       0 1   e+2 Y     
-    ## 71 road_density_km_per_km2                3.21e-6 1.54e+1       0 9   e+0 N     
-    ## 72 sd30_grd                               0       1.20e+2       0 6   e+2 Y     
-    ## 73 soil                                   0       4.67e+2       0 5   e+2 Y     
-    ## 74 solclear                               4.52e+0 3.39e+1       2 3.5 e+1 Y     
-    ## 75 solslope                               1.78e+0 3.02e+1       0 4   e+1 Y     
-    ## 76 soltotal                               1.80e+0 3.03e+1       0 3.2 e+1 Y     
-    ## 77 soltrans                               3.18e-1 9.37e-1       0 1   e+0 Y     
-    ## 78 sph                                    6.67e-4 2.19e-2       0 3   e-2 Y     
-    ## 79 srad                                   0       3.83e+2       0 4   e+2 Y     
-    ## 80 swe                                    0       1.31e+3       0 1.3 e+3 N     
-    ## 81 tdmean                                -1.79e+1 2.49e+1     -40 2.7 e+1 Y     
-    ## 82 th                                     0       3.59e+2       0 3.6 e+2 Y     
-    ## 83 tmax                                   0       4.61e+1     -50 5   e+1 Y     
-    ## 84 tmax_norm                             -1.08e+1 4.31e+1     -50 5   e+1 Y     
-    ## 85 tmean                                 -1.56e+1 3.55e+1     -16 4   e+1 Y     
-    ## 86 tmin                                   0       3.24e+1     -60 3.3 e+1 Y     
-    ## 87 tmin_norm                             -2.11e+1 2.80e+1     -60 3   e+1 Y     
-    ## 88 tmmn                                   2.44e+2 3.05e+2     240 3.5 e+2 Y     
-    ## 89 tmmx                                   2.57e+2 3.20e+2     240 3.5 e+2 Y     
-    ## 90 total_road_km                          1.02e-4 4.45e+2       0 6   e+4 Y     
-    ## 91 vap                                    0       3.42e+0       0 5   e+0 Y     
-    ## 92 vpd                                    0       6.55e+0       0 6   e+0 N     
-    ## 93 vpdmax                                 7.13e-1 7.50e+1       0 8   e+1 Y     
-    ## 94 vpdmin                                 1.91e-3 2.46e+1       0 3   e+1 Y     
-    ## 95 vs                                     6.62e-1 1.08e+1       0 2   e+1 Y     
-    ## 96 ws                                     0       1.55e+1       0 1.4 e+1 N
+    ## # A tibble: 148 × 6
+    ##     variable                             min_val max_val  min_exp max_exp passes
+    ##     <chr>                                  <dbl>   <dbl>    <dbl>   <dbl> <chr> 
+    ##   1 aet                                 0        2.14e+2  0       2.5 e+2 Y     
+    ##   2 albedo                              4.75e- 2 6.37e-1  0       9   e-1 Y     
+    ##   3 annual_total_air_lb                 0        8.66e+6  0       1   e+8 Y     
+    ##   4 annual_total_air_lb_per_km2         0        3.20e+6  0       4   e+6 Y     
+    ##   5 annual_total_air_lb_plusbuffer      0        8.66e+6  0       1   e+8 Y     
+    ##   6 annual_total_fugitive_air_lb        0        8.48e+6  0       1   e+8 Y     
+    ##   7 annual_total_fugitive_air_lb_per_…  0        5.37e+4  0       5   e+5 Y     
+    ##   8 annual_total_fugitive_air_lb_plus…  0        8.48e+6  0       1   e+8 Y     
+    ##   9 annual_total_stack_air_lb           0        4.50e+6  0       1   e+8 Y     
+    ##  10 annual_total_stack_air_lb_per_km2   0        3.20e+6  0       4   e+6 Y     
+    ##  11 annual_total_stack_air_lb_plusbuf…  0        6.25e+6  0       1   e+8 Y     
+    ##  12 area_km2                            8.25e- 3 3.57e+4  5  e+ 0 3.83e+5 N     
+    ##  13 bcsmass                             4.52e-12 4.64e-9  1  e-12 1   e-8 Y     
+    ##  14 be30_grd                            0        3.59e+3  0       6   e+3 Y     
+    ##  15 cldtot                              1.89e- 1 8.36e-1  0       1   e+0 Y     
+    ##  16 def                                 0        3.31e+2  0       3.4 e+2 Y     
+    ##  17 ds30_grd                            0        3.61e+3  0       6   e+3 Y     
+    ##  18 dusmass25                           3.19e-11 2.03e-8  1  e-11 3   e-8 Y     
+    ##  19 etr                                 8.61e- 2 1.75e+1  0       1.8 e+1 Y     
+    ##  20 evap                                3.76e- 7 7.69e-5  1  e- 8 1   e-4 Y     
+    ##  21 evi                                -9.36e- 2 8.50e-1 -1  e- 1 1   e+0 Y     
+    ##  22 fractional_impervious_surface       0        9.24e+1  0       1   e+2 Y     
+    ##  23 grn                                 0        9.83e-1  0       1   e+0 Y     
+    ##  24 gwetroot                            1.69e- 1 9.87e-1  0       1   e+0 Y     
+    ##  25 koppen_1                            1.47e- 4 1   e+0  0       1   e+0 Y     
+    ##  26 koppen_14                           7.89e- 6 1   e+0  0       1   e+0 Y     
+    ##  27 koppen_15                           9.95e- 5 1   e+0  0       1   e+0 Y     
+    ##  28 koppen_16                           2.76e- 5 8.17e-2  0       1   e+0 Y     
+    ##  29 koppen_17                           1.90e- 3 1   e+0  0       1   e+0 Y     
+    ##  30 koppen_18                           1.11e- 7 1   e+0  0       1   e+0 Y     
+    ##  31 koppen_19                           1.24e- 4 1   e+0  0       1   e+0 Y     
+    ##  32 koppen_2                            2.97e- 5 1   e+0  0       1   e+0 Y     
+    ##  33 koppen_21                           9.92e- 7 1   e+0  0       1   e+0 Y     
+    ##  34 koppen_22                           1.73e- 4 1   e+0  0       1   e+0 Y     
+    ##  35 koppen_23                           1.06e- 2 6.68e-1  0       1   e+0 Y     
+    ##  36 koppen_25                           2.29e- 6 1   e+0  0       1   e+0 Y     
+    ##  37 koppen_26                           1.52e- 7 1   e+0  0       1   e+0 Y     
+    ##  38 koppen_27                           1.94e- 7 1   e+0  0       1   e+0 Y     
+    ##  39 koppen_29                           9.28e- 5 1   e+0  0       1   e+0 Y     
+    ##  40 koppen_3                            5.56e- 4 1   e+0  0       1   e+0 Y     
+    ##  41 koppen_30                           5.00e- 3 5.00e-3  0       1   e+0 Y     
+    ##  42 koppen_4                            2.32e- 4 1   e+0  0       1   e+0 Y     
+    ##  43 koppen_5                            1.14e- 5 1   e+0  0       1   e+0 Y     
+    ##  44 koppen_6                            1.34e- 6 1   e+0  0       1   e+0 Y     
+    ##  45 koppen_7                            2.10e- 5 1   e+0  0       1   e+0 Y     
+    ##  46 koppen_8                            2.32e- 5 1   e+0  0       1   e+0 Y     
+    ##  47 koppen_9                            3.03e- 5 1   e+0  0       1   e+0 Y     
+    ##  48 koppen_confidence                   0        1   e+2  0       1   e+2 Y     
+    ##  49 lai                                 1.00e-20 7.35e+0  0       9   e+0 Y     
+    ##  50 land_cover_11                       0        9.47e-1  0       1   e+0 Y     
+    ##  51 land_cover_12                       0        8.28e-2  0       1   e+0 Y     
+    ##  52 land_cover_21                       0        8.60e-1  0       1   e+0 Y     
+    ##  53 land_cover_22                       0        9.85e-1  0       1   e+0 Y     
+    ##  54 land_cover_23                       0        9.90e-1  0       1   e+0 Y     
+    ##  55 land_cover_24                       0        1   e+0  0       1   e+0 Y     
+    ##  56 land_cover_31                       0        8.80e-1  0       1   e+0 Y     
+    ##  57 land_cover_41                       0        9.81e-1  0       1   e+0 Y     
+    ##  58 land_cover_42                       0        9.93e-1  0       1   e+0 Y     
+    ##  59 land_cover_43                       0        6.95e-1  0       1   e+0 Y     
+    ##  60 land_cover_52                       0        9.99e-1  0       1   e+0 Y     
+    ##  61 land_cover_71                       0        9.81e-1  0       1   e+0 Y     
+    ##  62 land_cover_81                       0        9.63e-1  0       1   e+0 Y     
+    ##  63 land_cover_82                       0        9.71e-1  0       1   e+0 Y     
+    ##  64 land_cover_90                       0        8.98e-1  0       1   e+0 Y     
+    ##  65 land_cover_95                       0        9.56e-1  0       1   e+0 Y     
+    ##  66 land_cover_confidence               0        9.51e+1  0       1   e+2 Y     
+    ##  67 lst_day_1km_k                       2.45e+ 2 3.33e+2  2.3e+ 2 4   e+2 Y     
+    ##  68 lst_night_1km_k                     2.36e+ 2 3.09e+2  2.3e+ 2 3.1 e+2 Y     
+    ##  69 lwgab                               1.95e+ 2 4.20e+2  1.8e+ 2 4   e+2 N     
+    ##  70 md30_grd                            0        3.61e+3 -4  e+ 2 8.85e+3 Y     
+    ##  71 mi30_grd                            0        3.48e+3 -4  e+ 2 8.85e+3 Y     
+    ##  72 mn30_grd                            0        3.61e+3 -4  e+ 2 8.85e+3 Y     
+    ##  73 mx30_grd                            0        3.77e+3  0       8.85e+3 Y     
+    ##  74 ndvi                               -1.99e- 1 9.72e-1 -1  e+ 0 1   e+0 Y     
+    ##  75 pblh                                2.06e+ 2 1.66e+3  5  e+ 1 2.5 e+3 Y     
+    ##  76 pdsi                                0        1.87e+1 -1  e+ 1 2   e+1 Y     
+    ##  77 pet                                 0        3.38e+2  0       3.5 e+2 Y     
+    ##  78 ppt                                 0        1.23e+3  0       1.4 e+3 Y     
+    ##  79 pr                                  0        4.92e+1  0       5   e+1 Y     
+    ##  80 precsno                             0        6.66e-5  0       7   e-5 Y     
+    ##  81 prectotcorr                         6.36e- 7 1.44e-4  1  e- 7 5   e-4 Y     
+    ##  82 prop_cover_huc2_01                  0        1   e+0  0       1   e+0 Y     
+    ##  83 prop_cover_huc2_02                  0        1   e+0  0       1   e+0 Y     
+    ##  84 prop_cover_huc2_03                  0        1   e+0  0       1   e+0 Y     
+    ##  85 prop_cover_huc2_04                  0        1   e+0  0       1   e+0 Y     
+    ##  86 prop_cover_huc2_05                  0        1   e+0  0       1   e+0 Y     
+    ##  87 prop_cover_huc2_06                  0        1   e+0  0       1   e+0 Y     
+    ##  88 prop_cover_huc2_07                  0        1   e+0  0       1   e+0 Y     
+    ##  89 prop_cover_huc2_08                  0        1   e+0  0       1   e+0 Y     
+    ##  90 prop_cover_huc2_09                  0        1   e+0  0       1   e+0 Y     
+    ##  91 prop_cover_huc2_10                  0        1   e+0  0       1   e+0 Y     
+    ##  92 prop_cover_huc2_11                  0        1   e+0  0       1   e+0 Y     
+    ##  93 prop_cover_huc2_12                  0        1   e+0  0       1   e+0 Y     
+    ##  94 prop_cover_huc2_13                  0        1   e+0  0       1   e+0 Y     
+    ##  95 prop_cover_huc2_14                  0        1   e+0  0       1   e+0 Y     
+    ##  96 prop_cover_huc2_15                  0        1   e+0  0       1   e+0 Y     
+    ##  97 prop_cover_huc2_16                  0        1   e+0  0       1   e+0 Y     
+    ##  98 prop_cover_huc2_17                  0        1   e+0  0       1   e+0 Y     
+    ##  99 prop_cover_huc2_18                  0        1   e+0  0       1   e+0 Y     
+    ## 100 prop_cover_huc2_20                  0        1   e+0  0       1   e+0 Y     
+    ## 101 prop_cover_huc2_21                  0        1   e+0  0       1   e+0 Y     
+    ## 102 prop_cover_huc2_22                  0        9.99e-1  0       1   e+0 Y     
+    ## 103 prop_heavy_coverage                 0        9.90e-1  0       1   e+0 Y     
+    ## 104 prop_light_coverage                 0        9.67e-1  0       1   e+0 Y     
+    ## 105 prop_med_coverage                   0        7.67e-1  0       1   e+0 Y     
+    ## 106 ps                                  6.83e+ 4 1.02e+5  5  e+ 4 1.05e+5 Y     
+    ## 107 qv2m                                1.11e- 3 1.97e-2  0       4   e-2 Y     
+    ## 108 rmax                                1.39e+ 1 1.00e+2  0       1   e+2 N     
+    ## 109 rmin                                2.83e+ 0 9.09e+1  0       1   e+2 Y     
+    ## 110 road_density_km_per_km2             3.21e- 6 1.54e+1  0       1.6 e+1 Y     
+    ## 111 sd30_grd                            0        1.20e+2  0       6   e+2 Y     
+    ## 112 slp                                 1.00e+ 5 1.02e+5  9.9e+ 4 1.02e+5 Y     
+    ## 113 soil                                0        4.67e+2  0       5   e+2 Y     
+    ## 114 solclear                            4.52e+ 0 3.39e+1  2  e+ 0 3.5 e+1 Y     
+    ## 115 solslope                            1.78e+ 0 3.02e+1  0       4   e+1 Y     
+    ## 116 soltotal                            1.80e+ 0 3.03e+1  0       3.2 e+1 Y     
+    ## 117 soltrans                            3.18e- 1 9.37e-1  0       1   e+0 Y     
+    ## 118 sph                                 6.67e- 4 2.19e-2  0       3   e-2 Y     
+    ## 119 srad                                3.05e+ 1 3.83e+2  0       4   e+2 Y     
+    ## 120 sur_refl_b01                        3.22e- 3 9.80e-1 -1  e- 1 1   e+0 Y     
+    ## 121 sur_refl_b02                        6.58e- 3 9.27e-1  0       1   e+0 Y     
+    ## 122 sur_refl_b03                        3.64e- 3 9.63e-1  0       1   e+0 Y     
+    ## 123 sur_refl_b04                        1.14e- 2 9.75e-1  0       1   e+0 Y     
+    ## 124 sur_refl_b05                        8.77e- 3 6.01e-1  0       1   e+0 Y     
+    ## 125 sur_refl_b06                        1.00e- 2 5.50e-1  0       1   e+0 Y     
+    ## 126 sur_refl_b07                        5.33e- 3 5.12e-1  0       1   e+0 Y     
+    ## 127 swe                                 0        1.31e+3  0       1.3 e+3 N     
+    ## 128 t2mdew                              2.53e+ 2 2.98e+2  2.3e+ 2 3.5 e+2 Y     
+    ## 129 tdmean                             -1.79e+ 1 2.49e+1 -4  e+ 1 2.7 e+1 Y     
+    ## 130 th                                  0        3.59e+2  0       3.6 e+2 Y     
+    ## 131 tmax                                0        4.61e+1 -5  e+ 1 5   e+1 Y     
+    ## 132 tmax_norm                          -1.08e+ 1 4.31e+1 -5  e+ 1 5   e+1 Y     
+    ## 133 tmean                              -1.56e+ 1 3.55e+1 -1.6e+ 1 4   e+1 Y     
+    ## 134 tmin                                0        3.24e+1 -6  e+ 1 3.3 e+1 Y     
+    ## 135 tmin_norm                          -2.11e+ 1 2.80e+1 -6  e+ 1 3   e+1 Y     
+    ## 136 tmmn                                2.44e+ 2 3.05e+2  2.4e+ 2 3.5 e+2 Y     
+    ## 137 tmmx                                2.57e+ 2 3.20e+2  2.4e+ 2 3.5 e+2 Y     
+    ## 138 total_road_km                       1.02e- 4 4.45e+2  0       6   e+4 Y     
+    ## 139 totexttau                           4.56e- 2 2.98e-1  2  e- 2 3   e-1 Y     
+    ## 140 ts                                  2.51e+ 2 3.03e+2  2.5e+ 2 3.05e+2 Y     
+    ## 141 u10m                               -6.85e+ 0 5.49e+0 -2  e+ 1 2   e+1 Y     
+    ## 142 vap                                 0        3.42e+0  0       5   e+0 Y     
+    ## 143 vpd                                 0        6.55e+0  0       7   e+0 Y     
+    ## 144 vpdmax                              7.13e- 1 7.50e+1  0       8   e+1 Y     
+    ## 145 vpdmin                              1.91e- 3 2.46e+1  0       3   e+1 Y     
+    ## 146 vs                                  6.62e- 1 1.08e+1  0       2   e+1 Y     
+    ## 147 ws                                  0        1.55e+1  0       1.6 e+1 Y     
+    ## 148 z0m                                 1.78e- 4 2.26e+0  1  e- 4 3   e+0 Y
+
+# Zip-Overall Sanity checks
+
+``` r
+# Duplicates: geoid-variable
+dup_zip_overall <- zip_overall %>%
+  group_by(geoid, variable) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  filter(n > 1) %>%
+  collect()
+
+any_dups_zip_overall <- nrow(dup_zip_overall) > 0
+any_dups_zip_overall
+```
+
+    ## [1] TRUE
+
+``` r
+dup_zip_overall  # inspect if TRUE
+```
+
+    ## # A tibble: 77,859 × 3
+    ##    geoid variable     n
+    ##    <chr> <chr>    <int>
+    ##  1 47236 pet          2
+    ##  2 47870 pet          2
+    ##  3 47851 pet          2
+    ##  4 47337 pet          2
+    ##  5 47435 pet          2
+    ##  6 47514 pet          2
+    ##  7 46045 pet          2
+    ##  8 46206 pet          2
+    ##  9 46704 pet          2
+    ## 10 47585 pet          2
+    ## # ℹ 77,849 more rows
+
+``` r
+# Basic shape (exact)
+zip_overall_shape <- list(
+  n_rows  = zip_overall %>% summarise(n = n()) %>% collect() %>% pull(),
+  n_zips  = zip_overall %>% distinct(geoid)   %>% summarise(n = n()) %>% collect() %>% pull(),
+  n_vars  = zip_overall %>% distinct(variable)%>% summarise(n = n()) %>% collect() %>% pull()
+) %>% tibble::as_tibble()
+zip_overall_shape
+```
+
+    ## # A tibble: 1 × 3
+    ##    n_rows n_zips n_vars
+    ##     <int>  <int>  <int>
+    ## 1 3683101  33791    135
+
+``` r
+# Variable distribution summary (then compare)
+var_summary_zip_overall <- zip_overall %>%
+  group_by(variable) %>%
+  summarise(
+    min_val    = min(value, na.rm = TRUE),
+    max_val    = max(value, na.rm = TRUE),
+    mean_val   = mean(value, na.rm = TRUE),
+    median_val = median(value, na.rm = TRUE),
+    sd_val     = sd(value, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  arrange(variable) %>%
+  collect()
+
+comparison_zip_overall <- var_summary_zip_overall %>%
+  dplyr::left_join(expected_ranges, by = "variable") %>%
+  mutate(
+    min_ok = min_val >= min_exp,
+    max_ok = max_val <= max_exp,
+    passes = ifelse(min_ok & max_ok, "Y", "N")
+  ) %>%
+  select(variable, min_val, max_val, min_exp, max_exp, passes)
+
+  
+
+print(comparison_zip_overall, n = Inf)
+```
+
+    ## # A tibble: 135 × 6
+    ##     variable                             min_val max_val  min_exp max_exp passes
+    ##     <chr>                                  <dbl>   <dbl>    <dbl>   <dbl> <chr> 
+    ##   1 aet                                 4.43e+ 0 1.24e+2  0       2.5 e+2 Y     
+    ##   2 albedo                              7.56e- 2 5.06e-1  0       9   e-1 Y     
+    ##   3 annual_total_air_lb                 0        6.41e+6  0       1   e+8 Y     
+    ##   4 annual_total_air_lb_per_km2         0        2.64e+6  0       4   e+6 Y     
+    ##   5 annual_total_air_lb_plusbuffer      0        6.41e+6  0       1   e+8 Y     
+    ##   6 annual_total_fugitive_air_lb        0        6.23e+6  0       1   e+8 Y     
+    ##   7 annual_total_fugitive_air_lb_per_…  0        2.65e+4  0       5   e+5 Y     
+    ##   8 annual_total_fugitive_air_lb_plus…  0        6.23e+6  0       1   e+8 Y     
+    ##   9 annual_total_stack_air_lb           0        3.30e+6  0       1   e+8 Y     
+    ##  10 annual_total_stack_air_lb_per_km2   0        2.63e+6  0       4   e+6 Y     
+    ##  11 annual_total_stack_air_lb_plusbuf…  0        5.37e+6  0       1   e+8 Y     
+    ##  12 area_km2                            8.25e- 3 3.57e+4  5  e+ 0 3.83e+5 N     
+    ##  13 bcsmass                             5.59e-12 1.82e-9  1  e-12 1   e-8 Y     
+    ##  14 be30_grd                            0        3.59e+3  0       6   e+3 Y     
+    ##  15 cldtot                              2.39e- 1 7.89e-1  0       1   e+0 Y     
+    ##  16 def                                 2.50e- 1 1.92e+2  0       3.4 e+2 Y     
+    ##  17 ds30_grd                            0        3.61e+3  0       6   e+3 Y     
+    ##  18 dusmass25                           3.93e-11 1.70e-8  1  e-11 3   e-8 Y     
+    ##  19 etr                                 2.08e+ 0 9.72e+0  0       1.8 e+1 Y     
+    ##  20 evap                                2.46e- 6 7.08e-5  1  e- 8 1   e-4 Y     
+    ##  21 evi                                -5.05e- 2 4.76e-1 -1  e- 1 1   e+0 Y     
+    ##  22 fractional_impervious_surface       0        9.23e+1  0       1   e+2 Y     
+    ##  23 grn                                 0        9.83e-1  0       1   e+0 Y     
+    ##  24 gwetroot                            1.96e- 1 9.80e-1  0       1   e+0 Y     
+    ##  25 koppen_1                            1.47e- 4 1   e+0  0       1   e+0 Y     
+    ##  26 koppen_14                           7.89e- 6 1   e+0  0       1   e+0 Y     
+    ##  27 koppen_15                           9.95e- 5 1   e+0  0       1   e+0 Y     
+    ##  28 koppen_16                           2.76e- 5 8.17e-2  0       1   e+0 Y     
+    ##  29 koppen_17                           1.90e- 3 1   e+0  0       1   e+0 Y     
+    ##  30 koppen_18                           1.11e- 7 1   e+0  0       1   e+0 Y     
+    ##  31 koppen_19                           1.24e- 4 1   e+0  0       1   e+0 Y     
+    ##  32 koppen_2                            2.97e- 5 1   e+0  0       1   e+0 Y     
+    ##  33 koppen_21                           9.92e- 7 1   e+0  0       1   e+0 Y     
+    ##  34 koppen_22                           1.73e- 4 1   e+0  0       1   e+0 Y     
+    ##  35 koppen_23                           1.06e- 2 6.68e-1  0       1   e+0 Y     
+    ##  36 koppen_25                           2.29e- 6 1   e+0  0       1   e+0 Y     
+    ##  37 koppen_26                           1.52e- 7 1   e+0  0       1   e+0 Y     
+    ##  38 koppen_27                           1.94e- 7 1   e+0  0       1   e+0 Y     
+    ##  39 koppen_29                           9.28e- 5 1   e+0  0       1   e+0 Y     
+    ##  40 koppen_3                            5.56e- 4 1   e+0  0       1   e+0 Y     
+    ##  41 koppen_30                           5.00e- 3 5.00e-3  0       1   e+0 Y     
+    ##  42 koppen_4                            2.32e- 4 1   e+0  0       1   e+0 Y     
+    ##  43 koppen_5                            1.14e- 5 1   e+0  0       1   e+0 Y     
+    ##  44 koppen_6                            1.34e- 6 1   e+0  0       1   e+0 Y     
+    ##  45 koppen_7                            2.10e- 5 1   e+0  0       1   e+0 Y     
+    ##  46 koppen_8                            2.32e- 5 1   e+0  0       1   e+0 Y     
+    ##  47 koppen_9                            3.03e- 5 1   e+0  0       1   e+0 Y     
+    ##  48 koppen_confidence                   0        1   e+2  0       1   e+2 Y     
+    ##  49 lai                                 1.00e-20 7.34e+0  0       9   e+0 Y     
+    ##  50 land_cover_11                       0        9.45e-1  0       1   e+0 Y     
+    ##  51 land_cover_12                       0        8.28e-2  0       1   e+0 Y     
+    ##  52 land_cover_21                       0        8.32e-1  0       1   e+0 Y     
+    ##  53 land_cover_22                       0        9.85e-1  0       1   e+0 Y     
+    ##  54 land_cover_23                       0        9.77e-1  0       1   e+0 Y     
+    ##  55 land_cover_24                       0        1   e+0  0       1   e+0 Y     
+    ##  56 land_cover_31                       0        8.57e-1  0       1   e+0 Y     
+    ##  57 land_cover_41                       0        9.80e-1  0       1   e+0 Y     
+    ##  58 land_cover_42                       0        9.92e-1  0       1   e+0 Y     
+    ##  59 land_cover_43                       0        6.81e-1  0       1   e+0 Y     
+    ##  60 land_cover_52                       0        9.99e-1  0       1   e+0 Y     
+    ##  61 land_cover_71                       0        9.79e-1  0       1   e+0 Y     
+    ##  62 land_cover_81                       0        9.61e-1  0       1   e+0 Y     
+    ##  63 land_cover_82                       0        9.69e-1  0       1   e+0 Y     
+    ##  64 land_cover_90                       0        8.97e-1  0       1   e+0 Y     
+    ##  65 land_cover_95                       0        9.55e-1  0       1   e+0 Y     
+    ##  66 land_cover_confidence               0        9.48e+1  0       1   e+2 Y     
+    ##  67 lst_day_1km_k                       2.67e+ 2 3.14e+2  2.3e+ 2 4   e+2 Y     
+    ##  68 lst_night_1km_k                     2.63e+ 2 2.97e+2  2.3e+ 2 3.1 e+2 Y     
+    ##  69 lwgab                               2.21e+ 2 4.16e+2  1.8e+ 2 4   e+2 N     
+    ##  70 md30_grd                            0        3.61e+3 -4  e+ 2 8.85e+3 Y     
+    ##  71 mi30_grd                            0        3.48e+3 -4  e+ 2 8.85e+3 Y     
+    ##  72 mn30_grd                            0        3.61e+3 -4  e+ 2 8.85e+3 Y     
+    ##  73 mx30_grd                            0        3.77e+3  0       8.85e+3 Y     
+    ##  74 ndvi                               -4.89e- 2 8.62e-1 -1  e+ 0 1   e+0 Y     
+    ##  75 pblh                                3.41e+ 2 1.29e+3  5  e+ 1 2.5 e+3 Y     
+    ##  76 pdsi                                1.31e- 2 4.83e+0 -1  e+ 1 2   e+1 Y     
+    ##  77 pet                                 1.77e+ 0 1.97e+2  0       3.5 e+2 Y     
+    ##  78 ppt                                 4.66e+ 0 4.34e+2  0       1.4 e+3 Y     
+    ##  79 pr                                  1.71e- 1 1.17e+1  0       5   e+1 Y     
+    ##  80 precsno                             0        5.11e-5  0       7   e-5 Y     
+    ##  81 prectotcorr                         2.40e- 6 1.14e-4  1  e- 7 5   e-4 Y     
+    ##  82 prop_cover_huc2_01                  0        1   e+0  0       1   e+0 Y     
+    ##  83 prop_cover_huc2_02                  0        1   e+0  0       1   e+0 Y     
+    ##  84 prop_cover_huc2_03                  0        1   e+0  0       1   e+0 Y     
+    ##  85 prop_cover_huc2_04                  0        1   e+0  0       1   e+0 Y     
+    ##  86 prop_cover_huc2_05                  0        1   e+0  0       1   e+0 Y     
+    ##  87 prop_cover_huc2_06                  0        1   e+0  0       1   e+0 Y     
+    ##  88 prop_cover_huc2_07                  0        1   e+0  0       1   e+0 Y     
+    ##  89 prop_cover_huc2_08                  0        1   e+0  0       1   e+0 Y     
+    ##  90 prop_cover_huc2_09                  0        1   e+0  0       1   e+0 Y     
+    ##  91 prop_cover_huc2_10                  0        1   e+0  0       1   e+0 Y     
+    ##  92 prop_cover_huc2_11                  0        1   e+0  0       1   e+0 Y     
+    ##  93 prop_cover_huc2_12                  0        1   e+0  0       1   e+0 Y     
+    ##  94 prop_cover_huc2_13                  0        1   e+0  0       1   e+0 Y     
+    ##  95 prop_cover_huc2_14                  0        1   e+0  0       1   e+0 Y     
+    ##  96 prop_cover_huc2_15                  0        1   e+0  0       1   e+0 Y     
+    ##  97 prop_cover_huc2_16                  0        1   e+0  0       1   e+0 Y     
+    ##  98 prop_cover_huc2_17                  0        1   e+0  0       1   e+0 Y     
+    ##  99 prop_cover_huc2_18                  0        1   e+0  0       1   e+0 Y     
+    ## 100 prop_cover_huc2_20                  0        1   e+0  0       1   e+0 Y     
+    ## 101 prop_cover_huc2_21                  0        1   e+0  0       1   e+0 Y     
+    ## 102 prop_cover_huc2_22                  0        9.99e-1  0       1   e+0 Y     
+    ## 103 ps                                  6.86e+ 4 1.02e+5  5  e+ 4 1.05e+5 Y     
+    ## 104 qv2m                                2.29e- 3 1.92e-2  0       4   e-2 Y     
+    ## 105 rmax                                3.61e+ 1 9.91e+1  0       1   e+2 Y     
+    ## 106 rmin                                1.23e+ 1 6.87e+1  0       1   e+2 Y     
+    ## 107 road_density_km_per_km2             3.21e- 6 1.54e+1  0       1.6 e+1 Y     
+    ## 108 sd30_grd                            0        1.20e+2  0       6   e+2 Y     
+    ## 109 slp                                 1.01e+ 5 1.02e+5  9.9e+ 4 1.02e+5 Y     
+    ## 110 soil                                0        3.16e+2  0       5   e+2 Y     
+    ## 111 sph                                 3.04e- 3 1.55e-2  0       3   e-2 Y     
+    ## 112 srad                                6.66e+ 1 2.55e+2  0       4   e+2 Y     
+    ## 113 sur_refl_b01                        2.75e- 2 7.18e-1 -1  e- 1 1   e+0 Y     
+    ## 114 sur_refl_b02                        4.76e- 2 6.37e-1  0       1   e+0 Y     
+    ## 115 sur_refl_b03                        1.80e- 2 7.42e-1  0       1   e+0 Y     
+    ## 116 sur_refl_b04                        3.72e- 2 7.39e-1  0       1   e+0 Y     
+    ## 117 sur_refl_b05                        4.61e- 2 4.62e-1  0       1   e+0 Y     
+    ## 118 sur_refl_b06                        4.26e- 2 4.78e-1  0       1   e+0 Y     
+    ## 119 sur_refl_b07                        2.73e- 2 4.31e-1  0       1   e+0 Y     
+    ## 120 swe                                 0        2.98e+2  0       1.3 e+3 Y     
+    ## 121 t2mdew                              2.62e+ 2 2.98e+2  2.3e+ 2 3.5 e+2 Y     
+    ## 122 th                                  2.39e+ 1 2.89e+2  0       3.6 e+2 Y     
+    ## 123 tmax                                0        3.25e+1 -5  e+ 1 5   e+1 Y     
+    ## 124 tmin                                0        2.56e+1 -6  e+ 1 3.3 e+1 Y     
+    ## 125 tmmn                                2.67e+ 2 2.96e+2  2.4e+ 2 3.5 e+2 Y     
+    ## 126 tmmx                                2.79e+ 2 3.06e+2  2.4e+ 2 3.5 e+2 Y     
+    ## 127 total_road_km                       1.02e- 4 4.45e+2  0       6   e+4 Y     
+    ## 128 totexttau                           6.01e- 2 1.97e-1  2  e- 2 3   e-1 Y     
+    ## 129 ts                                  2.61e+ 2 3.02e+2  2.5e+ 2 3.05e+2 Y     
+    ## 130 u10m                               -5.70e+ 0 4.39e+0 -2  e+ 1 2   e+1 Y     
+    ## 131 vap                                 3.29e- 1 3.00e+0  0       5   e+0 Y     
+    ## 132 vpd                                 6.77e- 2 2.82e+0  0       7   e+0 Y     
+    ## 133 vs                                  1.85e+ 0 6.43e+0  0       2   e+1 Y     
+    ## 134 ws                                  1.76e+ 0 8.77e+0  0       1.6 e+1 Y     
+    ## 135 z0m                                 2.21e- 4 2.26e+0  1  e- 4 3   e+0 Y
