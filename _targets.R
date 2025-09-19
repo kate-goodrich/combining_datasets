@@ -264,7 +264,6 @@ list(
                 in_shp = zcta_raw,
                 out_gpkg = CENSUS_GPKG,
                 out_layer = "zctas_500k",
-                crs_out = 5070,
                 make_valid = TRUE,
                 verbose = TRUE
             )
