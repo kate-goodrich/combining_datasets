@@ -2,20 +2,7 @@
 
 **File Names:**  
 
-**Dynamic Variable Files:**  
-`zip_2010_01.csv` … `zip_2010_12.csv`  
-`zip_2011_01.csv` … `zip_2011_12.csv`  
-…  
-`zip_2024_01.csv` … `zip_2024_12.csv`  
-(Each file also available as `.parquet`)  
-
-**Normal Variable Files:**  
-`zip_normal_01.csv` … `zip_normal_12.csv`  
-(Also available as `.parquet`)  
-
-**Static Variable File:**  
-`zip_static.csv`  
-(Also available as `.parquet`)  
+**File Name:** `zip_monthly.parquet`; `zip_monthly.csv`  
 
 **Last Updated:** 2025-09-12  
 
