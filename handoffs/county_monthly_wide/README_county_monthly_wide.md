@@ -79,8 +79,8 @@ This file was generated using data from:
 |-----------------------------------------|---------------|---------|------------------------------------------------------------|----------------|
 | etr                                     | gridmet       | dynamic | Reference alfalfa evaportranspiration                      | mm/day         |
 | pr                                      | gridmet       | dynamic | Precipitation                                              | mm/day         |
-| rmax                                    | gridmet       | dynamic | Maximum Near-Surface Relative Humidity                     | %              |
-| rmin                                    | gridmet       | dynamic | Minimum Near-Surface Relative Humidity                     | %              |
+| rmax                                    | gridmet       | dynamic | Maximum daily Near-Surface Relative Humidity               | %              |
+| rmin                                    | gridmet       | dynamic | Minimum daily Near-Surface Relative Humidity               | %              |
 | sph                                     | gridmet       | dynamic | Near-Surface Specific Humidity                             | kg/kg          |
 | srad                                    | gridmet       | dynamic | Surface Downwelling Solar Radiation                        | W/m²           |
 | th                                      | gridmet       | dynamic | Wind direction at 10 m                                     | degrees        |
@@ -116,8 +116,8 @@ This file was generated using data from:
 | ppt                                     | terraclimate  | dynamic | Precipitation                                              | mm/month       |
 | soil                                    | terraclimate  | dynamic | Soil moisture                                              | mm/month       |
 | swe                                     | terraclimate  | dynamic | Snow water equivalent                                      | mm/month       |
-| tmax                                    | terraclimate  | dynamic | Maximum temperature                                        | °C             |
-| tmin                                    | terraclimate  | dynamic | Minimum temperature                                        | °C             |
+| tmax                                    | terraclimate  | dynamic | Maximum daily temperature                                  | °C             |
+| tmin                                    | terraclimate  | dynamic | Minimum daily temperature                                  | °C             |
 | vap                                     | terraclimate  | dynamic | Vapor pressure                                             | kPa            |
 | vpd                                     | terraclimate  | dynamic | Vapor pressure deficit                                     | kPa            |
 | ws                                      | terraclimate  | dynamic | Wind speed                                                 | m/s            |

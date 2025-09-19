@@ -61,7 +61,7 @@ This file was generated using data from:
 - TRI point source emissions were summed by zip code; additional per-area and +4 km buffer summaries included.
 - PRISM normals represent 1991–2020 climatological averages (static).
 - Geographic coverage spans the 48 contiguous U.S. states. Alaska and Hawaii are excluded from gridMET, NLCD, PRISM, and MODIS here.
-- ZCTAs (ZIP Code Tabulation Areas) were used for zip codes, resulting in gaps in sparsely populated areas.
+- ZCTAs (ZIP Code Tabulation Areas, version 2020) were used for zip codes, resulting in gaps in sparsely populated areas.
 
 
 
@@ -72,8 +72,8 @@ This file was generated using data from:
 |-----------------------------------------|---------------|---------|------------------------------------------------------------|----------------|
 | etr                                     | gridmet       | dynamic | Reference alfalfa evaportranspiration                      | mm/day         |
 | pr                                      | gridmet       | dynamic | Precipitation                                              | mm/day         |
-| rmax                                    | gridmet       | dynamic | Maximum Near-Surface Relative Humidity                     | %              |
-| rmin                                    | gridmet       | dynamic | Minimum Near-Surface Relative Humidity                     | %              |
+| rmax                                    | gridmet       | dynamic | Daily maximum Near-Surface Relative Humidity               | %              |
+| rmin                                    | gridmet       | dynamic | Daily minimum Near-Surface Relative Humidity               | %              |
 | sph                                     | gridmet       | dynamic | Near-Surface Specific Humidity                             | kg/kg          |
 | srad                                    | gridmet       | dynamic | Surface Downwelling Solar Radiation                        | W/m²           |
 | th                                      | gridmet       | dynamic | Wind direction at 10 m                                     | degrees        |
@@ -132,8 +132,8 @@ This file was generated using data from:
 | tmax_norm                               | prism         | normal  | Max daily temperature                                      | °C             |
 | tmean                                   | prism         | normal  | Mean temperature                                           | °C             |
 | tmin_norm                               | prism         | normal  | Minimum daily temperature                                  | °C             |
-| vpdmax                                  | prism         | normal  | Maximum vapor pressure deficit                             | hPa            |
-| vpdmin                                  | prism         | normal  | Minimum vapor pressure deficit                             | hPa            |
+| vpdmax                                  | prism         | normal  | Daily maximum vapor pressure deficit                       | hPa            |
+| vpdmin                                  | prism         | normal  | Daily minimum vapor pressure deficit                       | hPa            |
 | be30_grd                                | gmted         | static  | Breakline emphasis (30-arc seconds)                        | m              |
 | ds30_grd                                | gmted         | static  | Systematic subsample (30-arc seconds)                      | m              |
 | md30_grd                                | gmted         | static  | Median statistic (30-arc seconds)                          | m              |

@@ -293,7 +293,7 @@ print(comparison, n = Inf)
 ```{r}
 county_keys <- tibble::tribble(
   ~geoid,  ~year,  ~month, ~variable,
-  "18161", "2018", "1",    "solclear",
+  "18161", "normal", "1",    "solclear",
   "38015", "2021", "6",    "tmax",
   "41071", "2011", "12",   "pr",
   "36061", "2012", "1",    "rmax",
@@ -460,9 +460,9 @@ print(comparison, n = Inf)
 ```{r}
 tract_keys <- tibble::tribble(
   ~geoid,        ~year,  ~month, ~variable,
-  "01001021100", "2018", "1",    "solclear",
+  "01001021100", "normal", "1",    "solclear",
   "01073010704", "2021", "6",    "tmax",
-  "04007000400", "2018", "1",    "solclear",
+  "04007000400", "normal", "11",    "solclear",
   "04013116607", "2014", "12",   "pr",
   "05027950302", "2021", "6",    "tmax"
 )

@@ -470,7 +470,7 @@ print(comparison, n = Inf)
 ``` r
 county_keys <- tibble::tribble(
   ~geoid,  ~year,  ~month, ~variable,
-  "18161", "2018", "1",    "solclear",
+  "18161", "normal", "1",    "solclear",
   "38015", "2021", "6",    "tmax",
   "41071", "2011", "12",   "pr",
   "36061", "2012", "1",    "rmax",
@@ -521,7 +521,7 @@ county_dupe_summary
 ## # A tibble: 1 × 4
 ##   combos_checked combos_present combos_with_duplicates extra_rows_total
 ##            <int>          <int>                  <int>            <int>
-## 1              6              5                      0                0
+## 1              6              6                      0                0
 ```
 
 ``` r
@@ -529,10 +529,9 @@ county_dupe_results %>% dplyr::filter(is_duplicate | !present)
 ```
 
 ```
-## # A tibble: 1 × 7
-##   geoid year  month variable n_rows present is_duplicate
-##   <chr> <chr> <chr> <chr>     <int> <lgl>   <lgl>       
-## 1 18161 2018  1     solclear      0 FALSE   FALSE
+## # A tibble: 0 × 7
+## # ℹ 7 variables: geoid <chr>, year <chr>, month <chr>, variable <chr>,
+## #   n_rows <int>, present <lgl>, is_duplicate <lgl>
 ```
 
 ``` r
@@ -1207,9 +1206,9 @@ print(comparison, n = Inf)
 ``` r
 tract_keys <- tibble::tribble(
   ~geoid,        ~year,  ~month, ~variable,
-  "01001021100", "2018", "1",    "solclear",
+  "01001021100", "normal", "1",    "solclear",
   "01073010704", "2021", "6",    "tmax",
-  "04007000400", "2018", "1",    "solclear",
+  "04007000400", "normal", "11",    "solclear",
   "04013116607", "2014", "12",   "pr",
   "05027950302", "2021", "6",    "tmax"
 )
@@ -1256,7 +1255,7 @@ tract_dupe_summary
 ## # A tibble: 1 × 4
 ##   combos_checked combos_present combos_with_duplicates extra_rows_total
 ##            <int>          <int>                  <int>            <int>
-## 1              5              3                      0                0
+## 1              5              5                      0                0
 ```
 
 ``` r
@@ -1264,11 +1263,9 @@ tract_dupe_results %>% dplyr::filter(is_duplicate | !present)
 ```
 
 ```
-## # A tibble: 2 × 7
-##   geoid       year  month variable n_rows present is_duplicate
-##   <chr>       <chr> <chr> <chr>     <int> <lgl>   <lgl>       
-## 1 01001021100 2018  1     solclear      0 FALSE   FALSE       
-## 2 04007000400 2018  1     solclear      0 FALSE   FALSE
+## # A tibble: 0 × 7
+## # ℹ 7 variables: geoid <chr>, year <chr>, month <chr>, variable <chr>,
+## #   n_rows <int>, present <lgl>, is_duplicate <lgl>
 ```
 
 ``` r
