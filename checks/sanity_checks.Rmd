@@ -293,12 +293,12 @@ print(comparison, n = Inf)
 ```{r}
 county_keys <- tibble::tribble(
   ~geoid,  ~year,  ~month, ~variable,
-  "06037", "2018", "1",    "solclear",
-  "06037", "2021", "6",    "tmax",
-  "06037", "2024", "12",   "pr",
-  "36061", "2018", "1",    "solclear",
-  "36061", "2021", "6",    "tmax",
-  "17031", "2024", "12",   "pr"
+  "18161", "2018", "1",    "solclear",
+  "38015", "2021", "6",    "tmax",
+  "41071", "2011", "12",   "pr",
+  "36061", "2012", "1",    "rmax",
+  "51099", "2013", "6",    "tmax",
+  "55117", "2014", "12",   "pr"
 )
 
 # Cast columns to character *inside Arrow* before filtering
@@ -460,11 +460,11 @@ print(comparison, n = Inf)
 ```{r}
 tract_keys <- tibble::tribble(
   ~geoid,        ~year,  ~month, ~variable,
-  "06037000100", "2018", "1",    "solclear",
-  "06037000100", "2021", "6",    "tmax",
-  "36061000100", "2018", "1",    "solclear",
-  "36061000100", "2024", "12",   "pr",
-  "17031010100", "2021", "6",    "tmax"
+  "01001021100", "2018", "1",    "solclear",
+  "01073010704", "2021", "6",    "tmax",
+  "04007000400", "2018", "1",    "solclear",
+  "04013116607", "2014", "12",   "pr",
+  "05027950302", "2021", "6",    "tmax"
 )
 
 tract_subset <- tract_monthly %>%

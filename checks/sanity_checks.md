@@ -439,12 +439,12 @@ print(comparison, n = Inf)
 ``` r
 county_keys <- tibble::tribble(
   ~geoid,  ~year,  ~month, ~variable,
-  "06037", "2018", "1",    "solclear",
-  "06037", "2021", "6",    "tmax",
-  "06037", "2024", "12",   "pr",
-  "36061", "2018", "1",    "solclear",
-  "36061", "2021", "6",    "tmax",
-  "17031", "2024", "12",   "pr"
+  "18161", "2018", "1",    "solclear",
+  "38015", "2021", "6",    "tmax",
+  "41071", "2011", "12",   "pr",
+  "36061", "2012", "1",    "rmax",
+  "51099", "2013", "6",    "tmax",
+  "55117", "2014", "12",   "pr"
 )
 
 # Cast columns to character *inside Arrow* before filtering
@@ -489,17 +489,16 @@ county_dupe_summary
     ## # A tibble: 1 × 4
     ##   combos_checked combos_present combos_with_duplicates extra_rows_total
     ##            <int>          <int>                  <int>            <int>
-    ## 1              6              4                      0                0
+    ## 1              6              5                      0                0
 
 ``` r
 county_dupe_results %>% dplyr::filter(is_duplicate | !present)
 ```
 
-    ## # A tibble: 2 × 7
+    ## # A tibble: 1 × 7
     ##   geoid year  month variable n_rows present is_duplicate
     ##   <chr> <chr> <chr> <chr>     <int> <lgl>   <lgl>       
-    ## 1 06037 2018  1     solclear      0 FALSE   FALSE       
-    ## 2 36061 2018  1     solclear      0 FALSE   FALSE
+    ## 1 18161 2018  1     solclear      0 FALSE   FALSE
 
 ``` r
 # Basic shape
@@ -1145,11 +1144,11 @@ print(comparison, n = Inf)
 ``` r
 tract_keys <- tibble::tribble(
   ~geoid,        ~year,  ~month, ~variable,
-  "06037000100", "2018", "1",    "solclear",
-  "06037000100", "2021", "6",    "tmax",
-  "36061000100", "2018", "1",    "solclear",
-  "36061000100", "2024", "12",   "pr",
-  "17031010100", "2021", "6",    "tmax"
+  "01001021100", "2018", "1",    "solclear",
+  "01073010704", "2021", "6",    "tmax",
+  "04007000400", "2018", "1",    "solclear",
+  "04013116607", "2014", "12",   "pr",
+  "05027950302", "2021", "6",    "tmax"
 )
 
 tract_subset <- tract_monthly %>%
@@ -1193,18 +1192,17 @@ tract_dupe_summary
     ## # A tibble: 1 × 4
     ##   combos_checked combos_present combos_with_duplicates extra_rows_total
     ##            <int>          <int>                  <int>            <int>
-    ## 1              5              2                      0                0
+    ## 1              5              3                      0                0
 
 ``` r
 tract_dupe_results %>% dplyr::filter(is_duplicate | !present)
 ```
 
-    ## # A tibble: 3 × 7
+    ## # A tibble: 2 × 7
     ##   geoid       year  month variable n_rows present is_duplicate
     ##   <chr>       <chr> <chr> <chr>     <int> <lgl>   <lgl>       
-    ## 1 06037000100 2018  1     solclear      0 FALSE   FALSE       
-    ## 2 06037000100 2021  6     tmax          0 FALSE   FALSE       
-    ## 3 36061000100 2018  1     solclear      0 FALSE   FALSE
+    ## 1 01001021100 2018  1     solclear      0 FALSE   FALSE       
+    ## 2 04007000400 2018  1     solclear      0 FALSE   FALSE
 
 ``` r
 # Basic shape
