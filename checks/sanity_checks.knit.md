@@ -468,6 +468,75 @@ print(comparison, n = Inf)
 # County-Monthly Sanity checks
 
 ``` r
+county_keys <- tibble::tribble(
+  ~geoid,  ~year,  ~month, ~variable,
+  "06037", "2018", "1",    "solclear",
+  "06037", "2021", "6",    "tmax",
+  "06037", "2024", "12",   "pr",
+  "36061", "2018", "1",    "solclear",
+  "36061", "2021", "6",    "tmax",
+  "17031", "2024", "12",   "pr"
+)
+
+# Cast columns to character *inside Arrow* before filtering
+county_subset <- county_monthly %>%
+  dplyr::transmute(
+    geoid    = arrow::cast(geoid, arrow::string()),
+    year     = arrow::cast(year,  arrow::string()),
+    month    = arrow::cast(month, arrow::string()),
+    variable = arrow::cast(variable, arrow::string())
+  ) %>%
+  dplyr::filter(
+    geoid    %in% county_keys$geoid,
+    year     %in% county_keys$year,
+    month    %in% county_keys$month,
+    variable %in% county_keys$variable
+  ) %>%
+  dplyr::collect()
+
+county_dupe_results <- county_subset %>%
+  dplyr::inner_join(county_keys, by = c("geoid","year","month","variable")) %>%
+  dplyr::group_by(geoid, year, month, variable) %>%
+  dplyr::summarise(n_rows = dplyr::n(), .groups = "drop") %>%
+  dplyr::right_join(county_keys, by = c("geoid","year","month","variable")) %>%
+  dplyr::mutate(
+    n_rows = tidyr::replace_na(n_rows, 0L),
+    present = n_rows > 0,
+    is_duplicate = n_rows > 1
+  ) %>%
+  dplyr::arrange(dplyr::desc(is_duplicate), dplyr::desc(present), geoid, year, month, variable)
+
+county_dupe_summary <- county_dupe_results %>%
+  dplyr::summarise(
+    combos_checked = dplyr::n(),
+    combos_present = sum(present),
+    combos_with_duplicates = sum(is_duplicate),
+    extra_rows_total = sum(dplyr::if_else(is_duplicate, n_rows - 1L, 0L))
+  )
+
+county_dupe_summary
+```
+
+```
+## # A tibble: 1 × 4
+##   combos_checked combos_present combos_with_duplicates extra_rows_total
+##            <int>          <int>                  <int>            <int>
+## 1              6              4                      0                0
+```
+
+``` r
+county_dupe_results %>% dplyr::filter(is_duplicate | !present)
+```
+
+```
+## # A tibble: 2 × 7
+##   geoid year  month variable n_rows present is_duplicate
+##   <chr> <chr> <chr> <chr>     <int> <lgl>   <lgl>       
+## 1 06037 2018  1     solclear      0 FALSE   FALSE       
+## 2 36061 2018  1     solclear      0 FALSE   FALSE
+```
+
+``` r
 # Basic shape
 # should be 3144 counties, 17 years (2010-2024) normal and static, 148 vars
 county_monthly %>%
@@ -1135,6 +1204,74 @@ print(comparison, n = Inf)
 
 
 # Tract-Monthly Sanity checks
+
+``` r
+tract_keys <- tibble::tribble(
+  ~geoid,        ~year,  ~month, ~variable,
+  "06037000100", "2018", "1",    "solclear",
+  "06037000100", "2021", "6",    "tmax",
+  "36061000100", "2018", "1",    "solclear",
+  "36061000100", "2024", "12",   "pr",
+  "17031010100", "2021", "6",    "tmax"
+)
+
+tract_subset <- tract_monthly %>%
+  dplyr::transmute(
+    geoid    = arrow::cast(geoid, arrow::string()),
+    year     = arrow::cast(year,  arrow::string()),
+    month    = arrow::cast(month, arrow::string()),
+    variable = arrow::cast(variable, arrow::string())
+  ) %>%
+  dplyr::filter(
+    geoid    %in% tract_keys$geoid,
+    year     %in% tract_keys$year,
+    month    %in% tract_keys$month,
+    variable %in% tract_keys$variable
+  ) %>%
+  dplyr::collect()
+
+tract_dupe_results <- tract_subset %>%
+  dplyr::inner_join(tract_keys, by = c("geoid","year","month","variable")) %>%
+  dplyr::group_by(geoid, year, month, variable) %>%
+  dplyr::summarise(n_rows = dplyr::n(), .groups = "drop") %>%
+  dplyr::right_join(tract_keys, by = c("geoid","year","month","variable")) %>%
+  dplyr::mutate(
+    n_rows = tidyr::replace_na(n_rows, 0L),
+    present = n_rows > 0,
+    is_duplicate = n_rows > 1
+  ) %>%
+  dplyr::arrange(dplyr::desc(is_duplicate), dplyr::desc(present), geoid, year, month, variable)
+
+tract_dupe_summary <- tract_dupe_results %>%
+  dplyr::summarise(
+    combos_checked = dplyr::n(),
+    combos_present = sum(present),
+    combos_with_duplicates = sum(is_duplicate),
+    extra_rows_total = sum(dplyr::if_else(is_duplicate, n_rows - 1L, 0L))
+  )
+
+tract_dupe_summary
+```
+
+```
+## # A tibble: 1 × 4
+##   combos_checked combos_present combos_with_duplicates extra_rows_total
+##            <int>          <int>                  <int>            <int>
+## 1              5              2                      0                0
+```
+
+``` r
+tract_dupe_results %>% dplyr::filter(is_duplicate | !present)
+```
+
+```
+## # A tibble: 3 × 7
+##   geoid       year  month variable n_rows present is_duplicate
+##   <chr>       <chr> <chr> <chr>     <int> <lgl>   <lgl>       
+## 1 06037000100 2018  1     solclear      0 FALSE   FALSE       
+## 2 06037000100 2021  6     tmax          0 FALSE   FALSE       
+## 3 36061000100 2018  1     solclear      0 FALSE   FALSE
+```
 
 ``` r
 # Basic shape
